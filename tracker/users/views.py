@@ -6,6 +6,7 @@ from django.views.generic import DetailView
 from django.views.generic import RedirectView
 from django.views.generic import UpdateView
 
+from tracker.task.models import Workspace
 from tracker.users.models import User
 
 
@@ -20,7 +21,7 @@ user_detail_view = UserDetailView.as_view()
 
 class UserUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = User
-    fields = ["name"]
+    fields = ["name", "default_workspace"]
     success_message = _("Information successfully updated")
 
     def get_success_url(self):
@@ -30,6 +31,14 @@ class UserUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_object(self):
         return self.request.user
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields["default_workspace"].queryset = Workspace.objects.filter(
+            users=self.request.user,
+        )
+        form.fields["default_workspace"].empty_label = None
+        return form
 
 
 user_update_view = UserUpdateView.as_view()

@@ -6,6 +6,8 @@ from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.conf import settings
 
+from tracker.task.models import Workspace
+
 if typing.TYPE_CHECKING:
     from allauth.socialaccount.models import SocialLogin
     from django.http import HttpRequest
@@ -16,6 +18,19 @@ if typing.TYPE_CHECKING:
 class AccountAdapter(DefaultAccountAdapter):
     def is_open_for_signup(self, request: HttpRequest) -> bool:
         return getattr(settings, "ACCOUNT_ALLOW_REGISTRATION", True)
+
+    def login(self, request, user):
+        super().login(request, user)
+
+        # Create a default workspace for the user if they don't have one
+        if not user.default_workspace:
+            workspace = Workspace.objects.create(
+                name=f"{user.email}'s Workspace",
+                created_by_id=user.id,
+            )
+            workspace.users.add(user)
+            user.default_workspace = workspace
+            user.save()
 
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):

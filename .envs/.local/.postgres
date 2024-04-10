@@ -1,5 +1,6 @@
 # PostgreSQL
 # ------------------------------------------------------------------------------
+DATABASE_URL=postgresql://debug:debug@postgres:5432/tracker 
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 POSTGRES_DB=tracker
