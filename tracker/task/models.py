@@ -63,10 +63,10 @@ class Task(models.Model):
     category = models.CharField(
         max_length=10, choices=CATEGORY_CHOICES, default="normal"
     )
-    due_date = models.DateTimeField(blank=True)
+    due_date = models.DateTimeField(blank=True, null=True)
     creation_date = models.DateTimeField(auto_now_add=True)
-    modified_date = models.DateTimeField(blank=True)
-    completed_date = models.DateTimeField(blank=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    completed_date = models.DateTimeField(blank=True, null=True)
     rooms = models.ManyToManyField(Room, related_name="tasks")
 
     class Meta:

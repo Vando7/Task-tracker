@@ -1,0 +1,44 @@
+<div class="mb-1">
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <div class="container-fluid">
+            <button class="navbar-toggler navbar-toggler-right"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent"
+                    aria-controls="navbarSupportedContent"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="{% url 'home' %}">taskTracker</a>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    {% if request.user.is_authenticated %}
+                        <li class="nav-item ms-auto">
+                            <a class="nav-link" href="{% url 'task:index' %}">Task index</a>
+                        </li>
+                        <li class="nav-item ms-auto">
+                            <a class="nav-link" href="{% url 'users:detail' request.user.pk %}">My Profile</a>
+                        </li>
+                        {% include "partials/_workspace_selector.html" %}
+                        <li class="nav-item">
+                            {# URL provided by django-allauth/account/urls.py #}
+                            <a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a>
+                        </li>
+                    {% else %}
+                        {% if ACCOUNT_ALLOW_REGISTRATION %}
+                            <li class="nav-item">
+                                {# URL provided by django-allauth/account/urls.py #}
+                                <a id="sign-up-link" class="nav-link" href="{% url 'account_signup' %}">Sign Up</a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            {# URL provided by django-allauth/account/urls.py #}
+                            <a id="log-in-link" class="nav-link" href="{% url 'account_login' %}">Sign In</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>

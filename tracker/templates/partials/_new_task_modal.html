@@ -1,0 +1,131 @@
+<div class="modal fade"
+     id="NewTaskModal"
+     tabindex="-1"
+     aria-labelledby="NewTaskModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="NewTaskModalLabel">New Task</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <form id="newTaskForm"  action="{% url 'task:create_task' %}" method="post" >
+                {% csrf_token %}
+                <div class="modal-body py-2">
+                    <!-- New Task Form -->
+                    <!-- Task name -->
+                    <div class="row g-2 mb-2">
+                        <label for="taskName" class="col-3 col-form-label">Task</label>
+                        <div class="col-9">
+                            <input type="text" name="taskName" class="form-control" id="taskName" placeholder="Vacuum, Do dishes, etc.." required>
+                        </div>
+                    </div>
+                    <!-- Task description -->
+                    <div class="row g-2 mb-2">
+                        <label for="taskDescription" class="col-3 col-form-label">Info</label>
+                        <div class="col-9">
+                            <textarea class="form-control" name="taskDescription" id="taskDescription" placeholder="Anything special or specific about this task?" required></textarea>
+                        </div>
+                    </div>
+                    <!-- Due date -->
+                    <div class="row g-2 mb-2">
+                        <label for="dueDate" class="col-3 col-form-label">Deadline</label>
+                        <div class="col-9">
+                            <input type="date" class="form-control" name="dueDate" id="dueDate">
+                        </div>
+                    </div>
+                    <!-- Type -->
+                    <div class="row g-2 mb-2">
+                        <label for="type" class="col-3 col-form-label">Regularity</label>
+                        <div class="col-9">
+                            <select class="form-select" name="type" required>
+                                <option value="single" selected>Single</option>
+                                <option value="recurring">Recurring</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Category -->
+                    <div class="row g-2 mb-2">
+                        <label for="category" class="col-3 col-form-label">Category</label>
+                        <div class="col-9">
+                            <select class="form-select" name="category" required>
+                                <option value="normal" selected>Normal</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="special">Special</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Room Selector -->
+                    <div class="mb-3">
+                        <div class="accordion" id="floorAccordion">
+                            {% for floor in workspace.floors.all %}
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                        <button class="accordion-button {% if not view_type == 'room' or floor.id != room_floor_id %}collapsed{% endif %}"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#collapse{{ forloop.counter }}"
+                                                aria-expanded="{% if floor.id == room_floor_id %}true{% else %}false{% endif %}"
+                                                aria-controls="collapse{{ forloop.counter }}">
+                                            <div class="form-check">
+                                                <!-- Add checked attribute for floor checkbox when in floor view -->
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       value=""
+                                                       id="{{ floor.name }}"
+                                                       {% if view_type == 'floor' and floor.id == floor_id %}checked show{% endif %}
+                                                       style="width: 25px;
+                                                              height: 25px;
+                                                              margin-right:10px" />
+                                                <style>
+                                                  .form-check-input {
+                                                    background-color: rgba(0, 0, 0, 0.37) !important;
+                                                    border-color: rgb(63, 63, 63);
+                                                    border-style: solid;
+                                                    border-width: 3px;
+                                                  }
+                                                </style>
+                                                <label class="form-check-label"
+                                                       for="{{ floor.name }}"
+                                                       style="padding-top:7px">{{ floor.name }}</label>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ forloop.counter }}"
+                                         class="accordion-collapse collapse {% if  view_type == 'room' and floor.id == room_floor_id or floor.id == floor_id %}show{% endif %}"
+                                         aria-labelledby="heading{{ forloop.counter }}"
+                                         data-bs-parent="#floorAccordion">
+                                        <div class="accordion-body">
+                                            {% for room in floor.rooms.all %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input"
+                                                           type="checkbox"
+                                                           value="{{ room.id }}"
+                                                           id="{{ room.name }}"
+                                                           {% if room.id == room_id or floor.id == floor_id %}checked{% endif %}
+                                                           style="width: 20px;
+                                                                  height: 20px" />
+                                                    <label class="form-check-label"
+                                                           for="{{ room.name }}"
+                                                           style="font-size: 16px">{{ room.name }}</label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <!-- Reduced padding here -->
+                    <button type="button" class="btn btn-dark" data-bs-dismiss="modal">❌ Cancel</button>
+                    <button type="submit" class="btn btn-success">🪓 Add task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

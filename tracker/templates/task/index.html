@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Task Index
+{% endblock title %}
+{% block content %}
+  <button type="button"
+          class="btn btn-dark btn-lg btn-animate"
+          data-bs-toggle="modal"
+          data-bs-target="#NewTaskModal">New Task 📝</button>
+  {% include 'partials/_new_task_modal.html' %}
+  <h1>Welcome to the Task Index!</h1>
+  <h2>Default Workspace: {{ default_workspace.name }}</h2>
+  <h2>Selected Workspace: {{ workspace.name }}</h2>
+  <!-- Form to Add Floor -->
+  <form method="post" action="{% url 'task:add_floor' %}">
+    {% csrf_token %}
+    <input type="hidden" name="workspace_id" value="{{ workspace.id }}" />
+    <input type="text" name="floor_name" placeholder="Floor Name" required />
+    <button type="submit">Add Floor</button>
+  </form>
+  {% for floor in workspace.floors.all %}
+    <div>
+      <h4>Floor: {{ floor.name }}</h4>
+      <form action="{% url 'task:remove_floor' floor.id %}"
+            method="post"
+            style="display:inline">
+        {% csrf_token %}
+        <a href="javascript:;" onclick="parentNode.submit();">Remove Floor</a>
+      </form>
+      <!-- Form to Add Room to this Floor -->
+      <form method="post" action="{% url 'task:add_room' %}">
+        {% csrf_token %}
+        <input type="hidden" name="floor_id" value="{{ floor.id }}" />
+        <input type="text" name="room_name" placeholder="Room Name" required />
+        <button type="submit">Add Room</button>
+      </form>
+      {% for room in floor.rooms.all %}
+        <h5>Room: {{ room.name }}</h5>
+        <!-- Add the remove room form/button here -->
+        <form method="post"
+              action="{% url 'task:remove_room' room.id %}"
+              style="display: inline">
+          {% csrf_token %}
+          <button type="submit"
+                  onclick="return confirm('Are you sure you want to remove this room?');">Remove Room</button>
+        </form>
+        {% for task in room.tasks.all %}<p>Task: {{ task.task_name }}</p>{% endfor %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+{% endblock content %}

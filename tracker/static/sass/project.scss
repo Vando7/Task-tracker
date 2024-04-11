@@ -34,3 +34,39 @@ $red: #b94a48;
   border-color: $dark-pink;
   color: $red;
 }
+
+// DARK MODE STUFF
+// Dark theme colors
+$dark-bg: #121212;
+$dark-text: #e0e0e0;
+$dark-primary: #bb86fc;
+$dark-secondary: #03dac6;
+$dark-error: #cf6679;
+
+// Body and background
+body {
+  background-color: $dark-bg;
+  color: $dark-text;
+}
+
+// Alerts
+.alert {
+  background-color: $dark-secondary;
+  color: $dark-bg;
+}
+
+.alert-error {
+  background-color: $dark-error;
+  border-color: darken($dark-error, 15%);
+}
+
+.dropdown-menu .dropdown-item:hover, 
+.dropdown-menu .dropdown-item:focus {
+  background-color: #2C3E50;
+  color: #EAEAEA;
+}
+
+.dropdown-menu .dropdown-item:active {
+  background-color: #34495E;
+  color: #ECF0F1;
+}

@@ -32,6 +32,8 @@ class AccountAdapter(DefaultAccountAdapter):
             user.default_workspace = workspace
             user.save()
 
+        request.session["selected_workspace_id"] = user.default_workspace.id
+
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):
     def is_open_for_signup(
