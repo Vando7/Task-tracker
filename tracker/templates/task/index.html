@@ -1,14 +1,59 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}
-  Task Index
-{% endblock title %}
+{% load static i18n %}
+
+{% block viewSpecificCss %}
+  <link rel="stylesheet" href="{% static 'css/task_index.css' %}" />
+</link />
+{% endblock viewSpecificCss %}
 {% block content %}
-  <button type="button"
-          class="btn btn-dark btn-lg btn-animate"
-          data-bs-toggle="modal"
-          data-bs-target="#NewTaskModal">New Task 📝</button>
-  {% include 'partials/_new_task_modal.html' %}
+  <div class="column-cards" style="column-gap: 3rem;">
+    {% for floor in workspace.floors.all %}
+      <div class="card h-100 {{ floor.name|lower }}"
+           style="break-inside: avoid;
+                  margin-bottom: 3rem">
+        <div class="card-header d-flex justify-content-between align-items-center"
+             style="background-color: {{ floor.name }}">
+          <h2 class="card-title">
+            <a href="{% url 'task:floor_view' floor.id %}"
+               style="text-decoration:none;
+                      color:rgb(0, 0, 0)">{{ floor.name }}</a>
+          </h2>
+          <a href="{% url 'task:floor_view' floor.id %}" class="btn btn-lg">👀 View</a>
+        </div>
+        <div class="card-body" style="padding:0px;">
+          {% for room in floor.rooms.all %}
+            <div class="room-name-redirect"
+                 style="padding:22px;
+                        background-color:{% cycle 'white' floor.name %}">
+              <h4 style="margin-bottom:0px;">
+                <a href="{% url 'task:room_view' room.id %}"
+                   class="room-link"
+                   style="text-decoration: none">{{ room.name }}</a>
+                {% if room.tasks > 0 %}<span class="badge bg-danger badge-sm">{{ room.tasks }}</span>{% endif %}
+                {% if room.tasks > 0 %}<span class="badge bg-warning">{{ room.tasks }}</span>{% endif %}
+                {% if room.tasks > 0 %}<span class="badge bg-success">{{ room.tasks }}</span>{% endif %}
+              </h4>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% if user.avatar %}
+    <img src="{{ user.avatar.url }}"
+         alt="Avatar"
+         style="height: 50px;
+                width: 50px;
+                border-radius: 50%" />
+  {% else %}
+    <img src="{% static 'images/default-avatar.png' %}"
+         alt="Default Avatar"
+         style="height: 50px;
+                width: 50px;
+                border-radius: 50%" />
+  {% endif %}
+  <p>Welcome, {{ user.name }}!</p>
   <h1>Welcome to the Task Index!</h1>
   <h2>Default Workspace: {{ default_workspace.name }}</h2>
   <h2>Selected Workspace: {{ workspace.name }}</h2>

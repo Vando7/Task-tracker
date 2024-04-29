@@ -20,7 +20,13 @@
                         <li class="nav-item ms-auto">
                             <a class="nav-link" href="{% url 'users:detail' request.user.pk %}">My Profile</a>
                         </li>
-                        {% include "partials/_workspace_selector.html" %}
+                        <button type="button"
+                            class="btn btn-dark"
+                            data-bs-toggle="modal"
+                            data-bs-target="#NewTaskModal">New Task 📝</button>
+                        <li class="nav-item ml-auto">
+                            {% include "partials/_workspace_selector.html" %}
+                        </li>
                         <li class="nav-item">
                             {# URL provided by django-allauth/account/urls.py #}
                             <a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a>

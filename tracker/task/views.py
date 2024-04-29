@@ -9,9 +9,10 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
 
+from tracker.task import models
 from tracker.task.models import Floor
 from tracker.task.models import Room
 from tracker.task.models import Task
@@ -39,7 +40,8 @@ def index(request):
     # todo can that even be possible?
     # todo maybe add validation for that idk lol :D
 
-    # Since tasks are related to rooms, they will be fetched efficiently as part of the rooms prefetch
+    # Since tasks are related to rooms, they will be fetched efficiently
+    # as part of the rooms prefetch
     context = {
         "default_workspace": default_workspace,
         "workspace": workspace,
@@ -49,6 +51,7 @@ def index(request):
     return render(request, "task/index.html", context)
 
 
+@login_required
 @require_POST
 def set_workspace(request):
     workspace_id = request.POST.get("workspace_id")
@@ -58,6 +61,7 @@ def set_workspace(request):
     return redirect(reverse("task:index"))
 
 
+@login_required
 @require_POST
 def add_floor(request):
     if not request.user.is_authenticated:
@@ -69,6 +73,7 @@ def add_floor(request):
     return redirect(reverse("task:index"))
 
 
+@login_required
 @require_POST
 def remove_floor(request, floor_id):
     if not request.user.is_authenticated:
@@ -78,6 +83,7 @@ def remove_floor(request, floor_id):
     return redirect(reverse("task:index"))
 
 
+@login_required
 @require_POST
 def add_room(request):
     if not request.user.is_authenticated:
@@ -89,6 +95,7 @@ def add_room(request):
     return redirect(reverse("task:index"))
 
 
+@login_required
 @require_POST
 def remove_room(request, room_id):
     if not request.user.is_authenticated:
@@ -98,50 +105,131 @@ def remove_room(request, room_id):
     return redirect(reverse("task:index"))
 
 
+@login_required
+def room_view(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    all_tasks = (
+        Task.objects.filter(rooms=room)
+        .annotate(
+            custom_order=models.Case(
+                models.When(category="urgent", then=models.Value(1)),
+                models.When(category="special", then=models.Value(2)),
+                models.When(category="normal", then=models.Value(3)),
+                default=models.Value(4),
+                output_field=models.IntegerField(),
+            )
+        )
+        .order_by("custom_order", "-modified_date")
+        .distinct()
+    )
+
+    # Separate tasks into exclusive and general
+    exclusive_tasks = [task for task in all_tasks if task.rooms.count() == 1]
+    general_tasks = [task for task in all_tasks if task.rooms.count() > 1]
+
+    all_floors = Floor.objects.all().prefetch_related("rooms__tasks")
+
+    params = {
+        "view_type": "room",
+        "room_id": room.id,
+        "room_floor_id": room.floor.id,
+        "room": room,
+        "exclusive_tasks": exclusive_tasks,
+        "general_tasks": general_tasks,
+        "floors": all_floors,
+        "today": timezone.now(),
+    }
+
+    return render(request, "room_view.html", params)
+
+
+@login_required
+def floor_view(request, floor_id):
+    floor = get_object_or_404(Floor, pk=floor_id)
+    tasks = (
+        Task.objects.filter(rooms__floor=floor)
+        .annotate(
+            custom_order=models.Case(
+                models.When(category="urgent", then=models.Value(1)),
+                models.When(category="special", then=models.Value(2)),
+                models.When(category="normal", then=models.Value(3)),
+                default=models.Value(4),
+                output_field=models.IntegerField(),
+            ),
+        )
+        .order_by("custom_order", "-modified_date")
+        .distinct()
+    )
+
+    all_floors = Floor.objects.all().prefetch_related("rooms__tasks")
+    return render(
+        request,
+        "floor_view.html",
+        {
+            "view_type": "floor",
+            "floor_id": floor.id,
+            "floor": floor,
+            "tasks": tasks,
+            "floors": all_floors,
+            "today": timezone.now(),
+        },
+    )
+
+
+@login_required
 @require_POST
 def create_task(request):
-    if request.method == "POST":
-        # Adapt form field names as necessary based on your modal's form
-        task_name = request.POST.get("taskName")
-        task_description = request.POST.get("taskDescription")
-        due_date = request.POST.get("dueDate")
-        task_type = request.POST.get("type")
-        task_category = request.POST.get("category")
-        room_ids = request.POST.getlist("rooms[]")  # Assumes multiple select for rooms
+    return JsonResponse({"status": "success"})
 
-        # Make variables null if they are empty strings
-        task_name = task_name or None
-        task_description = task_description or None
-        due_date = due_date or None
-        task_type = task_type or None
-        task_category = task_category or None
-        room_ids = room_ids or []
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "error": "Invalid request method"})
 
-        # Ensure room_ids are integers
-        room_ids = [int(id) for id in room_ids]
+    # Adapt form field names as necessary based on your modal's form
+    task_name = request.POST.get("taskName")
+    task_description = request.POST.get("taskDescription")
+    due_date = request.POST.get("dueDate")
+    task_type = request.POST.get("type")
+    task_category = request.POST.get("category")
+    room_ids = request.POST.getlist("roomIDs")
 
-        # Convert due_date from string to datetime object, if not empty
-        if due_date:
-            due_date = timezone.make_aware(
-                datetime.datetime.strptime(due_date, "%Y-%m-%d"),
-            )
+    # Make variables null if they are empty strings
+    task_name = task_name or None
+    task_description = task_description or None
+    due_date = due_date or None
+    task_type = task_type or None
+    task_category = task_category or None
+    room_ids = room_ids or []
 
-        # Adapt task creation to your model structure
-        task = Task.objects.create(
-            task_name=task_name,
-            task_description=task_description,
-            due_date=due_date,
-            type=task_type,
-            category=task_category,
-            modified_date=timezone.now(),
-            # Add other necessary fields
+    # Ensure room_ids are integers
+    room_ids = [int(id) for id in room_ids]
+
+    if not room_ids:
+        return JsonResponse({"status": "error", "error": "No rooms selected"})
+
+    # Convert due_date from string to datetime object, if not empty
+    if due_date:
+        due_date = timezone.make_aware(
+            datetime.datetime.strptime(due_date, "%Y-%m-%d"),
         )
-        # todo: remove logic that adds tasks, log params, check what room ids are given.
-        # todo: room ids must be validated - they must belong to the currently selected workspace
-        # Add rooms to the task if applicable
-        for room_id in room_ids:
-            task.rooms.add(Room.objects.get(id=room_id))
 
-        return JsonResponse({"status": "success"})
+    task = Task.objects.create(
+        task_name=task_name,
+        task_description=task_description,
+        due_date=due_date,
+        type=task_type,
+        category=task_category,
+        modified_date=timezone.now(),
+    )
 
-    return JsonResponse({"status": "error", "error": "Invalid request method"})
+    # todo: remove logic that adds tasks, log params, check what room ids are given.
+    # todo: room ids must be validated - they must belong to a floor in the currently selected workspace
+    # Add rooms to the task if applicable
+    for room_id in room_ids:
+        task.rooms.add(Room.objects.get(id=room_id))
+
+    return JsonResponse({"status": "success"})
+
+
+def write_to_log(string):
+    with open("ivan_log.txt", "a") as file:
+        file.write(string + "\n")

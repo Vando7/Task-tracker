@@ -10,7 +10,7 @@ from tracker.task.views import index
 from tracker.task.views import set_workspace
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
+    path("", index, name="home"),
     path(
         "about/",
         TemplateView.as_view(template_name="pages/about.html"),

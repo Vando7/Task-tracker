@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import typing
 
+import requests
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.conf import settings
+from django.core.files.base import ContentFile
 
 from tracker.task.models import Workspace
 
@@ -31,6 +33,21 @@ class AccountAdapter(DefaultAccountAdapter):
             workspace.users.add(user)
             user.default_workspace = workspace
             user.save()
+
+        # Use google avatar if user has no avatar
+        if not user.avatar and user.socialaccount_set.exists():
+            social_account = user.socialaccount_set.first()
+            if social_account.provider == "google":
+                picture_url = social_account.extra_data.get("picture")
+                if picture_url:
+                    response = requests.get(picture_url, timeout=5)
+                    if response.status_code == 200:
+                        # You can change 'avatar.jpg' to include user.id or other unique identifiers
+                        user.avatar.save(
+                            f"{user.username}_avatar.jpg",
+                            ContentFile(response.content),
+                            save=True,
+                        )
 
         request.session["selected_workspace_id"] = user.default_workspace.id
 
