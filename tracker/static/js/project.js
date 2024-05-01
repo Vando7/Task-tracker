@@ -10,11 +10,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function initAddRoomModal() {
   const input = document.getElementById("roomEmoji");
-
   attachEmojiPicker(input);
 }
 
 function initAddFloorModal() {
+  document
+    .getElementById("addFloorButton")
+    .addEventListener("click", function () {
+      var formWrapper = document.getElementById("add_floor_form_wrapper");
+      // Toggle visibility of the wrapper
+      formWrapper.style.display =
+        formWrapper.style.display === "none" ? "flex" : "none";
+    });
   const input = document.getElementById("floorEmoji");
   attachEmojiPicker(input);
 }
@@ -27,18 +34,21 @@ function attachEmojiPicker(input) {
   const picker = new EmojiMart.Picker({
     onEmojiSelect: (emoji) => {
       input.value = emoji.native;
+      pickerContainer.style.display = "none";
     },
-    searchPosition: "static",
+    autoFocus: true
   });
 
   const pickerContainer = document.createElement("div");
   pickerContainer.style.position = "absolute";
-  pickerContainer.style.zIndex = "505050550";
+  pickerContainer.style.zIndex = "101";
   pickerContainer.style.display = "none";
   pickerContainer.appendChild(picker);
   document.body.appendChild(pickerContainer);
 
-  input.addEventListener("focus", () => {
+  input.addEventListener("focus", (event) => {
+    console.log(event)
+    event.stopPropagation();
     pickerContainer.style.display = "flex";
     const rect = input.getBoundingClientRect();
     pickerContainer.style.top = `${rect.bottom}px`;
@@ -51,7 +61,6 @@ function attachEmojiPicker(input) {
   //   }, 200);
   // });
 }
-
 
 function initSidebar() {
   var userSidebarDropdownMenu = document.getElementById(

@@ -7,182 +7,177 @@
 {% endblock viewSpecificCss %}
 {% block content %}
   <div class="container mt-4">
+    <!-- Button that triggers the expand/collapse -->
     <button type="button"
             class="btn btn-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#addFloorModal">Add Floor</button>
-    <!-- Add Floor Modal -->
-    <div class="modal fade"
-         id="addFloorModal"
-         tabindex="-1"
-         aria-labelledby="addFloorModalLabel"
-         aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addFloorModalLabel">Add New Floor</h5>
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"></button>
+            id="addFloorButton"
+            data-bs-title="Add floor to workspace">Add Floor</button>
+    <!-- Hidden form wrapper for overlay -->
+    <div id="add_floor_form_wrapper"
+         style="display: none;
+                position: absolute;
+                width: 100%;
+                top: 0;
+                left: 0;
+                z-index: 100">
+      <div id="add_floor_form"
+           class="p-4"
+           style="background: #212529;
+                  border-radius: 8px;
+                  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.4)">
+        <form method="post" action="{% url 'task:add_floor' %}">
+          <input type="hidden" name="workspace_id" value="{{ workspace.id }}" />
+          {% csrf_token %}
+          <div class="mb-2">
+            <input type="text"
+                   class="form-control"
+                   name="floor_name"
+                   placeholder="Floor Name"
+                   required />
           </div>
-          <div class="modal-body">
-            <form method="post" action="{% url 'task:add_floor' %}">
-              <input type="hidden" name="workspace_id" value="{{ workspace.id }}" />
-              {% csrf_token %}
-              <!-- Floor Name Input -->
-              <div class="mb-3">
-                <label for="floorName" class="form-label">Name</label>
-                <input type="text"
-                       class="form-control"
-                       id="floorName"
-                       name="floor_name"
-                       placeholder="Basement, Ground, etc.."
-                       required />
-              </div>
-              <div class="mb-3 d-flex">
-                <div class="me-3">
-                  <!-- Color Picker -->
-                  <label for="floorColor" class="form-label">Color</label>
-                  <input type="color"
-                         class="form-control form-control-color"
-                         id="floorColor"
-                         name="floor_color"
-                         value="#8A2BE2"
-                         title="Choose your color"
-                         style="height: 89px;
-                                width: 89px" />
-                </div>
-                <div>
-                  <!-- Emoji Picker -->
-                  <label for="floorEmoji" class="form-label">Emoji</label>
-                  <input type="text"
-                         class="form-control"
-                         id="floorEmoji"
-                         name="floor_emoji"
-                         value="🤔"
-                         required
-                         readonly
-                         style="font-size: 50px;
-                                width:89px" />
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">➕ Add floor</button>
-              </div>
-            </form>
+          <div class="mb-2">
+            <input type="color"
+                   class="form-control form-control-color"
+                   name="floor_color"
+                   title="Choose your color" />
           </div>
-        </div>
+          <div class="mb-2">
+            <input type="text"
+                   class="form-control floorEmoji"
+                   name="floor_emoji"
+                   id="floorEmoji"
+                   value="🤔"
+                   required
+                   readonly />
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Add Floor</button>
+        </form>
       </div>
     </div>
-    <div class="d-flex flex-wrap align-items-stretch">
-      {% for floor in workspace.floors.all %}
-        <!-- Using flex-grow-1 to allow flexible width per card -->
-        <div class="flex-grow-1" style="min-width: 280px; max-width: 500px;margin:15px;">
-          <div class="card my-0">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <h4 class="card-title mb-0">{{ floor.icon }} {{ floor.name }}</h4>
-              <div>
-                <!-- Edit (pencil emoji) and Delete (trash emoji) actions -->
-                <button class="btn btn-outline-secondary btn-sm">✏️</button>
-                <form action="{% url 'task:remove_floor' floor.id %}"
-                      method="post"
-                      class="d-inline">
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="btn btn-outline-danger btn-sm"
-                          onclick="return confirm('Are you sure you want to remove this floor?');">🗑️</button>
-                </form>
-              </div>
+  </div>
+  <style>
+    #add_floor_form_wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #add_floor_form {
+      width: 90%;
+      max-width: 500px;
+    }
+  </style>
+  <div class="d-flex flex-wrap align-items-stretch">
+    {% for floor in workspace.floors.all %}
+      <!-- Using flex-grow-1 to allow flexible width per card -->
+      <div class="flex-grow-1"
+           style="min-width: 280px;
+                  max-width: 500px;
+                  margin:15px">
+        <div class="card my-0">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title mb-0">{{ floor.icon }} {{ floor.name }}</h4>
+            <div>
+              <!-- Edit (pencil emoji) and Delete (trash emoji) actions -->
+              <button class="btn btn-outline-secondary btn-sm">✏️</button>
+              <form action="{% url 'task:remove_floor' floor.id %}"
+                    method="post"
+                    class="d-inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Are you sure you want to remove this floor?');">🗑️</button>
+              </form>
             </div>
-            <div class="card-body">
-              {% for room in floor.rooms.all %}
-                <div class="mb-3">
-                  <h5 class="d-flex justify-content-between align-items-center">
-                    {{ room.icon }} {{ room.name }}
-                    <div>
-                      <!-- Room Edit and Delete buttons -->
-                      <button class="btn btn-outline-secondary btn-sm">✏️</button>
-                      <form method="post"
-                            action="{% url 'task:remove_room' room.id %}"
-                            class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit"
-                                class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to remove this room?');">🗑️</button>
-                      </form>
-                    </div>
-                  </h5>
-                  <ul class="list-unstyled">
-                    <!-- Show up to 3 tasks for this room -->
-                    {% for task in room.tasks.all|slice:":3" %}
-                      <li>{{ task.task_name }}</li>
-                    {% empty %}
-                      <li>No tasks found.</li>
-                    {% endfor %}
-                  </ul>
-                </div>
-              {% empty %}
-                <p>No rooms added for this floor yet.</p>
-              {% endfor %}
-              <!-- Form to Add Room to this Floor -->
-              <button type="button"
-                      class="btn btn-outline-primary"
-                      data-bs-toggle="modal"
-                      data-bs-target="#addRoomModal">Add Room</button>
-              <!-- Add Room Modal -->
-              <div class="modal fade"
-                   id="addRoomModal"
-                   tabindex="-1"
-                   aria-labelledby="addRoomModalLabel"
-                   aria-hidden="true">
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="addRoomModalLabel">Add New Room</h5>
-                      <button type="button"
-                              class="btn-close"
-                              data-bs-dismiss="modal"
-                              aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                      <form method="post" action="{% url 'task:add_room' %}" id="addRoomForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="floor_id" value="{{ floor.id }}" />
-                        <!-- Room Name Input -->
-                        <div class="mb-3">
-                          <label for="roomName" class="form-label">Room Name</label>
-                          <input type="text"
-                                 class="form-control"
-                                 id="roomName"
-                                 name="room_name"
-                                 placeholder="Room Name"
-                                 required />
-                        </div>
-                        <!-- Emoji Picker for Room (placeholder) -->
-                        <div class="mb-3">
-                          <label for="roomEmoji" class="form-label">Room Emoji</label>
-                          <input type="text"
-                                 class="form-control"
-                                 id="roomEmoji"
-                                 name="room_emoji"
-                                 value="🤔"
-                                 required />
-                        </div>
-                        <div class="modal-footer">
-                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                          <button type="submit" class="btn btn-primary">Add Room</button>
-                        </div>
-                      </form>
-                    </div>
+          </div>
+          <div class="card-body">
+            {% for room in floor.rooms.all %}
+              <div class="mb-3">
+                <h5 class="d-flex justify-content-between align-items-center">
+                  {{ room.icon }} {{ room.name }}
+                  <div>
+                    <!-- Room Edit and Delete buttons -->
+                    <button class="btn btn-outline-secondary btn-sm">✏️</button>
+                    <form method="post"
+                          action="{% url 'task:remove_room' room.id %}"
+                          class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="btn btn-outline-danger btn-sm"
+                              onclick="return confirm('Are you sure you want to remove this room?');">🗑️</button>
+                    </form>
+                  </div>
+                </h5>
+                <ul class="list-unstyled">
+                  <!-- Show up to 3 tasks for this room -->
+                  {% for task in room.tasks.all|slice:":3" %}
+                    <li>{{ task.task_name }}</li>
+                  {% empty %}
+                    <li>No tasks found.</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% empty %}
+              <p>No rooms added for this floor yet.</p>
+            {% endfor %}
+            <!-- Form to Add Room to this Floor -->
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addRoomModal">Add Room</button>
+            <!-- Add Room Modal -->
+            <div class="modal fade"
+                 id="addRoomModal"
+                 tabindex="-1"
+                 aria-labelledby="addRoomModalLabel"
+                 aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="addRoomModalLabel">Add New Room</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form method="post" action="{% url 'task:add_room' %}" id="addRoomForm">
+                      {% csrf_token %}
+                      <input type="hidden" name="floor_id" value="{{ floor.id }}" />
+                      <!-- Room Name Input -->
+                      <div class="mb-3">
+                        <label for="roomName" class="form-label">Room Name</label>
+                        <input type="text"
+                               class="form-control"
+                               id="roomName"
+                               name="room_name"
+                               placeholder="Room Name"
+                               required />
+                      </div>
+                      <!-- Emoji Picker for Room (placeholder) -->
+                      <div class="mb-3">
+                        <label for="roomEmoji" class="form-label">Room Emoji</label>
+                        <input type="text"
+                               class="form-control"
+                               id="roomEmoji"
+                               name="room_emoji"
+                               value="🤔"
+                               required />
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Room</button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      {% endfor %}
-    </div>
+      </div>
+    {% endfor %}
   </div>
+</div>
 {% endblock content %}
