@@ -1,0 +1,78 @@
+{% load static i18n %}
+
+<div class="d-flex flex-column flex-shrink-0 p-3 bg-body-tertiary sidebar" style="width:250px">
+    <div class="dropdown" id="userSidebarDropdown">
+        <a href="#"
+           class="d-flex align-items-center link-body-emphasis text-decoration-none dropdown-toggle"
+           data-bs-toggle="dropdown"
+           id="userSidebarDropdownMenu"
+           aria-expanded="false"
+           style="display: flex;
+              justify-content: center;
+              align-items: center;">
+            {% if user.avatar %}
+            <img src="{{ user.avatar.url }}"
+                 alt="Avatar"
+                 style="height: 32px;
+                    width: 32px;
+                    border-radius: 50%" />
+            {% else %}
+            <img src="{% static 'images/default-avatar.png' %}"
+                 alt="Default Avatar"
+                 style="height: 32px;
+                    width: 32px;
+                    border-radius: 50%" />
+            {% endif %}
+            <strong style="padding-left:5px; margin-top:5px; font-size: 30px">{{ user.name }}</strong>
+        </a>
+        <ul class="dropdown-menu text-small shadow">
+            <li>
+                <a class="dropdown-item" href="#">New project...</a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="#">Settings(WIP?)</a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="{% url 'users:detail' request.user.pk %}">Profile</a>
+            </li>
+            <li>
+                <hr class="dropdown-divider" />
+            </li>
+            <li>
+                <a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a>
+            </li>
+        </ul>
+    </div>
+    <hr />
+    <ul class="nav nav-pills flex-column mb-auto ps-0">
+        <li class="nav-item">
+            <a href="{% url 'home' %}"
+               class="nav-link active"
+               aria-current="page"
+               style="background-color: blueviolet;margin-bottom:4px">
+                <strong>🏡 Home</strong>
+            </a>
+        </li>
+        {% for floor in workspace.floors.all %}
+            <li class="nav-item">
+                <a href="#"
+                   class="nav-link active"
+                   aria-current="page"
+                   style="background-color: {{ floor.color }}">
+                    <strong>{{ floor.icon }}{{ floor.name }}</strong>
+                </a>
+            </li>
+            <ul class="nav flex-column ms-3">
+                {% for room in floor.rooms.all %}
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" style="color:#E0E0E0">{{ room.name }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </ul>
+    <button type="button"
+            class="btn btn-dark"
+            data-bs-toggle="modal"
+            data-bs-target="#NewTaskModal">New task 📝</button>
+</div>

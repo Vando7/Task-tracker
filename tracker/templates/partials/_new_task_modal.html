@@ -18,7 +18,7 @@
       <form id="newTaskForm"  action="{% url 'task:create_task' %}" method="post">
         {% csrf_token %}
         <div class="modal-body py-2">
-          
+
           <!-- New Task Form -->
           <!-- Task name -->
           <div class="row g-2 mb-2">
@@ -29,6 +29,7 @@
                      class="form-control"
                      id="taskName"
                      placeholder="Vacuum, Do dishes, etc.."
+                     maxlength="128"
                      required />
             </div>
           </div>
@@ -42,6 +43,7 @@
                         name="taskDescription"
                         id="taskDescription"
                         placeholder="Anything special or specific about this task?"
+                        maxlength="512"
                         required></textarea>
             </div>
           </div>

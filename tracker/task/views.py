@@ -9,7 +9,6 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
 
 from tracker.task import models
@@ -40,7 +39,7 @@ def index(request):
     # todo can that even be possible?
     # todo maybe add validation for that idk lol :D
 
-    # Since tasks are related to rooms, they will be fetched efficiently
+    # Since tasks are related to rooms, they will be fetched
     # as part of the rooms prefetch
     context = {
         "default_workspace": default_workspace,
@@ -68,8 +67,16 @@ def add_floor(request):
         return HttpResponseForbidden()
     workspace_id = request.POST.get("workspace_id")
     floor_name = request.POST.get("floor_name")
+    floor_color = request.POST.get("floor_color")
+    floor_emoji = request.POST.get("floor_emoji")
+
     workspace = get_object_or_404(Workspace, id=workspace_id, users=request.user)
-    Floor.objects.create(name=floor_name, workspace=workspace)
+    Floor.objects.create(
+        name=floor_name,
+        workspace=workspace,
+        icon=floor_emoji,
+        color=floor_color,
+    )
     return redirect(reverse("task:index"))
 
 
@@ -86,12 +93,43 @@ def remove_floor(request, floor_id):
 @login_required
 @require_POST
 def add_room(request):
+    params = request.POST
+    write_to_log(str(params))
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
     floor_id = request.POST.get("floor_id")
     room_name = request.POST.get("room_name")
+    room_icon = request.POST.get("room_emoji")
     floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
-    Room.objects.create(name=room_name, floor=floor)
+    Room.objects.create(name=room_name, floor=floor, icon=room_icon)
+    return redirect(reverse("task:index"))
+
+
+@login_required
+@require_POST
+def edit_floor(request, floor_id):
+    if not request.user.is_authenticated:
+        return HttpResponseForbidden()
+
+    # Get the floor instance
+    floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
+
+    # Update the floor details from POST data
+    floor_name = request.POST.get("floor_name")
+    floor_color = request.POST.get("floor_color")
+    floor_emoji = request.POST.get("floor_emoji")
+
+    if floor_name:
+        floor.name = floor_name
+    if floor_color:
+        floor.color = floor_color
+    if floor_emoji:
+        floor.icon = floor_emoji
+
+    # Save the updated floor
+    floor.save()
+
+    # Redirect to a specific page, e.g., a floor detail page or back to index
     return redirect(reverse("task:index"))
 
 
@@ -179,8 +217,6 @@ def floor_view(request, floor_id):
 @login_required
 @require_POST
 def create_task(request):
-    return JsonResponse({"status": "success"})
-
     if request.method != "POST":
         return JsonResponse({"status": "error", "error": "Invalid request method"})
 
@@ -221,7 +257,6 @@ def create_task(request):
         modified_date=timezone.now(),
     )
 
-    # todo: remove logic that adds tasks, log params, check what room ids are given.
     # todo: room ids must be validated - they must belong to a floor in the currently selected workspace
     # Add rooms to the task if applicable
     for room_id in room_ids:

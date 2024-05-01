@@ -4,94 +4,185 @@
 
 {% block viewSpecificCss %}
   <link rel="stylesheet" href="{% static 'css/task_index.css' %}" />
-</link />
 {% endblock viewSpecificCss %}
 {% block content %}
-  <div class="column-cards" style="column-gap: 3rem;">
-    {% for floor in workspace.floors.all %}
-      <div class="card h-100 {{ floor.name|lower }}"
-           style="break-inside: avoid;
-                  margin-bottom: 3rem">
-        <div class="card-header d-flex justify-content-between align-items-center"
-             style="background-color: {{ floor.name }}">
-          <h2 class="card-title">
-            <a href="{% url 'task:floor_view' floor.id %}"
-               style="text-decoration:none;
-                      color:rgb(0, 0, 0)">{{ floor.name }}</a>
-          </h2>
-          <a href="{% url 'task:floor_view' floor.id %}" class="btn btn-lg">👀 View</a>
-        </div>
-        <div class="card-body" style="padding:0px;">
-          {% for room in floor.rooms.all %}
-            <div class="room-name-redirect"
-                 style="padding:22px;
-                        background-color:{% cycle 'white' floor.name %}">
-              <h4 style="margin-bottom:0px;">
-                <a href="{% url 'task:room_view' room.id %}"
-                   class="room-link"
-                   style="text-decoration: none">{{ room.name }}</a>
-                {% if room.tasks > 0 %}<span class="badge bg-danger badge-sm">{{ room.tasks }}</span>{% endif %}
-                {% if room.tasks > 0 %}<span class="badge bg-warning">{{ room.tasks }}</span>{% endif %}
-                {% if room.tasks > 0 %}<span class="badge bg-success">{{ room.tasks }}</span>{% endif %}
-              </h4>
-            </div>
-          {% endfor %}
+  <div class="container mt-4">
+    <button type="button"
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#addFloorModal">Add Floor</button>
+    <!-- Add Floor Modal -->
+    <div class="modal fade"
+         id="addFloorModal"
+         tabindex="-1"
+         aria-labelledby="addFloorModalLabel"
+         aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addFloorModalLabel">Add New Floor</h5>
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="{% url 'task:add_floor' %}">
+              <input type="hidden" name="workspace_id" value="{{ workspace.id }}" />
+              {% csrf_token %}
+              <!-- Floor Name Input -->
+              <div class="mb-3">
+                <label for="floorName" class="form-label">Name</label>
+                <input type="text"
+                       class="form-control"
+                       id="floorName"
+                       name="floor_name"
+                       placeholder="Basement, Ground, etc.."
+                       required />
+              </div>
+              <div class="mb-3 d-flex">
+                <div class="me-3">
+                  <!-- Color Picker -->
+                  <label for="floorColor" class="form-label">Color</label>
+                  <input type="color"
+                         class="form-control form-control-color"
+                         id="floorColor"
+                         name="floor_color"
+                         value="#8A2BE2"
+                         title="Choose your color"
+                         style="height: 89px;
+                                width: 89px" />
+                </div>
+                <div>
+                  <!-- Emoji Picker -->
+                  <label for="floorEmoji" class="form-label">Emoji</label>
+                  <input type="text"
+                         class="form-control"
+                         id="floorEmoji"
+                         name="floor_emoji"
+                         value="🤔"
+                         required
+                         readonly
+                         style="font-size: 50px;
+                                width:89px" />
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">➕ Add floor</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    {% endfor %}
-  </div>
-  {% if user.avatar %}
-    <img src="{{ user.avatar.url }}"
-         alt="Avatar"
-         style="height: 50px;
-                width: 50px;
-                border-radius: 50%" />
-  {% else %}
-    <img src="{% static 'images/default-avatar.png' %}"
-         alt="Default Avatar"
-         style="height: 50px;
-                width: 50px;
-                border-radius: 50%" />
-  {% endif %}
-  <p>Welcome, {{ user.name }}!</p>
-  <h1>Welcome to the Task Index!</h1>
-  <h2>Default Workspace: {{ default_workspace.name }}</h2>
-  <h2>Selected Workspace: {{ workspace.name }}</h2>
-  <!-- Form to Add Floor -->
-  <form method="post" action="{% url 'task:add_floor' %}">
-    {% csrf_token %}
-    <input type="hidden" name="workspace_id" value="{{ workspace.id }}" />
-    <input type="text" name="floor_name" placeholder="Floor Name" required />
-    <button type="submit">Add Floor</button>
-  </form>
-  {% for floor in workspace.floors.all %}
-    <div>
-      <h4>Floor: {{ floor.name }}</h4>
-      <form action="{% url 'task:remove_floor' floor.id %}"
-            method="post"
-            style="display:inline">
-        {% csrf_token %}
-        <a href="javascript:;" onclick="parentNode.submit();">Remove Floor</a>
-      </form>
-      <!-- Form to Add Room to this Floor -->
-      <form method="post" action="{% url 'task:add_room' %}">
-        {% csrf_token %}
-        <input type="hidden" name="floor_id" value="{{ floor.id }}" />
-        <input type="text" name="room_name" placeholder="Room Name" required />
-        <button type="submit">Add Room</button>
-      </form>
-      {% for room in floor.rooms.all %}
-        <h5>Room: {{ room.name }}</h5>
-        <!-- Add the remove room form/button here -->
-        <form method="post"
-              action="{% url 'task:remove_room' room.id %}"
-              style="display: inline">
-          {% csrf_token %}
-          <button type="submit"
-                  onclick="return confirm('Are you sure you want to remove this room?');">Remove Room</button>
-        </form>
-        {% for task in room.tasks.all %}<p>Task: {{ task.task_name }}</p>{% endfor %}
+    </div>
+    <div class="d-flex flex-wrap align-items-stretch">
+      {% for floor in workspace.floors.all %}
+        <!-- Using flex-grow-1 to allow flexible width per card -->
+        <div class="flex-grow-1" style="min-width: 280px; max-width: 500px;margin:15px;">
+          <div class="card my-0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h4 class="card-title mb-0">{{ floor.icon }} {{ floor.name }}</h4>
+              <div>
+                <!-- Edit (pencil emoji) and Delete (trash emoji) actions -->
+                <button class="btn btn-outline-secondary btn-sm">✏️</button>
+                <form action="{% url 'task:remove_floor' floor.id %}"
+                      method="post"
+                      class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="btn btn-outline-danger btn-sm"
+                          onclick="return confirm('Are you sure you want to remove this floor?');">🗑️</button>
+                </form>
+              </div>
+            </div>
+            <div class="card-body">
+              {% for room in floor.rooms.all %}
+                <div class="mb-3">
+                  <h5 class="d-flex justify-content-between align-items-center">
+                    {{ room.icon }} {{ room.name }}
+                    <div>
+                      <!-- Room Edit and Delete buttons -->
+                      <button class="btn btn-outline-secondary btn-sm">✏️</button>
+                      <form method="post"
+                            action="{% url 'task:remove_room' room.id %}"
+                            class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Are you sure you want to remove this room?');">🗑️</button>
+                      </form>
+                    </div>
+                  </h5>
+                  <ul class="list-unstyled">
+                    <!-- Show up to 3 tasks for this room -->
+                    {% for task in room.tasks.all|slice:":3" %}
+                      <li>{{ task.task_name }}</li>
+                    {% empty %}
+                      <li>No tasks found.</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% empty %}
+                <p>No rooms added for this floor yet.</p>
+              {% endfor %}
+              <!-- Form to Add Room to this Floor -->
+              <button type="button"
+                      class="btn btn-outline-primary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#addRoomModal">Add Room</button>
+              <!-- Add Room Modal -->
+              <div class="modal fade"
+                   id="addRoomModal"
+                   tabindex="-1"
+                   aria-labelledby="addRoomModalLabel"
+                   aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="addRoomModalLabel">Add New Room</h5>
+                      <button type="button"
+                              class="btn-close"
+                              data-bs-dismiss="modal"
+                              aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form method="post" action="{% url 'task:add_room' %}" id="addRoomForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="floor_id" value="{{ floor.id }}" />
+                        <!-- Room Name Input -->
+                        <div class="mb-3">
+                          <label for="roomName" class="form-label">Room Name</label>
+                          <input type="text"
+                                 class="form-control"
+                                 id="roomName"
+                                 name="room_name"
+                                 placeholder="Room Name"
+                                 required />
+                        </div>
+                        <!-- Emoji Picker for Room (placeholder) -->
+                        <div class="mb-3">
+                          <label for="roomEmoji" class="form-label">Room Emoji</label>
+                          <input type="text"
+                                 class="form-control"
+                                 id="roomEmoji"
+                                 name="room_emoji"
+                                 value="🤔"
+                                 required />
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                          <button type="submit" class="btn btn-primary">Add Room</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       {% endfor %}
     </div>
-  {% endfor %}
+  </div>
 {% endblock content %}

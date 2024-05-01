@@ -2,9 +2,71 @@ import "../sass/project.scss";
 
 /* Project specific Javascript goes here. */
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("Document loaded");
   initTaskModal();
+  initSidebar();
+  initAddFloorModal();
+  initAddRoomModal();
 });
+
+function initAddRoomModal() {
+  const input = document.getElementById("roomEmoji");
+
+  attachEmojiPicker(input);
+}
+
+function initAddFloorModal() {
+  const input = document.getElementById("floorEmoji");
+  attachEmojiPicker(input);
+}
+
+function attachEmojiPicker(input) {
+  if (!input) {
+    return;
+  }
+
+  const picker = new EmojiMart.Picker({
+    onEmojiSelect: (emoji) => {
+      input.value = emoji.native;
+    },
+    searchPosition: "static",
+  });
+
+  const pickerContainer = document.createElement("div");
+  pickerContainer.style.position = "absolute";
+  pickerContainer.style.zIndex = "505050550";
+  pickerContainer.style.display = "none";
+  pickerContainer.appendChild(picker);
+  document.body.appendChild(pickerContainer);
+
+  input.addEventListener("focus", () => {
+    pickerContainer.style.display = "flex";
+    const rect = input.getBoundingClientRect();
+    pickerContainer.style.top = `${rect.bottom}px`;
+    pickerContainer.style.left = `${rect.left}px`;
+  });
+
+  // input.addEventListener("blur", () => {
+  //   setTimeout(() => {
+  //     pickerContainer.style.display = "none";
+  //   }, 200);
+  // });
+}
+
+
+function initSidebar() {
+  var userSidebarDropdownMenu = document.getElementById(
+    "userSidebarDropdownMenu"
+  );
+
+  if (!userSidebarDropdownMenu) {
+    return;
+  }
+
+  userSidebarDropdownMenu.addEventListener("click", function () {
+    var dropdownMenu = userSidebarDropdownMenu.nextElementSibling;
+    dropdownMenu.classList.toggle("show");
+  });
+}
 
 // Handle task modal logic.
 function initTaskModal() {
@@ -12,7 +74,6 @@ function initTaskModal() {
   var taskName = document.getElementById("taskName");
 
   if (!taskModal || !taskName) {
-    console.log("Element was not found");
     return;
   }
 
@@ -20,24 +81,21 @@ function initTaskModal() {
     taskName.focus();
   });
 
+  taskModal.addEventListener("hidden.bs.modal", function () {
+    let backdrop = document.querySelector(".modal-backdrop");
+    if (backdrop) {
+      backdrop.remove(); // Remove the backdrop from the DOM entirely
+    }
+  });
+
   document
     .getElementById("newTaskForm")
     .addEventListener("submit", function (event) {
-      // Prevent the form from submitting the info through the browser
       event.preventDefault();
       const formData = new FormData(this); // Get the form data
-      console.log("submitting form data");
 
-      //console log all data in formData
-      for (var pair of formData.entries()) {
-        console.log(pair[0] + ", " + pair[1]);
-      }
-
-      // if floorIDs or RoomIDs are not selected, display error on page and dont submit
       if (!formData.has("floorIDs") && !formData.has("roomIDs")) {
-        // there is an element taskModalErrorField with the error message
-        // it has a display: none style, remove it here:
-        document.getElementById("taskModalErrorField").style.display = "block";
+        showModalError();
         return;
       }
 
@@ -46,19 +104,19 @@ function initTaskModal() {
         method: "POST",
         body: formData,
         headers: {
-          "X-CSRFToken": formData.get("csrfmiddlewaretoken"), // Handling CSRF token
+          "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
         },
       })
         .then((response) => response.json())
         .then((data) => {
           if (data.status === "success") {
-            console.log("Task added successfully");
-            var taskModalElement = document.getElementById("NewTaskModal");
-            const taskModal_bs = new bootstrap.Modal(taskModalElement, {
-              backdrop: "static",
-            });
+            console.log("Task added successfully?");
 
-            taskModal_bs.hide();
+            var myModal = bootstrap.Modal.getOrCreateInstance(
+              document.getElementById("NewTaskModal")
+            );
+            myModal.hide();
+
             this.reset();
           } else {
             alert("Error adding task. Please try again.");
@@ -121,7 +179,7 @@ function initTaskModal() {
       const allRoomCheckboxes = document.querySelectorAll(
         `[data-floor-id="${floorId}"]`
       );
-    console.log(Array.from(allRoomCheckboxes));
+      console.log(Array.from(allRoomCheckboxes));
       const isAnyRoomChecked = Array.from(allRoomCheckboxes).some(
         (cb) => cb.checked
       );
@@ -131,7 +189,7 @@ function initTaskModal() {
       if (areAllRoomsChecked) {
         console.log("All rooms are checked");
         floorCheckbox.checked = true;
-        floorCheckbox.indeterminate = false; // Make sure to remove indeterminate state if all are checked
+        floorCheckbox.indeterminate = false; // remove indeterminate state if all are checked
       } else if (isAnyRoomChecked) {
         console.log("Some rooms are checked");
         floorCheckbox.checked = false;
@@ -145,6 +203,34 @@ function initTaskModal() {
   });
 
   function hideModalError() {
-    document.getElementById("taskModalErrorField").style.display = "none";
+    var errorField = document.getElementById("taskModalErrorField");
+    errorField.style.opacity = 1; // Ensure full opacity before hiding
+
+    function fadeOut() {
+      if (errorField.style.opacity > 0) {
+        errorField.style.opacity -= 0.1;
+      } else {
+        clearInterval(fadeEffect);
+        errorField.style.display = "none"; // Hide after transition
+      }
+    }
+
+    var fadeEffect = setInterval(fadeOut, 50); // Adjust time to control speed of fade
+  }
+
+  function showModalError() {
+    var errorField = document.getElementById("taskModalErrorField");
+    errorField.style.display = "block"; // Make block before fading in
+    errorField.style.opacity = 0; // Start from transparent
+
+    function fadeIn() {
+      if (errorField.style.opacity < 1) {
+        errorField.style.opacity = parseFloat(errorField.style.opacity) + 0.1;
+      } else {
+        clearInterval(fadeEffect);
+      }
+    }
+
+    var fadeEffect = setInterval(fadeIn, 50); // Adjust time to control speed of fade
   }
 }

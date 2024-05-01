@@ -18,6 +18,8 @@ class Floor(models.Model):
     workspace = models.ForeignKey(
         Workspace, related_name="floors", on_delete=models.CASCADE
     )
+    icon = models.CharField(max_length=10, blank=True)
+    color = models.CharField(max_length=7, default="#8A2BE2")
 
     class Meta:
         app_label = "task"
@@ -29,6 +31,7 @@ class Floor(models.Model):
 class Room(models.Model):
     name = models.CharField(max_length=100)
     floor = models.ForeignKey(Floor, related_name="rooms", on_delete=models.CASCADE)
+    icon = models.CharField(max_length=10, blank=True)
 
     class Meta:
         app_label = "task"
@@ -61,7 +64,9 @@ class Task(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="to_do")
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="single")
     category = models.CharField(
-        max_length=10, choices=CATEGORY_CHOICES, default="normal"
+        max_length=10,
+        choices=CATEGORY_CHOICES,
+        default="normal",
     )
     due_date = models.DateTimeField(blank=True, null=True)
     creation_date = models.DateTimeField(auto_now_add=True)

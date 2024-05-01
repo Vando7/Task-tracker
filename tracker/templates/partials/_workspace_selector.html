@@ -1,4 +1,5 @@
 {% if global_workspaces|length > 1 %}
+    <h3>Select workspace</h3>
     <div class="dropdown">
         <!-- Button text now dynamically displays the name of the selected workspace -->
         <button class="btn btn-secondary dropdown-toggle bg-dark text-light"
@@ -30,4 +31,13 @@
             {% endfor %}
         </ul>
     </div>
+
+    <script>
+        var workspaceDropdown = document.getElementById('workspaceDropdown');
+        // on click of the dropdown button, toggle the dropdown menu
+        workspaceDropdown.addEventListener('click', function() {
+            var dropdownMenu = workspaceDropdown.nextElementSibling;
+            dropdownMenu.classList.toggle('show');
+        });
+    </script>
 {% endif %}

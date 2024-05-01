@@ -70,3 +70,24 @@ body {
   background-color: #34495E;
   color: #ECF0F1;
 }
+
+.sidebar {
+  height: 100vh;
+  position: fixed;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.flex-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex-grow: 1;
+}
+
+.container-fluid {
+  padding-right: 0;
+  padding-left: 0;
+}
