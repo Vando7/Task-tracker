@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% load static i18n %}
+
+{% block viewSpecificCss %}
+{% endblock viewSpecificCss %}
+
+{% block content %}
+<h1>Floor {{ floor.name }}</h1>
+{% include "partials/_tasks.html" with floor_id=floor_id%}
+{% endblock content %}

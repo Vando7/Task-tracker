@@ -1,6 +1,8 @@
 import datetime
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.db.models import Count
 from django.db.models import Prefetch
 from django.http import HttpResponseForbidden
 from django.http import JsonResponse
@@ -9,6 +11,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
 
 from tracker.task import models
@@ -47,6 +50,8 @@ def index(request):
         "all_workspaces": all_workspaces,
     }
 
+    set_sidebar_floors(request, selected_workspace_id)
+
     return render(request, "task/index.html", context)
 
 
@@ -57,6 +62,8 @@ def set_workspace(request):
     # todo: validate that the given workspace_id is associated with the user.
     if workspace_id:
         request.session["selected_workspace_id"] = workspace_id
+        set_sidebar_floors(request, workspace_id)
+
     return redirect(reverse("task:index"))
 
 
@@ -93,8 +100,9 @@ def remove_floor(request, floor_id):
 @login_required
 @require_POST
 def add_room(request):
-    params = request.POST
-    write_to_log(str(params))
+    # debug
+    # params = request.POST
+    # write_to_log(str(params))
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
     floor_id = request.POST.get("floor_id")
@@ -131,6 +139,85 @@ def edit_floor(request, floor_id):
 
     # Redirect to a specific page, e.g., a floor detail page or back to index
     return redirect(reverse("task:index"))
+
+
+@login_required
+@require_GET
+def fetch_tasks(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+
+    floor_id = request.GET.get("floor_id")
+    room_id = request.GET.get("room_id")
+    completed = request.GET.get("completed") == "true"
+
+    write_to_log(str(request.GET))
+
+    if not floor_id and not room_id:
+        return JsonResponse({"error": "No floor or room id provided"}, status=400)
+
+    if floor_id and room_id:
+        return JsonResponse(
+            {"error": "Both floor and room id provided. Please provide only one."},
+            status=400,
+        )
+
+    tasks = Task.objects.none()  # Initialize with no tasks
+
+    if floor_id:
+        floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
+        rooms = floor.rooms.all()
+        num_rooms = rooms.count()
+
+        # Fetch tasks associated with at least all rooms on this floor
+        tasks = (
+            Task.objects.annotate(
+                num_rooms_on_floor=Count(
+                    "rooms", filter=Q(rooms__in=rooms), distinct=True
+                )
+            )
+            .filter(num_rooms_on_floor=num_rooms)
+            .distinct()
+        )
+
+        # Filter tasks based on completion status
+        if completed:
+            tasks = tasks.filter(status="done")
+        else:
+            tasks = tasks.exclude(status="done")
+
+    if room_id:
+        room = get_object_or_404(Room, id=room_id, floor__workspace__users=request.user)
+        tasks = Task.objects.filter(rooms=room)
+
+        # Apply the same completion filter to room-specific tasks
+        if completed:
+            tasks = tasks.filter(status="done")
+        else:
+            tasks = tasks.exclude(status="done")
+
+    task_data = [
+        {
+            "id": task.id,
+            "name": task.task_name,
+            "description": task.task_description,
+            "status": task.status,
+            "type": task.type,
+            "category": task.category,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "creation_date": task.creation_date.isoformat(),
+            "modified_date": task.modified_date.isoformat()
+            if task.modified_date
+            else None,
+            "completed_date": task.completed_date.isoformat()
+            if task.completed_date
+            else None,
+            "rooms": {room.id: room.name for room in task.rooms.all()},
+        }
+        for task in tasks
+    ]
+
+    return JsonResponse(task_data, safe=False)
 
 
 @login_required
@@ -182,33 +269,15 @@ def room_view(request, room_id):
 
 
 @login_required
-def floor_view(request, floor_id):
+def floor(request, floor_id):
     floor = get_object_or_404(Floor, pk=floor_id)
-    tasks = (
-        Task.objects.filter(rooms__floor=floor)
-        .annotate(
-            custom_order=models.Case(
-                models.When(category="urgent", then=models.Value(1)),
-                models.When(category="special", then=models.Value(2)),
-                models.When(category="normal", then=models.Value(3)),
-                default=models.Value(4),
-                output_field=models.IntegerField(),
-            ),
-        )
-        .order_by("custom_order", "-modified_date")
-        .distinct()
-    )
 
-    all_floors = Floor.objects.all().prefetch_related("rooms__tasks")
     return render(
         request,
-        "floor_view.html",
+        "task/floor.html",
         {
-            "view_type": "floor",
             "floor_id": floor.id,
             "floor": floor,
-            "tasks": tasks,
-            "floors": all_floors,
             "today": timezone.now(),
         },
     )
@@ -263,6 +332,41 @@ def create_task(request):
         task.rooms.add(Room.objects.get(id=room_id))
 
     return JsonResponse({"status": "success"})
+
+
+def set_sidebar_floors(request, workspace_id):
+    user = request.user
+    floors_prefetch = Prefetch("floors__rooms", queryset=Room.objects.all())
+
+    all_workspaces = Workspace.objects.filter(users=user).prefetch_related(
+        floors_prefetch,
+    )
+
+    workspace = all_workspaces.get(id=workspace_id)
+    floors = Floor.objects.filter(workspace=workspace)
+    rooms = []
+    for floor in floors:
+        rooms += floor.rooms.all()
+
+    sidebar_floors = [
+        {
+            "name": floor.name,
+            "id": floor.id,
+            "color": floor.color,
+            "icon": floor.icon,
+            "rooms": [
+                {
+                    "id": room.id,
+                    "name": room.name,
+                }
+                for room in rooms
+                if room.floor == floor
+            ],
+        }
+        for floor in floors
+    ]
+
+    request.session["sidebar_floors"] = sidebar_floors
 
 
 def write_to_log(string):

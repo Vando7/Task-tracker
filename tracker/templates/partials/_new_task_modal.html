@@ -18,7 +18,6 @@
       <form id="newTaskForm"  action="{% url 'task:create_task' %}" method="post">
         {% csrf_token %}
         <div class="modal-body py-2">
-
           <!-- New Task Form -->
           <!-- Task name -->
           <div class="row g-2 mb-2">
@@ -78,69 +77,74 @@
           <!-- Room Selector -->
           <div class="mb-3" style="padding-top:15px">
             <div class="accordion" id="floorAccordion">
-              {% for floor in workspace.floors.all %}
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                    <button class="accordion-button {% if not view_type == 'room' or floor.id != room_floor_id %}collapsed{% endif %}"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#collapse{{ floor.id }}"
-                            aria-expanded="{% if floor.id == room_floor_id %}true{% else %}false{% endif %}"
-                            aria-controls="collapse{{ forloop.counter }}">
-                      <div class="form-check">
-                        <!-- Add checked attribute for floor checkbox when in floor view -->
-                        <input class="form-check-input"
-                               type="checkbox"
-                               value="{{ floor.id }}"
-                               id="floor-{{ floor.name }}"
-                               name="floorIDs"
-                               {% if view_type == 'floor' and floor.id == floor_id %}checked show{% endif %}
-                               style="width: 25px;
-                                      height: 25px;
-                                      margin-right:10px" />
-                        <label class="form-check-label"
-                               for="{{ floor.name }}"
-                               style="padding-top:7px">{{ floor.name }}</label>
-                      </div>
-                    </button>
-                  </h2>
-                  <div id="collapse{{ floor.id }}"
-                       class="accordion-collapse collapse {% if  view_type == 'room' and floor.id == room_floor_id or floor.id == floor_id %}show{% endif %}"
-                       aria-labelledby="heading{{ forloop.counter }}"
-                       data-bs-parent="#floorAccordion">
-                    <div class="accordion-body">
-                      {% for room in floor.rooms.all %}
+              {% for floor in request.session.sidebar_floors %}
+                {%comment%}if floor has no rooms then skip{%endcomment%}
+                {% if not floor.rooms %}
+                  <!-- continue -->
+                {% else %}
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                      <button class="accordion-button {% if not view_type == 'room' or floor.id != room_floor_id %}collapsed{% endif %}"
+                              type="button"
+                              data-bs-toggle="collapse"
+                              data-bs-target="#collapse{{ floor.id }}"
+                              aria-expanded="{% if floor.id == room_floor_id %}true{% else %}false{% endif %}"
+                              aria-controls="collapse{{ forloop.counter }}">
                         <div class="form-check">
+                          <!-- Add checked attribute for floor checkbox when in floor view -->
                           <input class="form-check-input"
                                  type="checkbox"
-                                 value="{{ room.id }}"
-                                 name="roomIDs"
-                                 data-floor-id="floor-{{ floor.name }}"
-                                 id="{{ room.name }}"
-                                 {% if room.id == room_id or floor.id == floor_id %}checked{% endif %}
-                                 style="width: 20px;
-                                        height: 20px" />
+                                 value="{{ floor.id }}"
+                                 id="floor-{{ floor.name }}"
+                                 name="floorIDs"
+                                 {% if floor_id and floor.id == floor_id %}checked{% endif %}
+                                 style="width: 25px;
+                                        height: 25px;
+                                        margin-right:10px" />
                           <label class="form-check-label"
-                                 for="{{ room.name }}"
-                                 style="font-size: 16px">{{ room.name }}</label>
+                                 for="{{ floor.name }}"
+                                 style="padding-top:7px">{{ floor.name }}</label>
                         </div>
-                      {% endfor %}
+                      </button>
+                    </h2>
+                    <div id="collapse{{ floor.id }}"
+                         class="accordion-collapse collapse {% if  view_type == 'room' and floor.id == room_floor_id or floor.id == floor_id %}show{% endif %}"
+                         aria-labelledby="heading{{ forloop.counter }}"
+                         data-bs-parent="#floorAccordion">
+                      <div class="accordion-body">
+                        {% for room in floor.rooms %}
+                          <div class="form-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   value="{{ room.id }}"
+                                   name="roomIDs"
+                                   data-floor-id="floor-{{ floor.name }}"
+                                   id="{{ room.name }}"
+                                   {% if room.id == room_id or floor.id == floor_id %}checked{% endif %}
+                                   style="width: 20px;
+                                          height: 20px" />
+                            <label class="form-check-label"
+                                   for="{{ room.name }}"
+                                   style="font-size: 16px">{{ room.name }}</label>
+                          </div>
+                        {% endfor %}
+                      </div>
                     </div>
                   </div>
-                </div>
+                {% endif %}
               {% endfor %}
             </div>
           </div>
         </div>
         <div class="alert alert-danger"
-          role="alert"
-          id="taskModalErrorField"
-          style="margin-left:40px;
-              margin-right:40px;
-              background-color:maroon;
-              color:white;
-              text-align:center;
-              display:none;">Please select a room or floor</div>
+             role="alert"
+             id="taskModalErrorField"
+             style="margin-left:40px;
+                    margin-right:40px;
+                    background-color:maroon;
+                    color:white;
+                    text-align:center;
+                    display:none">Please select a room or floor</div>
         <div class="modal-footer py-2"
              style="border: none;
                     padding-bottom:15px !important">

@@ -16,7 +16,8 @@ urlpatterns = [
     path("remove_floor/<int:floor_id>/", views.remove_floor, name="remove_floor"),
     path("add_room/", views.add_room, name="add_room"),
     path("remove_room/<int:room_id>", views.remove_room, name="remove_room"),
-    path("floor_view/<int:floor_id>", views.floor_view, name="floor_view"),
+    path("floor/<int:floor_id>", views.floor, name="floor"),
     path("room_view/<int:floor_id>", views.room_view, name="room_view"),
     path("tasks/create/", views.create_task, name="create_task"),
+    path("fetch_tasks/", views.fetch_tasks, name="fetch_tasks"),
 ]

@@ -7,7 +7,10 @@ from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.db.models import Prefetch
 
+from tracker.task.models import Floor
+from tracker.task.models import Room
 from tracker.task.models import Workspace
 
 if typing.TYPE_CHECKING:
@@ -50,6 +53,39 @@ class AccountAdapter(DefaultAccountAdapter):
                         )
 
         request.session["selected_workspace_id"] = user.default_workspace.id
+
+        # load the sidebar floor list
+        floors_prefetch = Prefetch("floors__rooms", queryset=Room.objects.all())
+
+        all_workspaces = Workspace.objects.filter(users=user).prefetch_related(
+            floors_prefetch,
+        )
+
+        workspace = all_workspaces.get(id=user.default_workspace.id)
+        floors = Floor.objects.filter(workspace=workspace)
+        rooms = []
+        for floor in floors:
+            rooms += floor.rooms.all()
+
+        sidebar_floors = [
+            {
+                "name": floor.name,
+                "id": floor.id,
+                "color": floor.color,
+                "icon": floor.icon,
+                "rooms": [
+                    {
+                        "id": room.id,
+                        "name": room.name,
+                    }
+                    for room in rooms
+                    if room.floor == floor
+                ],
+            }
+            for floor in floors
+        ]
+
+        request.session["sidebar_floors"] = sidebar_floors
 
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):

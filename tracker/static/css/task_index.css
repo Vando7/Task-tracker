@@ -1,0 +1,12 @@
+.clickable {
+    transition: background-color 0.3s ease;
+}
+
+.toggle-icon {
+    font-size: 24px; /* Adjust size as needed */
+    transition: transform 0.3s ease;
+}
+
+.card-header[aria-expanded="true"] .toggle-icon {
+    transform: rotate(45deg); /* Adjust for desired toggle effect */
+}

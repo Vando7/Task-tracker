@@ -4,26 +4,39 @@ import "../sass/project.scss";
 document.addEventListener("DOMContentLoaded", function () {
   initTaskModal();
   initSidebar();
-  initAddFloorModal();
+  initAddFloorForm();
   initAddRoomModal();
 });
 
 function initAddRoomModal() {
-  const input = document.getElementById("roomEmoji");
-  attachEmojiPicker(input);
+  const roomEmojiElements = document.querySelectorAll(".room-emoji");
+
+  roomEmojiElements.forEach(function (roomEmojiElement) {
+    attachEmojiPicker(roomEmojiElement);
+  });
 }
 
-function initAddFloorModal() {
-  document
-    .getElementById("addFloorButton")
-    .addEventListener("click", function () {
-      var formWrapper = document.getElementById("add_floor_form_wrapper");
-      // Toggle visibility of the wrapper
-      formWrapper.style.display =
-        formWrapper.style.display === "none" ? "flex" : "none";
-    });
-  const input = document.getElementById("floorEmoji");
-  attachEmojiPicker(input);
+function initAddFloorForm() {
+  var collapseElementList = [].slice.call(document.querySelectorAll(".collapse-floor"));
+
+  collapseElementList.forEach(function (collapseEl) {
+      var collapseInstance = new bootstrap.Collapse(collapseEl, {
+          toggle: false // Initialize without toggling state
+      });
+
+      collapseEl.addEventListener("show.bs.collapse", function (event) {
+          console.log("Expanding...");
+          this.previousElementSibling.querySelector(".toggle-icon").textContent = "-";
+      });
+
+      collapseEl.addEventListener("hide.bs.collapse", function (event) {
+          console.log("Collapsing...");
+          this.previousElementSibling.querySelector(".toggle-icon").textContent = "+";
+      });
+  });
+
+  const emojiInput = document.getElementById("floorEmoji");
+  attachEmojiPicker(emojiInput);
 }
 
 function attachEmojiPicker(input) {
@@ -35,31 +48,64 @@ function attachEmojiPicker(input) {
     onEmojiSelect: (emoji) => {
       input.value = emoji.native;
       pickerContainer.style.display = "none";
+      document.getElementById("emojiOverlay").style.display = "none";
     },
-    autoFocus: true
+    autoFocus: true,
   });
 
   const pickerContainer = document.createElement("div");
   pickerContainer.style.position = "absolute";
   pickerContainer.style.zIndex = "101";
   pickerContainer.style.display = "none";
-  pickerContainer.appendChild(picker);
   document.body.appendChild(pickerContainer);
+  pickerContainer.appendChild(picker);
 
-  input.addEventListener("focus", (event) => {
-    console.log(event)
-    event.stopPropagation();
+  input.addEventListener("focus", () => {
     pickerContainer.style.display = "flex";
-    const rect = input.getBoundingClientRect();
-    pickerContainer.style.top = `${rect.bottom}px`;
-    pickerContainer.style.left = `${rect.left}px`;
+
+    // Function to update the position of the picker
+    function updatePosition() {
+      if (document.activeElement === input) {
+        const rect = input.getBoundingClientRect();
+        const pickerHeight = picker.offsetHeight;
+        const pickerWidth = picker.offsetWidth;
+
+        // Adjust position based on viewport edges
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceRight = window.innerWidth - rect.right;
+
+        pickerContainer.style.top = `${
+          spaceBelow < pickerHeight ? rect.top - pickerHeight : rect.bottom
+        }px`;
+        pickerContainer.style.left = `${
+          spaceRight < pickerWidth ? rect.right - pickerWidth : rect.left
+        }px`;
+      } else {
+        pickerContainer.style.display = "none";
+      }
+    }
+
+    updatePosition();
   });
 
-  // input.addEventListener("blur", () => {
-  //   setTimeout(() => {
-  //     pickerContainer.style.display = "none";
-  //   }, 200);
-  // });
+  input.addEventListener("focus", () => {
+    document.getElementById("emojiOverlay").style.display = "block";
+    pickerContainer.style.display = "flex";
+  });
+
+  document.getElementById("emojiOverlay").addEventListener("click", () => {
+    pickerContainer.style.display = "none";
+    document.getElementById("emojiOverlay").style.display = "none";
+  });
+
+  input.addEventListener("blur", (event) => {
+    setTimeout(() => {
+      if (!document.activeElement.closest("em-emoji-picker")) {
+        pickerContainer.style.display = "none";
+        document.getElementById("emojiOverlay").style.display = "none";
+      }
+    }, 200);
+  });
 }
 
 function initSidebar() {

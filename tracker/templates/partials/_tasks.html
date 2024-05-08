@@ -1,0 +1,131 @@
+{% if floor_id %}
+<div id="floor_id_holder" floor_id="{{floor_id}}">floor id holder: {{ floor_id }}</div>
+{% endif %}
+
+{% if room_id %}
+<div id="room_id_holder" room_id="{{room_id}}">room id holder: {{ room_id }}</div>
+{% endif %}
+
+<!-- placeholder for dynamically loaded tasks -->
+<div id="tasks">
+    <div id="pending_tasks_holder"> Loading pending tasks...</div>
+    <div id="done_tasks_holder"> Loading pending tasks... </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOMContentLoaded");
+
+        loadElements();
+    });
+
+    function loadElements() {
+        loadPendingTasks();
+        loadDoneTasks();
+    }
+
+    async function loadPendingTasks() {
+        const pending_tasks = await fetchTasks(false); // Assuming false for pending
+        renderTasks(pending_tasks, "pending_tasks_holder");
+    }
+
+    async function loadDoneTasks() {
+        const done_tasks = await fetchTasks(true); // Assuming true for completed
+        renderTasks(done_tasks, "done_tasks_holder");
+    }
+
+    function renderTasks(tasks, elementId) {
+        const container = document.getElementById(elementId);
+        container.innerHTML = ''; // Clear existing tasks/cards
+        tasks.forEach(task => {
+            container.innerHTML += createTaskCard(task);
+        });
+    }
+
+    function createTaskCard(task) {
+        return `
+            <div class="card mb-3">
+                <div class="card-header">
+                    ${task.name}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Details</h5>
+                    <p class="card-text">${task.description}</p>
+                    <p>Status: ${task.status}</p>
+                    <p>Type: ${task.type}</p>
+                    <p>Category: ${task.category}</p>
+                    <p>Due Date: ${task.due_date ? task.due_date : 'N/A'}</p>
+                    <p>Creation Date: ${task.creation_date}</p>
+                    <p>Modified Date: ${task.modified_date ? task.modified_date : 'N/A'}</p>
+                    <p>Completed Date: ${task.completed_date ? task.completed_date : 'N/A'}</p>
+                    <p>Rooms: ${Object.entries(task.rooms).map(([id, name]) => `${name} (ID: ${id})`).join(', ')}</p>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary">Edit</button>
+                    <button class="btn btn-danger">Delete</button>
+                    <button class="btn btn-success">Mark as Done</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function getRoomID() {
+        var room_id_holder = document.getElementById("room_id_holder");
+        var room_id = null;
+
+        if (room_id_holder) {
+            room_id = room_id_holder.getAttribute("room_id");
+        }
+
+        return room_id;
+    }
+
+
+    function getFloorID() {
+        var floor_id_holder = document.getElementById("floor_id_holder")
+        var floor_id = null;
+
+        if (floor_id_holder) {
+            floor_id = floor_id_holder.getAttribute("floor_id");
+        }
+
+        return floor_id;
+    }
+
+    function fetchTasks(completed = false) {
+        let floor_id = getFloorID();
+        let room_id = getRoomID();
+
+        // Construct the URL with parameters
+        let url = new URL(`/task/fetch_tasks`, window.location.origin); // Ensure URL is correctly pointed to your Django view URL
+
+        if (floor_id) {
+            url.searchParams.append('floor_id', floor_id);
+        }
+
+        if (room_id) {
+            url.searchParams.append('room_id', room_id);
+        }
+
+        url.searchParams.append('completed', completed);
+
+        console.log("Fetching tasks for", completed ? "completed" : "incomplete", "from", url);
+
+        // Return the fetch promise
+        return fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(tasks => {
+                console.log('Tasks:', tasks);
+                return tasks;
+            })
+            .catch(error => {
+                console.error('Failed to fetch tasks:', error);
+                return [];
+            });
+    }
+</script>
