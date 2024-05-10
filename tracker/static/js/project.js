@@ -121,6 +121,30 @@ function initSidebar() {
     var dropdownMenu = userSidebarDropdownMenu.nextElementSibling;
     dropdownMenu.classList.toggle("show");
   });
+
+  var sidebarFloorExpanders = document.querySelectorAll('.sidebar-floor-expander');
+
+  //* Logic for handling the expand/collapse of the sidebar floor dropdowns
+  sidebarFloorExpanders.forEach(function (sidebarFloorExpander) {
+    sidebarFloorExpander.addEventListener("click", function () {
+      var floorId = this.getAttribute("floor-id");
+      var collapseElement = document.querySelector("#collapsible-sidebar-"+ floorId);
+      var bsCollapse = new bootstrap.Collapse(collapseElement, {
+        toggle: false,
+      });
+
+      const expandSymbol = "V";
+      const collapseSymbol = "^";
+
+      if (this.innerText === expandSymbol) {
+        this.innerText = collapseSymbol;
+        bsCollapse.show();
+      } else {
+        this.innerText = expandSymbol;
+        bsCollapse.hide();
+      }
+    });
+  });
 }
 
 // Handle task modal logic.
