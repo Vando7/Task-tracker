@@ -1,6 +1,7 @@
 import datetime
 
 from django.contrib.auth.decorators import login_required
+from django.db import models
 from django.db.models import Count
 from django.db.models import Prefetch
 from django.db.models import Q
@@ -14,7 +15,6 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
 
-from tracker.task import models
 from tracker.task.models import Floor
 from tracker.task.models import Room
 from tracker.task.models import Task
@@ -174,9 +174,17 @@ def fetch_tasks(request):
             Task.objects.annotate(
                 num_rooms_on_floor=Count(
                     "rooms", filter=Q(rooms__in=rooms), distinct=True
-                )
+                ),
+                custom_order=models.Case(
+                    models.When(category="urgent", then=models.Value(1)),
+                    models.When(category="special", then=models.Value(2)),
+                    models.When(category="normal", then=models.Value(3)),
+                    default=models.Value(4),
+                    output_field=models.IntegerField(),
+                ),
             )
             .filter(num_rooms_on_floor=num_rooms)
+            .order_by("custom_order", "-modified_date")
             .distinct()
         )
 

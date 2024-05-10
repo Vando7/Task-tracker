@@ -50,7 +50,8 @@
         <div style="flex-grow: 1;">
           <div class="container-fluid">
             <div class="row" style="width:100%">
-              <div class="col-12" style="margin:10px;">{% include "partials/_workspace_selector.html" %}</div>
+              <div class="col-6">{% include "partials/_workspace_selector.html" %}</div>
+              <div class="col-6">{% block page_title %}{% endblock page_title %}</div>
               <div class="col-12" style="margin:10px;">
                 {% if messages %}
                   {% for message in messages %}

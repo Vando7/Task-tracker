@@ -5,7 +5,16 @@
 {% block viewSpecificCss %}
 {% endblock viewSpecificCss %}
 
+{% block page_title %}
+    <div style="
+            text-align: right;
+            text-shadow: 1px 1px 20px {{ floor.color }};
+            font-size: 30px;
+            ">
+        {{ floor.icon }} {{ floor.name }}
+    </div>
+{% endblock page_title %}
+
 {% block content %}
-<h1>{{ floor.name }}</h1>
-{% include "partials/_tasks.html" with floor_id=floor_id%}
+    {% include "partials/_tasks.html" with floor_id=floor_id%}
 {% endblock content %}

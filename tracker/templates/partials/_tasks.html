@@ -8,630 +8,71 @@
 
 <!-- placeholder for dynamically loaded tasks -->
 <div id="tasks" class="container">
-    <div class="row" id="pending_tasks_holder"></div>
-    <div class="row" id="done_tasks_holder"></div>
-</div>
-
-<div id="tasks" class="container">
+    <div style="
+            text-align: center;
+            text-shadow: 1px 1px 20px {{ floor.color }};
+            margin-bottom: 20px;
+            ">
+        Pending tasks
+    </div>
     <div class="row" id="pending_tasks_holder">
-        <div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
+        <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending">
+            <div class="card mb-3 shadow card-loading-main" style="width:100%;">
+                <div class="card-header card-loading-header">
+                    <div class="loading-rectangle"></div>
                 </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
+                <div class="card-body card-loading-body">
+                    <div class="loading-rectangle" style="width: 70%;"></div>
+                    <div class="loading-rectangle" style="width: 90%;"></div>
+                    <div class="loading-rectangle" style="width: 30%;"></div>
                 </div>
             </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending">
+            <div class="card mb-3 shadow card-loading-main" style="width:100%;">
+                <div class="card-header card-loading-header">
+                    <div class="loading-rectangle"></div>
                 </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
+                <div class="card-body card-loading-body">
+                    <div class="loading-rectangle" style="width: 70%;"></div>
+                    <div class="loading-rectangle" style="width: 90%;"></div>
+                    <div class="loading-rectangle" style="width: 30%;"></div>
                 </div>
             </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending">
+            <div class="card mb-3 shadow card-loading-main" style="width:100%;">
+                <div class="card-header card-loading-header">
+                    <div class="loading-rectangle"></div>
                 </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
-                </div>
-            </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
-                </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
-                </div>
-            </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
-                </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
-                </div>
-            </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
-                </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
-                </div>
-            </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
-                </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
-                </div>
-            </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
-                </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
-                </div>
-            </div>
-        </div><div class="col-lg-4 col-md-6 col-sm-12">
-            <div class="card mb-3 shadow">
-                <div class="card-header">
-                    <span class="task-name" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing
-                        elit. Vestibulum facilisis dui in magna cursus, ut facilisis sem dapibus nam.</span>
-                </div>
-                <div class="card-body collapse show">
-                    <div class="task-field-container">
-                        <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_description">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Suspendisse quis condimentum purus. Vivamus vulputate eu purus et porta. Nam eros mi,
-                            consectetur id pretium id, pharetra vitae quam. Donec finibus libero magna, eget finibus ex
-                            malesuada in. Praesent sed sagittis mauris. Vestibulum ultricies nisl vitae malesuada
-                            sagittis. Sed urna sapien, tempus rutrum consectetur elementum, luctus a elit. Suspendisse
-                            aliquet justo lorem, in faucibus leo tempor eget. Etiam fringilla sagittis ante ac
-                            pellentesque nam.</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <p class="task-status-label task-label">Status: </p>
-                        <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_status">sth</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-type-label task-label">Type: </div>
-                        <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_type">haha</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-category-label task-label">Category: </div>
-                        <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_category">single</span>
-                    </div>
-
-                    <div class="ttask-field-container">
-                        <div class="task-due-date-label task-label">Due date: </div>
-                        <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_due_date">due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-creation-date-label task-label">Creation date: </div>
-                        <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_creation_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-modified-date-label task-label">Modified date: </div>
-                        <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_modified_date"> due date</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-completed-date-label task-label">Completed date: </div>
-                        <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_completed_date"> asd</span>
-                    </div>
-
-                    <div class="task-field-container">
-                        <div class="task-rooms-label task-label">Rooms: </div>
-                        <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                            data-field-name="task_rooms">idk</span>
-                    </div>
+                <div class="card-body card-loading-body">
+                    <div class="loading-rectangle" style="width: 70%;"></div>
+                    <div class="loading-rectangle" style="width: 90%;"></div>
+                    <div class="loading-rectangle" style="width: 30%;"></div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row" id="done_tasks_holder"></div>
+    <div style="
+            text-align: center;
+            text-shadow: 1px 1px 20px {{ floor.color }};
+            margin-bottom: 20px;
+            ">
+        Completed tasks
+    </div>
+    <div class="row" id="done_tasks_holder">
+
+    </div>
 </div>
 
 <template id="task-template">
     <div class="col-lg-4 col-md-6 col-sm-12">
         <div class="card mb-3 shadow">
             <div class="card-header">
-                <span class="task-name"></span>
-                <button class="btn btn-outline-secondary float-right expand-button">Expand</button>
+                <span class="task-name" contenteditable="true"></span>
             </div>
-            <div class="card-body collapse">
+            <div class="card-body collapse show">
                 <div class="task-field-container">
-                    <p class="task-description-label task-label">Description: </p>
                     <span class="task-description task-field" contenteditable="true" data-task-id="0"
                         data-field-name="task_description"></span>
                 </div>
@@ -663,7 +104,7 @@
                 <div class="task-field-container">
                     <div class="task-creation-date-label task-label">Creation date: </div>
                     <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_creation_date"></span>
+                        data-field-name="task_creation_date"> </span>
                 </div>
 
                 <div class="task-field-container">
@@ -683,10 +124,6 @@
                     <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
                         data-field-name="task_rooms"></span>
                 </div>
-            </div>
-            <div class="card-footer">
-                <button class="btn btn-danger">Delete</button>
-                <button class="btn btn-success">Mark as Done</button>
             </div>
         </div>
     </div>
@@ -714,6 +151,51 @@
     .card:hover {
         transform: translateY(-3px);
     }
+
+    .card-loading-main {
+        width: 200px;
+        height: 300px;
+        border: 1px solid #424549;
+        /* Darker border for dark mode */
+        border-radius: 5px;
+        background-color: #2A2A2A;
+        /* Dark card background */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        /* Stronger shadow for contrast */
+    }
+
+    .card-loading-header {
+        background-color: #272B2F;
+        /* Align items to the left */
+    }
+
+    .card-loading-body {
+        background-color: #212529;
+    }
+
+    .loading-rectangle {
+        width: 100%;
+        /* Default width */
+        height: 20px;
+        margin-bottom: 8px;
+        /* Space between rectangles */
+        background-color: #2A2A2A;
+        /* Darker rectangle for loading */
+        animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+
+        0%,
+        100% {
+            background-color: #333;
+        }
+
+        50% {
+            background-color: #444;
+            /* Slightly lighter during animation */
+        }
+    }
 </style>
 
 <script>
@@ -729,13 +211,20 @@
     }
 
     async function loadPendingTasks() {
-        const pending_tasks = await fetchTasks(false); // Assuming false for pending
-        //renderTasks(pending_tasks, "pending_tasks_holder");
+        const pending_tasks = await fetchTasks(false);
+        // fade out elements with class lading-container-pending
+        const loading_containers = document.querySelectorAll('.lading-container-pending');
+        loading_containers.forEach(container => {
+            container.classList.add('fade');
+            // also set display to none
+            container.style.display = 'none';
+        });
+        renderTasks(pending_tasks, "pending_tasks_holder");
     }
 
     async function loadDoneTasks() {
-        const done_tasks = await fetchTasks(true); // Assuming true for completed
-        //renderTasks(done_tasks, "done_tasks_holder");
+        const done_tasks = await fetchTasks(true);
+        renderTasks(done_tasks, "done_tasks_holder");
     }
 
     function renderTasks(tasks, elementId) {
@@ -756,11 +245,9 @@
             taskCard.querySelector(".task-completed-date-value").textContent = task.completed_date ? task.completed_date : 'N/A';
             taskCard.querySelector(".task-rooms-value").textContent = Object.entries(task.rooms).map(([id, name]) => `${name} (ID: ${id})`).join(', ');
 
-            // for each element with class task-field, set data task id attribute
             const taskFields = taskCard.querySelectorAll(".task-field");
 
             taskFields.forEach(taskField => {
-                // set data-task-id attribute for the text field to be task.id
                 taskField.setAttribute("data-task-id", task.id);
             });
 
