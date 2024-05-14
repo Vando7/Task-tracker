@@ -1,8 +1,10 @@
 import datetime
+import json
 
 from django.contrib.auth.decorators import login_required
 from django.db import models
 from django.db.models import Count
+from django.db.models import Max
 from django.db.models import Prefetch
 from django.db.models import Q
 from django.http import HttpResponseForbidden
@@ -151,8 +153,6 @@ def fetch_tasks(request):
     room_id = request.GET.get("room_id")
     completed = request.GET.get("completed") == "true"
 
-    write_to_log(str(request.GET))
-
     if not floor_id and not room_id:
         return JsonResponse({"error": "No floor or room id provided"}, status=400)
 
@@ -207,8 +207,8 @@ def fetch_tasks(request):
     task_data = [
         {
             "id": task.id,
-            "name": task.task_name,
-            "description": task.task_description,
+            "task_name": task.task_name,
+            "task_description": task.task_description,
             "status": task.status,
             "type": task.type,
             "category": task.category,
@@ -226,6 +226,45 @@ def fetch_tasks(request):
     ]
 
     return JsonResponse(task_data, safe=False)
+
+
+@login_required
+def fetch_latest_task_timestamp(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+
+    floor_id = request.GET.get("floor_id")
+    room_id = request.GET.get("room_id")
+
+    if not floor_id and not room_id:
+        return JsonResponse({"error": "No floor or room id provided"}, status=400)
+
+    if floor_id and room_id:
+        return JsonResponse(
+            {"error": "Both floor and room id provided. Please provide only one."},
+            status=400,
+        )
+
+    tasks = Task.objects.none()  # Initialize with no tasks
+
+    if floor_id:
+        floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
+        rooms = floor.rooms.all()
+        num_rooms = rooms.count()
+
+        tasks = Task.objects.annotate(
+            num_rooms_on_floor=Count("rooms", filter=Q(rooms__in=rooms), distinct=True)
+        ).filter(num_rooms_on_floor=num_rooms)
+
+    if room_id:
+        room = get_object_or_404(Room, id=room_id, floor__workspace__users=request.user)
+        tasks = Task.objects.filter(rooms=room)
+
+    latest_timestamp = tasks.aggregate(latest=Max("modified_date"))["latest"]
+
+    return JsonResponse(
+        {"latest_timestamp": latest_timestamp.isoformat() if latest_timestamp else None}
+    )
 
 
 @login_required
@@ -342,7 +381,80 @@ def create_task(request):
     return JsonResponse({"status": "success"})
 
 
+@login_required
+@require_POST
+def update_task(request):
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "error", "message": "Invalid JSON"}, status=400)
+
+    required_fields = ["task_id", "field_name", "value"]
+    if not all(field in data for field in required_fields):
+        return JsonResponse(
+            {"status": "error", "message": "Missing required field(s)."},
+            status=400,
+        )
+
+    task = get_object_or_404(Task, id=data["task_id"])
+    selected_workspace = request.session.get("selected_workspace_id")
+    if not task_belongs_to_workspace(task, selected_workspace):
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "Task does not belong to the selected workspace.",
+            },
+            status=400,
+        )
+
+    editable_fields = {
+        "task_name",
+        "task_description",
+        "status",
+        "type",
+        "category",
+        "due_date",
+        "description",
+        "rooms",
+    }
+    if data["field_name"] not in editable_fields:
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": f"Invalid task field '{data['field_name']}'. Allowed fields: {editable_fields}",
+            },
+            status=400,
+        )
+
+    # General field update, except for special cases
+    if data["field_name"] != "rooms":
+        setattr(task, data["field_name"], data["value"])
+
+        if data["field_name"] == "status" and data["value"] == "done":
+            task.completed_date = timezone.now()
+
+        task.modified_date = timezone.now()
+        task.save()
+
+    # Special handling for rooms
+    elif data["field_name"] == "rooms":
+        rooms = Room.objects.filter(id__in=data["value"])
+        task.rooms.set(rooms)  # Reduces database hits
+
+    return JsonResponse({"status": "success"})
+
+
 def set_sidebar_floors(request, workspace_id):
+    """
+    Sets the selected workspace and floor in the user's session.
+
+    Parameters:
+        request (HttpRequest): The request object.
+        workspace_id (int): The ID of the workspace to set as the selected workspace.
+
+    Returns:
+        None: The function does not return anything.
+    """
     user = request.user
     floors_prefetch = Prefetch("floors__rooms", queryset=Room.objects.all())
 
@@ -366,6 +478,7 @@ def set_sidebar_floors(request, workspace_id):
                 {
                     "id": room.id,
                     "name": room.name,
+                    "icon": room.icon,
                 }
                 for room in rooms
                 if room.floor == floor
@@ -375,6 +488,23 @@ def set_sidebar_floors(request, workspace_id):
     ]
 
     request.session["sidebar_floors"] = sidebar_floors
+
+
+# helper function checks whether a task belongs to the user's currently selected workspace, returns bool:
+def task_belongs_to_workspace(task: Task, workspace_id: int) -> bool:
+    selected_workspace = Workspace.objects.get(
+        id=workspace_id,
+    )
+
+    task_rooms = task.rooms.all()
+    selected_workspace_floors = Floor.objects.filter(workspace=selected_workspace)
+
+    first_room = task_rooms[0]
+    first_room_floor = first_room.floor
+    if first_room_floor not in selected_workspace_floors:
+        return False
+
+    return True
 
 
 def write_to_log(string):

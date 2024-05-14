@@ -5,7 +5,8 @@
                 type="button"
                 id="workspaceDropdown"
                 data-bs-toggle="dropdown"
-                aria-expanded="false">
+                aria-expanded="false"
+                style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
             {% for workspace in global_workspaces %}
                 {% if workspace.id|stringformat:"s" == request.session.selected_workspace_id|stringformat:"s" %}
                     {{ workspace.name }}

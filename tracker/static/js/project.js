@@ -124,24 +124,36 @@ function initSidebar() {
 
   var sidebarFloorExpanders = document.querySelectorAll('.sidebar-floor-expander');
 
-  //* Logic for handling the expand/collapse of the sidebar floor dropdowns
   sidebarFloorExpanders.forEach(function (sidebarFloorExpander) {
+    var floorId = sidebarFloorExpander.getAttribute("floor-id");
+    var collapseElement = document.querySelector("#collapsible-sidebar-" + floorId);
+    var bsCollapse = new bootstrap.Collapse(collapseElement, {
+      toggle: false,
+    });
+
+    // Set the initial state based on the cookie
+    var state = getCookie("sidebar-collapse-" + floorId);
+    const expandSymbol = "V";
+    const collapseSymbol = "^";
+
+    if (state === "collapsed") {
+      sidebarFloorExpander.innerText = expandSymbol;
+      bsCollapse.hide();
+    } else {
+      sidebarFloorExpander.innerText = collapseSymbol;
+      bsCollapse.show();
+    }
+
+    // Add click event listener
     sidebarFloorExpander.addEventListener("click", function () {
-      var floorId = this.getAttribute("floor-id");
-      var collapseElement = document.querySelector("#collapsible-sidebar-"+ floorId);
-      var bsCollapse = new bootstrap.Collapse(collapseElement, {
-        toggle: false,
-      });
-
-      const expandSymbol = "V";
-      const collapseSymbol = "^";
-
       if (this.innerText === expandSymbol) {
         this.innerText = collapseSymbol;
         bsCollapse.show();
+        setCookie("sidebar-collapse-" + floorId, "expanded", 7); // Set cookie for 7 days
       } else {
         this.innerText = expandSymbol;
         bsCollapse.hide();
+        setCookie("sidebar-collapse-" + floorId, "collapsed", 7); // Set cookie for 7 days
       }
     });
   });
@@ -312,4 +324,30 @@ function initTaskModal() {
 
     var fadeEffect = setInterval(fadeIn, 50); // Adjust time to control speed of fade
   }
+}
+
+
+/* Cookie helpers */
+
+// Function to set a cookie
+function setCookie(name, value, days) {
+  var expires = "";
+  if (days) {
+    var date = new Date();
+    date.setTime(date.getTime() + (days*24*60*60*1000));
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+// Function to get a cookie by name
+function getCookie(name) {
+  var nameEQ = name + "=";
+  var ca = document.cookie.split(';');
+  for (var i = 0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
 }

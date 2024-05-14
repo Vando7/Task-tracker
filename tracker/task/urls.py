@@ -20,4 +20,10 @@ urlpatterns = [
     path("room_view/<int:floor_id>", views.room_view, name="room_view"),
     path("tasks/create/", views.create_task, name="create_task"),
     path("fetch_tasks/", views.fetch_tasks, name="fetch_tasks"),
+    path("update_task/", views.update_task, name="update_task"),
+    path(
+        "fetch_latest_task_timestamp/",
+        views.fetch_latest_task_timestamp,
+        name="fetch_latest_task_timestamp",
+    ),
 ]

@@ -1,319 +1,622 @@
-{% if floor_id %}
-<div id="floor_id_holder" floor_id="{{floor_id}}"></div>
-{% endif %}
+{% load static i18n %}
 
-{% if room_id %}
-<div id="room_id_holder" room_id="{{room_id}}"></div>
-{% endif %}
-
+<link rel="stylesheet" href="{% static 'css/task_partial.css' %}" />
+</link />
+{% comment %} <script src="{% static 'js/tasks_partial.js' %}"></script> {% endcomment %}
+{% if floor_id %}<div id="floor_id_holder" floor_id="{{ floor_id }}"></div>{% endif %}
+{% if room_id %}<div id="room_id_holder" room_id="{{ room_id }}"></div>{% endif %}
 <!-- placeholder for dynamically loaded tasks -->
 <div id="tasks" class="container">
-    <div style="
-            text-align: center;
-            text-shadow: 1px 1px 20px {{ floor.color }};
-            margin-bottom: 20px;
-            ">
-        Pending tasks
-    </div>
-    <div class="row" id="pending_tasks_holder">
-        <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending">
-            <div class="card mb-3 shadow card-loading-main" style="width:100%;">
-                <div class="card-header card-loading-header">
-                    <div class="loading-rectangle"></div>
-                </div>
-                <div class="card-body card-loading-body">
-                    <div class="loading-rectangle" style="width: 70%;"></div>
-                    <div class="loading-rectangle" style="width: 90%;"></div>
-                    <div class="loading-rectangle" style="width: 30%;"></div>
-                </div>
-            </div>
+  <div style="text-align: center;
+              text-shadow: 1px 1px 20px {{ floor.color }};
+              font-size: 20px;
+              margin-bottom: 20px">Pending tasks</div>
+  <div id="pending_tasks_holder">
+    <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
+      <div class="card mb-3 shadow card-loading-main" style="width:100%;">
+        <div class="card-header card-loading-header">
+          <div class="loading-rectangle"></div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending">
-            <div class="card mb-3 shadow card-loading-main" style="width:100%;">
-                <div class="card-header card-loading-header">
-                    <div class="loading-rectangle"></div>
-                </div>
-                <div class="card-body card-loading-body">
-                    <div class="loading-rectangle" style="width: 70%;"></div>
-                    <div class="loading-rectangle" style="width: 90%;"></div>
-                    <div class="loading-rectangle" style="width: 30%;"></div>
-                </div>
-            </div>
+        <div class="card-body card-loading-body">
+          <div class="loading-rectangle" style="width: 70%;"></div>
+          <div class="loading-rectangle" style="width: 90%;"></div>
+          <div class="loading-rectangle" style="width: 30%;"></div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending">
-            <div class="card mb-3 shadow card-loading-main" style="width:100%;">
-                <div class="card-header card-loading-header">
-                    <div class="loading-rectangle"></div>
-                </div>
-                <div class="card-body card-loading-body">
-                    <div class="loading-rectangle" style="width: 70%;"></div>
-                    <div class="loading-rectangle" style="width: 90%;"></div>
-                    <div class="loading-rectangle" style="width: 30%;"></div>
-                </div>
-            </div>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
+      <div class="card mb-3 shadow card-loading-main " style="width:100%;">
+        <div class="card-header card-loading-header">
+          <div class="loading-rectangle"></div>
         </div>
+        <div class="card-body card-loading-body">
+          <div class="loading-rectangle" style="width: 70%;"></div>
+          <div class="loading-rectangle" style="width: 90%;"></div>
+          <div class="loading-rectangle" style="width: 30%;"></div>
+        </div>
+      </div>
     </div>
-    <div style="
-            text-align: center;
-            text-shadow: 1px 1px 20px {{ floor.color }};
-            margin-bottom: 20px;
-            ">
-        Completed tasks
+    <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
+      <div class="card mb-3 shadow card-loading-main" style="width:100%;">
+        <div class="card-header card-loading-header">
+          <div class="loading-rectangle"></div>
+        </div>
+        <div class="card-body card-loading-body">
+          <div class="loading-rectangle" style="width: 70%;"></div>
+          <div class="loading-rectangle" style="width: 90%;"></div>
+          <div class="loading-rectangle" style="width: 30%;"></div>
+        </div>
+      </div>
     </div>
-    <div class="row" id="done_tasks_holder">
-
+  </div>
+  <div style="text-align: center;
+              text-shadow: 1px 1px 20px {{ floor.color }};
+              margin-bottom: 20px;
+              font-size: 20px">Completed tasks</div>
+  <div id="done_tasks_holder">
+    <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
+      <div class="card mb-3 shadow card-loading-main" style="width:100%;">
+        <div class="card-header card-loading-header">
+          <div class="loading-rectangle"></div>
+        </div>
+        <div class="card-body card-loading-body">
+          <div class="loading-rectangle" style="width: 70%;"></div>
+          <div class="loading-rectangle" style="width: 90%;"></div>
+          <div class="loading-rectangle" style="width: 30%;"></div>
+        </div>
+      </div>
     </div>
+    <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
+      <div class="card mb-3 shadow card-loading-main " style="width:100%;">
+        <div class="card-header card-loading-header">
+          <div class="loading-rectangle"></div>
+        </div>
+        <div class="card-body card-loading-body">
+          <div class="loading-rectangle" style="width: 70%;"></div>
+          <div class="loading-rectangle" style="width: 90%;"></div>
+          <div class="loading-rectangle" style="width: 30%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
+      <div class="card mb-3 shadow card-loading-main" style="width:100%;">
+        <div class="card-header card-loading-header">
+          <div class="loading-rectangle"></div>
+        </div>
+        <div class="card-body card-loading-body">
+          <div class="loading-rectangle" style="width: 70%;"></div>
+          <div class="loading-rectangle" style="width: 90%;"></div>
+          <div class="loading-rectangle" style="width: 30%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-
 <template id="task-template">
-    <div class="col-lg-4 col-md-6 col-sm-12">
-        <div class="card mb-3 shadow">
-            <div class="card-header">
-                <span class="task-name" contenteditable="true"></span>
-            </div>
-            <div class="card-body collapse show">
-                <div class="task-field-container">
-                    <span class="task-description task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_description"></span>
-                </div>
-
-                <div class="task-field-container">
-                    <p class="task-status-label task-label">Status: </p>
-                    <span class="task-status-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_status"></span>
-                </div>
-
-                <div class="task-field-container">
-                    <div class="task-type-label task-label">Type: </div>
-                    <span class="task-type-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_type"></span>
-                </div>
-
-                <div class="task-field-container">
-                    <div class="task-category-label task-label">Category: </div>
-                    <span class="task-category-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_category"></span>
-                </div>
-
-                <div class="ttask-field-container">
-                    <div class="task-due-date-label task-label">Due date: </div>
-                    <span class="task-due-date-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_due_date"></span>
-                </div>
-
-                <div class="task-field-container">
-                    <div class="task-creation-date-label task-label">Creation date: </div>
-                    <span class="task-creation-date-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_creation_date"> </span>
-                </div>
-
-                <div class="task-field-container">
-                    <div class="task-modified-date-label task-label">Modified date: </div>
-                    <span class="task-modified-date-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_modified_date"></span>
-                </div>
-
-                <div class="task-field-container">
-                    <div class="task-completed-date-label task-label">Completed date: </div>
-                    <span class="task-completed-date-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_completed_date"></span>
-                </div>
-
-                <div class="task-field-container">
-                    <div class="task-rooms-label task-label">Rooms: </div>
-                    <span class="task-rooms-value task-field" contenteditable="true" data-task-id="0"
-                        data-field-name="task_rooms"></span>
-                </div>
-            </div>
+  <div class="task-holder">
+    <div class="card mb-3 shadow">
+      <div class="card-header">
+        <span class="task-name task-field"
+              contenteditable="true"
+              data-task-id="0"
+              csrf="{{ csrf_token }}"
+              data-field-name="task_name"></span>
+        <!-- Mark as done button -->
+        <button class="btn btn-sm btn-outline-success mark-as-done-btn task-field"
+                type="button"
+                data-task-id="0"
+                data-field-name="status"
+                data-value="done"
+                csrf="{{ csrf_token }}">✅</button>
+      </div>
+      <div class="card-body collapse show">
+        <div class="task-field-container">
+          <span class="task-description task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="task_description"></span>
         </div>
+        <div class="task-field-container">
+          <p class="task-status-label task-label">Status</p>
+          <span class="task-status-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="status"></span>
+        </div>
+        <div class="task-field-container">
+          <div class="task-type-label task-label">Type</div>
+          <span class="task-type-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="type"></span>
+        </div>
+        <div class="task-field-container">
+          <div class="task-category-label task-label">Category</div>
+          <span class="task-category-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="category"></span>
+        </div>
+        <div class="ttask-field-container">
+          <div class="task-due-date-label task-label">Due</div>
+          <span class="task-due-date-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="due_date"></span>
+        </div>
+        <div class="task-field-container">
+          <div class="task-creation-date-label task-label">Created</div>
+          <span class="task-creation-date-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="creation_date"></span>
+        </div>
+        <div class="task-field-container">
+          <div class="task-modified-date-label task-label">Modified</div>
+          <span class="task-modified-date-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="modified_date"
+                ></span>
+        </div>
+        <div class="task-field-container">
+          <div class="task-modified-date-label task-label">Modified ts</div>
+          <span class="task-modified-date-value-actual task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="modified_date"
+                ></span>
+        </div>
+        <div class="task-field-container">
+          <div class="task-completed-date-label task-label">Completed</div>
+          <span class="task-completed-date-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="completed_date"></span>
+        </div>
+        <div class="task-field-container">
+          <div class="task-rooms-label task-label">Rooms</div>
+          <span class="task-rooms-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="rooms"></span>
+        </div>
+      </div>
     </div>
+  </div>
 </template>
-
-<style>
-    .task-field-container {
-        display: flex;
-    }
-
-    .task-label {
-        margin-right: 10px;
-        font-weight: bold;
-    }
-
-    .card-header {
-        font-weight: bold;
-        font-size: 20px;
-    }
-
-    .card {
-        transition: transform 0.4s ease-in-out;
-    }
-
-    .card:hover {
-        transform: translateY(-3px);
-    }
-
-    .card-loading-main {
-        width: 200px;
-        height: 300px;
-        border: 1px solid #424549;
-        /* Darker border for dark mode */
-        border-radius: 5px;
-        background-color: #2A2A2A;
-        /* Dark card background */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        /* Stronger shadow for contrast */
-    }
-
-    .card-loading-header {
-        background-color: #272B2F;
-        /* Align items to the left */
-    }
-
-    .card-loading-body {
-        background-color: #212529;
-    }
-
-    .loading-rectangle {
-        width: 100%;
-        /* Default width */
-        height: 20px;
-        margin-bottom: 8px;
-        /* Space between rectangles */
-        background-color: #2A2A2A;
-        /* Darker rectangle for loading */
-        animation: loading 1.5s infinite;
-    }
-
-    @keyframes loading {
-
-        0%,
-        100% {
-            background-color: #333;
-        }
-
-        50% {
-            background-color: #444;
-            /* Slightly lighter during animation */
-        }
-    }
-</style>
-
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        console.log("DOMContentLoaded");
+  var fieldsLoaded = 0;
+  let latestTimestamp = null;
+  const updateIntervalSeconds = 1;
 
-        loadElements();
+  document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOMContentLoaded");
+
+    loadElements();
+  });
+
+  /***********************************8
+   * UPDATE TASKS
+   */
+  async function updateTaskList() {
+    const pending_tasks = await fetchTasks(false);
+    const done_tasks = await fetchTasks(true);
+
+    allTasks = pending_tasks.concat(done_tasks);
+    updateTasksOnPage(allTasks);
+    //addMissingTasks(allTasks);
+  }
+
+  function updateTasksOnPage(tasks) {
+    /*
+     * Update the task fields in the dom for all tasks given a list of tasks from the server..
+     */
+
+    tasks.forEach((task) => {
+      const taskCard = document.getElementById(`task-${task.id}`);
+
+      if (!taskCard) {
+        console.log("Task card not found");
+        return;
+      }
+
+      // check if the last modified date is different from the one in the task card
+      const pageTaskModifiedDate = taskCard.querySelector(
+        ".task-modified-date-value-actual"
+      ).textContent;
+
+      console.log("pageTaskModifiedDate: " + pageTaskModifiedDate);
+      console.log("task.modified_date: " + task.modified_date);
+
+      if (pageTaskModifiedDate == task.modified_date) {
+        console.log("task " + task.id + " has not been modified continuing");
+        return;
+      }
+
+      console.log("task " + task.id + " has been modified - updating");
+
+      const taskFields = taskCard.querySelectorAll(".task-field");
+      taskFields.forEach((taskField) => {
+        const taskFieldValue = taskField.textContent;
+
+        console.log("UPDATING TASK FIELD + " + taskField.getAttribute("data-field-name"));
+        console.log(taskFieldValue);
+        console.log(task[taskField.getAttribute("data-field-name")]);
+
+        // set field value:
+        taskField.textContent = task[taskField.getAttribute("data-field-name")];
+      });
+    });
+  }
+
+  async function fetchLatestTimestamp() {
+    let floorId = getFloorID();
+    let roomId = getRoomID();
+    let url = new URL(
+      `/task/fetch_latest_task_timestamp`,
+      window.location.origin
+    );
+
+    if (floorId) {
+      url.searchParams.append("floor_id", floorId);
+    }
+
+    if (roomId) {
+      url.searchParams.append("room_id", roomId);
+    }
+
+    try {
+      let response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      let data = await response.json();
+
+      return data.latest_timestamp;
+    } catch (error) {
+      console.error("Failed to fetch the latest timestamp:", error);
+      return null;
+    }
+  }
+
+  /**
+   ** Check whether the tasks on the page need to be updated.
+   */
+  async function checkForUpdates() {
+    let newTimestamp = await fetchLatestTimestamp();
+    console.log("new timestamp: ", newTimestamp);
+    console.log("latest timestamp: ", latestTimestamp);
+    if (newTimestamp && newTimestamp !== latestTimestamp) {
+      latestTimestamp = newTimestamp;
+      // Fetch and refresh tasks only if there is an update
+      updateTaskList();
+      console.log("UPDATE DETECTED POGGGGGGGGGGGGG");
+    }
+  }
+  // Periodic check for updates
+  setInterval(checkForUpdates, updateIntervalSeconds * 1000);
+
+  //********************************************************** */
+  /**
+   ** This Function makes it so each tasks field is editable and
+   ** when a user edits a field it sends an update to the server.
+   */
+  function initialize_fields() {
+    // Mark as done buttons.
+    var markAsDoneBtns = document.querySelectorAll(".mark-as-done-btn");
+
+    markAsDoneBtns.forEach(function(markAsDoneBtn) {
+      console.log("Mark as done button found");
+      markAsDoneBtn.addEventListener("click", function() {
+        console.log("Mark as done button clicked");
+        var taskId = this.getAttribute("data-task-id");
+        var fieldName = this.getAttribute("data-field-name");
+        var value = this.getAttribute("data-value");
+        var csrf = this.getAttribute("csrf");
+        console.log("Marking task as done");
+        console.log(taskId);
+        console.log(fieldName);
+        console.log(value);
+        update_task(taskId, fieldName, value, csrf);
+      });
     });
 
-    function loadElements() {
-        loadPendingTasks();
-        loadDoneTasks();
+    const editableSpans = document.querySelectorAll(
+      'span[contenteditable="true"]'
+    );
+
+    // Editable spans.
+    function handleFocus(event) {
+      event.target.dataset.oldValue = event.target.textContent;
     }
 
-    async function loadPendingTasks() {
-        const pending_tasks = await fetchTasks(false);
-        // fade out elements with class lading-container-pending
-        const loading_containers = document.querySelectorAll('.lading-container-pending');
-        loading_containers.forEach(container => {
-            container.classList.add('fade');
-            // also set display to none
-            container.style.display = 'none';
-        });
-        renderTasks(pending_tasks, "pending_tasks_holder");
+    async function handleEdit(event) {
+      if (event.type === "keypress" && event.key !== "Enter") {
+        return;
+      } else if (event.type === "keypress") {
+        event.preventDefault();
+        event.target.blur();
+      }
+      const oldValue = event.target.dataset.oldValue;
+      const newValue = event.target.textContent;
+
+      if (oldValue == newValue) {
+        console.log(`Old Value: ${oldValue}, New Value: ${newValue}`);
+        // No changes made.
+        return;
+      }
+
+      // Update the task.
+      spanElement = event.target;
+      console.log(spanElement);
+
+      task_id = spanElement.getAttribute("data-task-id");
+      field_name = spanElement.getAttribute("data-field-name");
+      csrf = spanElement.getAttribute("csrf");
+
+      console.log(task_id);
+      console.log(field_name);
+      console.log(newValue);
+
+      const response = await update_task(task_id, field_name, newValue, csrf);
+      const response_json = await response.json;
+      console.log("result:");
+      console.log(response_json);
+      /*if(result.status == "error") {
+            console.log("Error updating task");
+            console.log(result);
+            spanElement.textContent = oldValue;
+        }*/
     }
 
-    async function loadDoneTasks() {
-        const done_tasks = await fetchTasks(true);
-        renderTasks(done_tasks, "done_tasks_holder");
+    // Add event listeners to each span
+    editableSpans.forEach((span) => {
+      span.addEventListener("focus", handleFocus);
+      span.addEventListener("blur", handleEdit);
+      span.addEventListener("keypress", handleEdit);
+    });
+  }
+
+  function update_task(task_id, field_name, value, csrf) {
+    var post_data = {
+      task_id: task_id,
+      field_name: field_name,
+      value: value,
+    };
+
+    console.log(post_data);
+
+    return fetch("/task/update_task/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrf,
+        },
+        body: JSON.stringify(post_data),
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        return data;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        return {
+          status: "error"
+        };
+      });
+  }
+
+  function loadElements() {
+    loadPendingTasks();
+    loadDoneTasks();
+  }
+
+  async function loadPendingTasks() {
+    const pending_tasks = await fetchTasks(false);
+    // fade out elements with class lading-container-pending
+    const loading_containers = document.querySelectorAll(
+      ".lading-container-pending"
+    );
+    loading_containers.forEach((container) => {
+      container.classList.add("fade");
+      // also set display to none
+      container.style.display = "none";
+    });
+    renderTasks(pending_tasks, "pending_tasks_holder");
+  }
+
+  async function loadDoneTasks() {
+    const done_tasks = await fetchTasks(true);
+    renderTasks(done_tasks, "done_tasks_holder");
+  }
+
+  function renderTasks(tasks, elementId) {
+    const container = document.getElementById(elementId);
+    const template = document.getElementById("task-template");
+    const fragment = document.createDocumentFragment();
+
+    tasks.forEach((task) => {
+      const taskCard = template.content.cloneNode(true);
+      // set id attribute of the element with class task-holder to be "task-" + task.id
+      taskCard.querySelector(".task-holder").id = "task-" + task.id;
+      taskCard.querySelector(".task-name").textContent = task.task_name;
+      taskCard.querySelector(".task-description").textContent = task.task_description;
+      taskCard.querySelector(".task-status-value").textContent = task.status;
+      taskCard.querySelector(".task-type-value").textContent = task.type;
+      taskCard.querySelector(".task-category-value").textContent = task.category;
+
+      // dates
+      taskCard.querySelector(".task-due-date-value").textContent = task.due_date ?
+        dateTostring(task.due_date) :
+        null;
+      taskCard.querySelector(".task-creation-date-value").textContent =
+        dateTostring(task.creation_date);
+      taskCard.querySelector(".task-modified-date-value-actual").textContent = task.modified_date;
+      taskCard.querySelector(".task-modified-date-value").textContent =
+        task.modified_date ? dateTostring(task.modified_date) : null;
+      taskCard.querySelector(".task-completed-date-value").textContent =
+        task.completed_date ? dateTostring(task.completed_date) : null;
+      taskCard.querySelector(".task-rooms-value").textContent = Object.entries(
+          task.rooms
+        )
+        .map(([id, name]) => `${name} (ID: ${id})`)
+        .join(", ");
+
+      if (task.status == "done") {
+        // hide "mark as done" button
+        taskCard.querySelector(".mark-as-done-btn").style.display = "none";
+      } else {
+        // hide completed label and value from template
+        taskCard.querySelector(".task-completed-date-label").style.display =
+          "none";
+        taskCard.querySelector(".task-completed-date-value").style.display =
+          "none";
+      }
+
+      //* hide due date if value is not set or 'N/A'
+      if (task.due_date == null || task.due_date == "N/A") {
+        taskCard.querySelector(".task-due-date-label").style.display = "none";
+        taskCard.querySelector(".task-due-date-value").style.display = "none";
+      }
+
+      //* Hide created/modified fields and labels entirely.
+      // Comment these lines for debugging purposes.
+      //taskCard.querySelector(".task-creation-date-label").style.display = "none";
+      //taskCard.querySelector(".task-creation-date-value").style.display = "none";
+      //taskCard.querySelector(".task-modified-date-label").style.display = "none";
+      //taskCard.querySelector(".task-modified-date-value").style.display = "none";
+
+      //* Set the data task id value in each task field.
+      const taskFields = taskCard.querySelectorAll(".task-field");
+
+      taskFields.forEach((taskField) => {
+        taskField.setAttribute("data-task-id", task.id);
+      });
+
+      //* check it modified date is newer than the latest timestamp and update the latest timestamp
+      if (!latestTimestamp || task.modified_date > latestTimestamp) {
+        latestTimestamp = task.modified_date;
+      }
+
+      fragment.appendChild(taskCard);
+    });
+
+    container.appendChild(fragment);
+
+    fieldsLoaded++;
+
+    if (fieldsLoaded == 2) {
+      initialize_fields();
+    }
+  }
+
+  /* Helper */
+  function dateTostring(date) {
+    const now = new Date();
+    const targetDate = new Date(date);
+
+    const diff = targetDate - now;
+    const absDiff = Math.abs(diff);
+
+    const minutes = Math.floor(absDiff / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30); // Approximate months
+    const years = Math.floor(days / 365); // Approximate years
+
+    if (diff > 0) {
+      if (years > 0) {
+        return `In ${years} year${years > 1 ? "s" : ""}`;
+      } else if (months > 0) {
+        return `In ${months} month${months > 1 ? "s" : ""}`;
+      } else if (days > 0) {
+        return `In ${days} day${days > 1 ? "s" : ""}`;
+      } else if (hours > 0) {
+        return `In ${hours} hour${hours > 1 ? "s" : ""}`;
+      } else {
+        return `In ${minutes} minute${minutes > 1 ? "s" : ""}`;
+      }
+    } else {
+      if (years > 0) {
+        return `${years} year${years > 1 ? "s" : ""} ago`;
+      } else if (months > 0) {
+        return `${months} month${months > 1 ? "s" : ""} ago`;
+      } else if (days > 0) {
+        return `${days} day${days > 1 ? "s" : ""} ago`;
+      } else if (hours > 0) {
+        return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+      } else {
+        return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+      }
+    }
+  }
+
+  /* Helper */
+  function getRoomID() {
+    var room_id_holder = document.getElementById("room_id_holder");
+    var room_id = null;
+
+    if (room_id_holder) {
+      room_id = room_id_holder.getAttribute("room_id");
     }
 
-    function renderTasks(tasks, elementId) {
-        const container = document.getElementById(elementId);
-        const template = document.getElementById("task-template");
-        const fragment = document.createDocumentFragment();
+    return room_id;
+  }
 
-        tasks.forEach(task => {
-            const taskCard = template.content.cloneNode(true);
-            taskCard.querySelector(".task-name").textContent = task.name;
-            taskCard.querySelector(".task-description").textContent = task.description;
-            taskCard.querySelector(".task-status-value").textContent = task.status;
-            taskCard.querySelector(".task-type-value").textContent = task.type;
-            taskCard.querySelector(".task-category-value").textContent = task.category;
-            taskCard.querySelector(".task-due-date-value").textContent = task.due_date ? task.due_date : 'N/A';
-            taskCard.querySelector(".task-creation-date-value").textContent = task.creation_date;
-            taskCard.querySelector(".task-modified-date-value").textContent = task.modified_date ? task.modified_date : 'N/A';
-            taskCard.querySelector(".task-completed-date-value").textContent = task.completed_date ? task.completed_date : 'N/A';
-            taskCard.querySelector(".task-rooms-value").textContent = Object.entries(task.rooms).map(([id, name]) => `${name} (ID: ${id})`).join(', ');
+  /* Helper */
+  function getFloorID() {
+    var floor_id_holder = document.getElementById("floor_id_holder");
+    var floor_id = null;
 
-            const taskFields = taskCard.querySelectorAll(".task-field");
-
-            taskFields.forEach(taskField => {
-                taskField.setAttribute("data-task-id", task.id);
-            });
-
-            fragment.appendChild(taskCard);
-        });
-
-        container.appendChild(fragment);
+    if (floor_id_holder) {
+      floor_id = floor_id_holder.getAttribute("floor_id");
     }
 
-    function getRoomID() {
-        var room_id_holder = document.getElementById("room_id_holder");
-        var room_id = null;
+    return floor_id;
+  }
 
-        if (room_id_holder) {
-            room_id = room_id_holder.getAttribute("room_id");
+  /* Helper */
+  function fetchTasks(completed = false) {
+    let floor_id = getFloorID();
+    let room_id = getRoomID();
+    let url = new URL(`/task/fetch_tasks`, window.location.origin);
+
+    if (floor_id) {
+      url.searchParams.append("floor_id", floor_id);
+    }
+
+    if (room_id) {
+      url.searchParams.append("room_id", room_id);
+    }
+
+    url.searchParams.append("completed", completed);
+
+    // Return the fetch promise
+    return fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
         }
-
-        return room_id;
-    }
-
-
-    function getFloorID() {
-        var floor_id_holder = document.getElementById("floor_id_holder")
-        var floor_id = null;
-
-        if (floor_id_holder) {
-            floor_id = floor_id_holder.getAttribute("floor_id");
-        }
-
-        return floor_id;
-    }
-
-    function fetchTasks(completed = false) {
-        let floor_id = getFloorID();
-        let room_id = getRoomID();
-
-        // Construct the URL with parameters
-        let url = new URL(`/task/fetch_tasks`, window.location.origin); // Ensure URL is correctly pointed to your Django view URL
-
-        if (floor_id) {
-            url.searchParams.append('floor_id', floor_id);
-        }
-
-        if (room_id) {
-            url.searchParams.append('room_id', room_id);
-        }
-
-        url.searchParams.append('completed', completed);
-
-        console.log("Fetching tasks for", completed ? "completed" : "incomplete", "from", url);
-
-        // Return the fetch promise
-        return fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(tasks => {
-                console.log('Tasks:', tasks);
-                return tasks;
-            })
-            .catch(error => {
-                console.error('Failed to fetch tasks:', error);
-                return [];
-            });
-    }
+        return response.json();
+      })
+      .then((tasks) => {
+        console.log("Tasks:", tasks);
+        return tasks;
+      })
+      .catch((error) => {
+        console.error("Failed to fetch tasks:", error);
+        return [];
+      });
+  }
 </script>

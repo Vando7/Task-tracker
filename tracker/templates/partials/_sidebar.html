@@ -1,5 +1,4 @@
 {% load static i18n %}
-
 <div class="d-flex flex-column flex-shrink-0 p-3 bg-body-tertiary sidebar" style="width:250px">
     <div class="dropdown" id="userSidebarDropdown">
         <a href="#" class="d-flex align-items-center link-body-emphasis text-decoration-none dropdown-toggle"
@@ -39,7 +38,7 @@
         </ul>
     </div>
     <hr />
-    <ul class="nav nav-pills flex-column mb-auto ps-0">
+    <ul class="nav nav-pills flex-column mb-auto ps-0 sidebar-ul">
         <li class="nav-item">
             <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#NewTaskModal"
                 style="width: 100%;">New task 📝
@@ -60,8 +59,10 @@
                 <div class="btn-group sidebar-floor-btn-group" style="filter: drop-shadow(0 0 0.35rem {{ floor.color }});">
 
                     <a href="{% url 'task:floor' floor.id %}"
-                        class="btn sidebar-floor-button sidebar-btn-group-{{ floor.id }}" style="background-color: {{ floor.color }};
-                            border-radius:20px;">
+                        class="btn sidebar-floor-button sidebar-btn-group-{{ floor.id }}"
+                        style="background-color: {{ floor.color }}50;
+                               border-color:{{ floor.color }}99;
+                               border-radius:20px;">
                         <strong>{{ floor.icon }} {{ floor.name }}</strong>
                     </a>
 
@@ -74,8 +75,8 @@
                         data-bs-toggle="collapse"
                         floor-id="{{ floor.id }}"
                         style="
-                            background-color:{{ floor.color }};
-                            border-color:{{ floor.color }};
+                            background-color:{{ floor.color }}50;
+                            border-color:{{ floor.color }}99;
                             border-radius:20px;
                             margin-left:5px;
                         ">
@@ -95,10 +96,10 @@
 
             <div class="nav flex-column ms-3 collapse-sidebar collapse show"
                 id="collapsible-sidebar-{{ floor.id }}">
-                <ul style="display:block">
+                <ul style="display:block; padding-left:10px" class="sidebar-ul">
                     {% for room in floor.rooms %}
                     <li class="nav-item">
-                        <a href="#" class="nav-link" style="color:#E0E0E0">{{ room.name }}</a>
+                        <a href="#" class="nav-link" style="color:#E0E0E0">{{ room.icon }} {{ room.name }}</a>
                     </li>
                     {% endfor %}
                 </ul>
@@ -109,6 +110,10 @@
 </div>
 
 <style>
+    .sidebar {
+      box-shadow: 10px 0 20px rgba(0, 0, 0, 0.5);
+    }
+
     .sidebar-floor-expander {
         border-left: darkgrey solid 1px;
         width: 20%;
@@ -120,5 +125,9 @@
 
     .sidebar-floor-btn-group {
         width: 100%;
+    }
+
+    .sidebar-ul {
+        list-style-type: none;
     }
 </style>
