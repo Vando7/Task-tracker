@@ -55,7 +55,7 @@
         </li>
         {% for floor in request.session.sidebar_floors %}
         <div class="sidebar-floor-dropdown-container" style="margin-bottom:15px">
-            <li class="nav-item" style="height:38px;"">
+            <li class="nav-item" style="height:38px;">
                 <div class="btn-group sidebar-floor-btn-group" style="filter: drop-shadow(0 0 0.35rem {{ floor.color }});">
 
                     <a href="{% url 'task:floor' floor.id %}"
@@ -80,7 +80,7 @@
                             border-radius:20px;
                             margin-left:5px;
                         ">
-                        ^
+                        <i class="bi bi-chevron-up"></i>
                     </a>
                     <style>
                         .sidebar-btn-group-{{ floor.id }}{

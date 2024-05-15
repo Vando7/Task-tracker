@@ -107,7 +107,20 @@
                 data-task-id="0"
                 data-field-name="status"
                 data-value="done"
-                csrf="{{ csrf_token }}">✅</button>
+                csrf="{{ csrf_token }}"
+                style="box-shadow: inset 0px 0px 20px 2px darkgreen;">
+                <i class="bi bi-check-lg" style="font-size: 30px; text-shadow: 0px 0px 6px black;"></i>
+        </button>
+        <!-- Mark as done button -->
+        <button class="btn btn-sm btn-outline-info mark-as-todo-btn task-field"
+                type="button"
+                data-task-id="0"
+                data-field-name="status"
+                data-value="to_do"
+                csrf="{{ csrf_token }}"
+                style="box-shadow: inset 0px 0px 20px 2px darkcyan;">
+                <i class="bi bi-arrow-repeat" style="font-size: 30px; text-shadow: 0px 0px 6px black;"></i>
+        </button>
       </div>
       <div class="card-body collapse show">
         <div class="task-field-container">
@@ -117,7 +130,7 @@
                 csrf="{{ csrf_token }}"
                 data-field-name="task_description"></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
           <p class="task-status-label task-label">Status</p>
           <span class="task-status-value task-field"
                 contenteditable="true"
@@ -125,7 +138,7 @@
                 csrf="{{ csrf_token }}"
                 data-field-name="status"></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
           <div class="task-type-label task-label">Type</div>
           <span class="task-type-value task-field"
                 contenteditable="true"
@@ -133,7 +146,7 @@
                 csrf="{{ csrf_token }}"
                 data-field-name="type"></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
           <div class="task-category-label task-label">Category</div>
           <span class="task-category-value task-field"
                 contenteditable="true"
@@ -141,49 +154,51 @@
                 csrf="{{ csrf_token }}"
                 data-field-name="category"></span>
         </div>
-        <div class="ttask-field-container">
+        <div class="task-field-container hideable">
           <div class="task-due-date-label task-label">Due</div>
           <span class="task-due-date-value task-field"
-                contenteditable="true"
                 data-task-id="0"
                 csrf="{{ csrf_token }}"
                 data-field-name="due_date"></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
+          <div class="task-due-date-label task-label">Due</div>
+          <span class="task-due-date-value-actual task-field"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="due_date"></span>
+        </div>
+        <div class="task-field-container hideable">
           <div class="task-creation-date-label task-label">Created</div>
           <span class="task-creation-date-value task-field"
-                contenteditable="true"
                 data-task-id="0"
                 csrf="{{ csrf_token }}"
                 data-field-name="creation_date"></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
           <div class="task-modified-date-label task-label">Modified</div>
           <span class="task-modified-date-value task-field"
-                contenteditable="true"
                 data-task-id="0"
                 csrf="{{ csrf_token }}"
                 data-field-name="modified_date"
                 ></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
           <div class="task-modified-date-label task-label">Modified ts</div>
           <span class="task-modified-date-value-actual task-field"
-                contenteditable="true"
                 data-task-id="0"
                 csrf="{{ csrf_token }}"
                 data-field-name="modified_date"
                 ></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
           <div class="task-completed-date-label task-label">Completed</div>
           <span class="task-completed-date-value task-field"
-                contenteditable="true"
                 data-task-id="0"
                 csrf="{{ csrf_token }}"
                 data-field-name="completed_date"></span>
         </div>
-        <div class="task-field-container">
+        <div class="task-field-container hideable">
           <div class="task-rooms-label task-label">Rooms</div>
           <span class="task-rooms-value task-field"
                 contenteditable="true"
@@ -192,13 +207,18 @@
                 data-field-name="rooms"></span>
         </div>
       </div>
+
+      <div class="due-period-visible"></div>
+      <div class="expand-task-card-button task-field" data-task-id="0"><i class="bi bi-arrow-down-circle expand-task-card-button-icon"></i></div>
     </div>
   </div>
 </template>
 <script>
   var fieldsLoaded = 0;
+  var noChangesCounter = 0;
+  var updateIntervalSeconds = 10;
   let latestTimestamp = null;
-  const updateIntervalSeconds = 1;
+
 
   document.addEventListener("DOMContentLoaded", function() {
     console.log("DOMContentLoaded");
@@ -247,6 +267,7 @@
       console.log("task " + task.id + " has been modified - updating");
 
       const taskFields = taskCard.querySelectorAll(".task-field");
+
       taskFields.forEach((taskField) => {
         const taskFieldValue = taskField.textContent;
 
@@ -254,10 +275,95 @@
         console.log(taskFieldValue);
         console.log(task[taskField.getAttribute("data-field-name")]);
 
+        //* skip following fields, they will be handled differently -
+        if(taskField.classList.contains("mark-as-todo-btn")) {
+          // if task is done and task type is single then make redo button visible
+          if(task.status == "done" && task.type == "recurring") {
+            taskField.style.display = "inline";
+          } else {
+            taskField.style.display = "none";
+          }
+
+          return;
+        }
+
+        if (taskField.classList.contains("mark-as-done-btn")) {
+          // if task is not done then make the mark as done button visible
+          const duePeriodElement = taskCard.querySelector(".due-period-visible");
+          console.log("HOLYYYYYYYYYYY")
+          console.log(task)
+          console.log("HOLYYYYYYYYYYY")
+          if (task.status != "done") {
+            // find element with class 'due-period-visible' within the card and make it visible
+            if(task.due_date) {
+              duePeriodElement.innerHTML = dateTostring(task.due_date) + '<i class="bi bi-clock-history"></i>';
+            }
+
+            taskField.style.display = "inline";
+          } else {
+            duePeriodElement.innerHTML = "";
+
+            taskField.style.display = "none";
+          }
+
+          return;
+        }
+
+        //  the due date indicator - should be set to the string value with teh actual hidden value updated.
+        if(taskField.classList.contains("task-due-date-value")) {
+          taskField.textContent = dateTostring(task[taskField.getAttribute("data-field-name")]);
+          return;
+        }
+
+        if(taskField.classList.contains("task-due-date-value-actual")) {
+          taskField.textContent = task[taskField.getAttribute("data-field-name")];
+          return;
+        }
+
+        // handle modified and modified ts fields
+        if(taskField.classList.contains("task-modified-date-value")) {
+          taskField.textContent = dateTostring(task[taskField.getAttribute("data-field-name")]);
+          return;
+        }
+
+        if(taskField.classList.contains("task-modified-date-value-actual")) {
+          taskField.textContent = task[taskField.getAttribute("data-field-name")];
+          return;
+        }
+        //  rooms
+        if(taskField.classList.contains("task-rooms-value")) {
+          taskField.textContent = Object.entries(task[taskField.getAttribute("data-field-name")]).map(([id, name]) => `${name} (ID: ${id})`).join(", ");
+          return;
+        }
+
+        // due date indicator
+        if(taskField.classList.contains("due-period-visible")) {
+          taskField.innerHTML = dateTostring(task[taskField.getAttribute("data-field-name")]) + '<i class="bi bi-clock-history"></i>';
+          return;
+        }
+
+        //* do nothing for the expand button
+        if(taskField.classList.contains("expand-task-card-button")) {
+          return;
+        }
+
         // set field value:
         taskField.textContent = task[taskField.getAttribute("data-field-name")];
       });
+
+      const taskCardElement = taskCard.querySelector(".card");
+      flashCard(taskCardElement, 2);
     });
+  }
+
+  // make the background of the card flash
+  function flashCard(taskCardElement, flashCount){
+    // use animation param, use 'loading' keyframe
+    taskCardElement.style.animation = `loading 1s linear ${flashCount}`;
+    // after animation ends remove animation from style so it can be executed again:
+    setTimeout(() => {
+      taskCardElement.style.animation = "";
+    }, 1000);
   }
 
   async function fetchLatestTimestamp() {
@@ -295,14 +401,16 @@
    */
   async function checkForUpdates() {
     let newTimestamp = await fetchLatestTimestamp();
-    console.log("new timestamp: ", newTimestamp);
-    console.log("latest timestamp: ", latestTimestamp);
+    // console.log("new timestamp: ", newTimestamp);
+    // console.log("latest timestamp: ", latestTimestamp);
+
     if (newTimestamp && newTimestamp !== latestTimestamp) {
       latestTimestamp = newTimestamp;
-      // Fetch and refresh tasks only if there is an update
+
       updateTaskList();
-      console.log("UPDATE DETECTED POGGGGGGGGGGGGG");
+      return;
     }
+
   }
   // Periodic check for updates
   setInterval(checkForUpdates, updateIntervalSeconds * 1000);
@@ -329,14 +437,103 @@
         console.log(fieldName);
         console.log(value);
         update_task(taskId, fieldName, value, csrf);
+
+        // make the entire card slowly fade out
+        var cardHolder = this.parentElement.parentElement;
+        cardHolder.style.opacity = 1;
+        setTimeout(function() {
+          cardHolder.style.opacity = 0;
+        },
+          1000);
+
+        // move card element to the top of the completed tasks holder
+        var completedTasksHolder = document.getElementById("done_tasks_holder");
+        var cardHolder = document.getElementById("task-" + taskId);
+
+        // append to first element in the completed tasks holder
+        completedTasksHolder.insertBefore(cardHolder, completedTasksHolder.firstElementChild);
+
+        // make the card fade in
+        cardHolder.style.opacity = 0;
+        setTimeout(function() {
+          cardHolder.style.opacity = 1;
+        },
+          1000);
+
+
       });
     });
 
-    const editableSpans = document.querySelectorAll(
-      'span[contenteditable="true"]'
-    );
+    // Mark as to_do buttons.
+    var markAsToDoBtns = document.querySelectorAll(".mark-as-todo-btn");
 
-    // Editable spans.
+    markAsToDoBtns.forEach(function(markAsToDoBtn) {
+      console.log("Mark as to_do button found");
+      markAsToDoBtn.addEventListener("click", function() {
+        console.log("Mark as to_do button clicked");
+        var taskId = this.getAttribute("data-task-id");
+        var fieldName = this.getAttribute("data-field-name");
+        var value = this.getAttribute("data-value");
+        var csrf = this.getAttribute("csrf");
+        console.log("Marking task as to_do");
+        console.log(taskId);
+        console.log(fieldName);
+        console.log(value);
+        update_task(taskId, fieldName, value, csrf);
+
+        // make the entire card slowly fade out
+        var cardHolder = this.parentElement.parentElement;
+        cardHolder.style.opacity = 1;
+        setTimeout(function() {
+          cardHolder.style.opacity = 0;
+        },
+          1000);
+
+        // move card element to the top of the pending  tasks holder
+        var pendingTasksHolder = document.getElementById("pending_tasks_holder");
+        var cardHolder = document.getElementById("task-" + taskId);
+
+        // append to first element in the pending tasks holder
+        pendingTasksHolder.insertBefore(cardHolder, pendingTasksHolder.firstElementChild);
+
+        // make the card fade in
+        cardHolder.style.opacity = 0;
+        setTimeout(function() {
+          cardHolder.style.opacity = 1;
+        },
+          1000);
+      });
+    });
+
+
+    // Expand task card button.
+    const expandTaskCardButton = document.querySelectorAll(".expand-task-card-button");
+    expandTaskCardButton.forEach(function(expandTaskCardButton) {
+      expandTaskCardButton.addEventListener("click", function() {
+        const arrowUpIcon = '<i class="bi bi-arrow-up-circle expand-task-card-button-icon"></i>';
+        const arrowDownIcon = '<i class="bi bi-arrow-down-circle expand-task-card-button-icon"></i>';
+        const taskId = this.getAttribute("data-task-id");
+        const taskCardHolder = document.getElementById("task-" + taskId);
+        const hideableElements = taskCardHolder.querySelectorAll(".hideable");
+
+        if(this.innerHTML === arrowDownIcon) {
+          console.log("display elements");
+          this.innerHTML = arrowUpIcon;
+          hideableElements.forEach(function(hideableElement) {
+            hideableElement.classList.add("show");
+          });
+        } else {
+          console.log("hide elements");
+          this.innerHTML = arrowDownIcon;
+          hideableElements.forEach(function(hideableElement) {
+            hideableElement.classList.remove("show");
+          });
+        }
+      });
+    });
+
+
+    //* Handle editable spans.
     function handleFocus(event) {
       event.target.dataset.oldValue = event.target.textContent;
     }
@@ -351,8 +548,9 @@
       const oldValue = event.target.dataset.oldValue;
       const newValue = event.target.textContent;
 
+      // Debug print
+      // console.log(`Old Value: ${oldValue}, New Value: ${newValue}`);
       if (oldValue == newValue) {
-        console.log(`Old Value: ${oldValue}, New Value: ${newValue}`);
         // No changes made.
         return;
       }
@@ -371,16 +569,13 @@
 
       const response = await update_task(task_id, field_name, newValue, csrf);
       const response_json = await response.json;
-      console.log("result:");
-      console.log(response_json);
-      /*if(result.status == "error") {
-            console.log("Error updating task");
-            console.log(result);
-            spanElement.textContent = oldValue;
-        }*/
     }
 
-    // Add event listeners to each span
+    // Add event listeners to each editable span
+    const editableSpans = document.querySelectorAll(
+      'span[contenteditable="true"]'
+    );
+
     editableSpans.forEach((span) => {
       span.addEventListener("focus", handleFocus);
       span.addEventListener("blur", handleEdit);
@@ -429,7 +624,7 @@
       ".lading-container-pending"
     );
     loading_containers.forEach((container) => {
-      container.classList.add("fade");
+       container.classList.add("fade");
       // also set display to none
       container.style.display = "none";
     });
@@ -448,8 +643,11 @@
 
     tasks.forEach((task) => {
       const taskCard = template.content.cloneNode(true);
+
       // set id attribute of the element with class task-holder to be "task-" + task.id
       taskCard.querySelector(".task-holder").id = "task-" + task.id;
+
+      // task data
       taskCard.querySelector(".task-name").textContent = task.task_name;
       taskCard.querySelector(".task-description").textContent = task.task_description;
       taskCard.querySelector(".task-status-value").textContent = task.status;
@@ -457,31 +655,30 @@
       taskCard.querySelector(".task-category-value").textContent = task.category;
 
       // dates
-      taskCard.querySelector(".task-due-date-value").textContent = task.due_date ?
-        dateTostring(task.due_date) :
-        null;
-      taskCard.querySelector(".task-creation-date-value").textContent =
-        dateTostring(task.creation_date);
+      taskCard.querySelector(".task-due-date-value").textContent = task.due_date ? dateTostring(task.due_date) : null;
+      taskCard.querySelector(".task-due-date-value-actual").textContent = task.due_date;
+      taskCard.querySelector(".task-creation-date-value").textContent = dateTostring(task.creation_date);
       taskCard.querySelector(".task-modified-date-value-actual").textContent = task.modified_date;
-      taskCard.querySelector(".task-modified-date-value").textContent =
-        task.modified_date ? dateTostring(task.modified_date) : null;
-      taskCard.querySelector(".task-completed-date-value").textContent =
-        task.completed_date ? dateTostring(task.completed_date) : null;
-      taskCard.querySelector(".task-rooms-value").textContent = Object.entries(
-          task.rooms
-        )
-        .map(([id, name]) => `${name} (ID: ${id})`)
-        .join(", ");
+      taskCard.querySelector(".task-modified-date-value").textContent = task.modified_date ? dateTostring(task.modified_date) : null;
+      taskCard.querySelector(".task-completed-date-value").textContent = task.completed_date ? dateTostring(task.completed_date) : null;
+
+      // rooms
+      taskCard.querySelector(".task-rooms-value").textContent = Object.entries( task.rooms ).map(([id, name]) => `${name} (ID: ${id})`).join(", ");
 
       if (task.status == "done") {
         // hide "mark as done" button
         taskCard.querySelector(".mark-as-done-btn").style.display = "none";
+
+        // hide "mark as to_do" button
+        if(task.type == "single") {
+          taskCard.querySelector(".mark-as-todo-btn").style.display = "none";
+        }
       } else {
-        // hide completed label and value from template
-        taskCard.querySelector(".task-completed-date-label").style.display =
-          "none";
-        taskCard.querySelector(".task-completed-date-value").style.display =
-          "none";
+        // if task is not done, hide completed date, and redo button
+        taskCard.querySelector(".mark-as-todo-btn").style.display = "none";
+        taskCard.querySelector(".task-completed-date-label").style.display = "none";
+        taskCard.querySelector(".task-completed-date-value").style.display = "none";
+        taskCard.querySelector(".due-period-visible").innerHTML = task.due_date ? dateTostring(task.due_date) + ' <i class="bi bi-clock-history"></i>' : "";
       }
 
       //* hide due date if value is not set or 'N/A'
@@ -490,8 +687,9 @@
         taskCard.querySelector(".task-due-date-value").style.display = "none";
       }
 
+
       //* Hide created/modified fields and labels entirely.
-      // Comment these lines for debugging purposes.
+      // Comment these lines for debugging purposes:
       //taskCard.querySelector(".task-creation-date-label").style.display = "none";
       //taskCard.querySelector(".task-creation-date-value").style.display = "none";
       //taskCard.querySelector(".task-modified-date-label").style.display = "none";
@@ -537,15 +735,15 @@
 
     if (diff > 0) {
       if (years > 0) {
-        return `In ${years} year${years > 1 ? "s" : ""}`;
+        return `${years} year${years > 1 ? "s" : ""}`;
       } else if (months > 0) {
-        return `In ${months} month${months > 1 ? "s" : ""}`;
+        return `${months} month${months > 1 ? "s" : ""}`;
       } else if (days > 0) {
-        return `In ${days} day${days > 1 ? "s" : ""}`;
+        return `${days} day${days > 1 ? "s" : ""}`;
       } else if (hours > 0) {
-        return `In ${hours} hour${hours > 1 ? "s" : ""}`;
+        return `${hours} hour${hours > 1 ? "s" : ""}`;
       } else {
-        return `In ${minutes} minute${minutes > 1 ? "s" : ""}`;
+        return `${minutes} minute${minutes > 1 ? "s" : ""}`;
       }
     } else {
       if (years > 0) {
@@ -619,4 +817,5 @@
         return [];
       });
   }
+
 </script>

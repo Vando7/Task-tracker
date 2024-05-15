@@ -21,9 +21,76 @@
 }
 
 .card-header {
-  border: 0;
   font-weight: bold;
   font-size: 20px;
+  display:flex;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  padding: 0px;
+  justify-content: space-between;
+  padding: 0px 0px 0px 0px;
+}
+
+.card-header span{
+  margin:auto;
+  padding: 10px;
+}
+
+.mark-as-done-btn, .mark-as-todo-btn{
+  border:0;
+  border-radius: 0px 5px 0px 0px;
+}
+
+.due-period-visible{
+  font-size:15px;
+  display: inline;
+  position:absolute;
+  color:deeppink;
+  top:-12px;
+  left: -5px;
+  text-shadow: 4px 2px 4px #000000;
+}
+
+.expand-task-card-button {
+  position: absolute;
+  margin-left: auto;
+  margin-right: auto;
+  bottom: -17px;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.hideable {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+  opacity: 0;
+}
+
+.hideable.show {
+  max-height: 1000px; /* Set a maximum height that can accommodate your content */
+  opacity: 1;
+}
+
+.expand-task-card-button-icon:hover {
+  /* change mouse pointer to hand */
+  cursor: pointer;
+}
+
+.expand-task-card-button-icon:before {
+  font-size:25px;
+  text-shadow: 0px 0px 10px hsl(0, 0%, 65%);
+  color: #dee2e6e0;
+  border-radius: 50%;
+  transition: 0.5s;
+}
+
+.expand-task-card-button-icon:hover:before {
+  font-size: 30px;
+  text-shadow: 0px 0px 10px hsl(0, 0%, 100%);
+  color: #dee2e6e0;
+  border-radius: 50%;
 }
 
 .card {
@@ -32,13 +99,13 @@
 }
 
 .card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 
 .card-loading-main {
   width: 200px;
   height: 300px;
-  border: 1px solid #424549;
+  border: 0;
   /* Darker border for dark mode */
   border-radius: 5px;
   background-color: #2A2A2A;

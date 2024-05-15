@@ -133,25 +133,26 @@ function initSidebar() {
 
     // Set the initial state based on the cookie
     var state = getCookie("sidebar-collapse-" + floorId);
-    const expandSymbol = "V";
-    const collapseSymbol = "^";
+    const expandSymbol = '<i class="bi bi-chevron-down"></i>';
+    const collapseSymbol = '<i class="bi bi-chevron-up"></i>';
 
     if (state === "collapsed") {
-      sidebarFloorExpander.innerText = expandSymbol;
+      sidebarFloorExpander.innerHTML = expandSymbol;
       bsCollapse.hide();
     } else {
-      sidebarFloorExpander.innerText = collapseSymbol;
+      sidebarFloorExpander.innerHTML = collapseSymbol;
       bsCollapse.show();
     }
 
     // Add click event listener
     sidebarFloorExpander.addEventListener("click", function () {
-      if (this.innerText === expandSymbol) {
-        this.innerText = collapseSymbol;
+      console.log("inntertext: ", this.innerHTML);
+      if (this.innerHTML === expandSymbol) {
+        this.innerHTML = collapseSymbol;
         bsCollapse.show();
         setCookie("sidebar-collapse-" + floorId, "expanded", 7); // Set cookie for 7 days
       } else {
-        this.innerText = expandSymbol;
+        this.innerHTML = expandSymbol;
         bsCollapse.hide();
         setCookie("sidebar-collapse-" + floorId, "collapsed", 7); // Set cookie for 7 days
       }
