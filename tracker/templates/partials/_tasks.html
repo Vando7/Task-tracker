@@ -15,7 +15,7 @@
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main" style="width:100%;">
         <div class="card-header card-loading-header">
-          <div class="loading-rectangle"></div>
+          <div class="loading-rectangle loading-rectangle-header"></div>
         </div>
         <div class="card-body card-loading-body">
           <div class="loading-rectangle" style="width: 70%;"></div>
@@ -27,7 +27,7 @@
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main " style="width:100%;">
         <div class="card-header card-loading-header">
-          <div class="loading-rectangle"></div>
+          <div class="loading-rectangle loading-rectangle-header"></div>
         </div>
         <div class="card-body card-loading-body">
           <div class="loading-rectangle" style="width: 70%;"></div>
@@ -39,7 +39,7 @@
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main" style="width:100%;">
         <div class="card-header card-loading-header">
-          <div class="loading-rectangle"></div>
+          <div class="loading-rectangle loading-rectangle-header"></div>
         </div>
         <div class="card-body card-loading-body">
           <div class="loading-rectangle" style="width: 70%;"></div>
@@ -57,7 +57,7 @@
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main" style="width:100%;">
         <div class="card-header card-loading-header">
-          <div class="loading-rectangle"></div>
+          <div class="loading-rectangle loading-rectangle-header"></div>
         </div>
         <div class="card-body card-loading-body">
           <div class="loading-rectangle" style="width: 70%;"></div>
@@ -69,7 +69,7 @@
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main " style="width:100%;">
         <div class="card-header card-loading-header">
-          <div class="loading-rectangle"></div>
+          <div class="loading-rectangle loading-rectangle-header"></div>
         </div>
         <div class="card-body card-loading-body">
           <div class="loading-rectangle" style="width: 70%;"></div>
@@ -81,7 +81,7 @@
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main" style="width:100%;">
         <div class="card-header card-loading-header">
-          <div class="loading-rectangle"></div>
+          <div class="loading-rectangle loading-rectangle-header"></div>
         </div>
         <div class="card-body card-loading-body">
           <div class="loading-rectangle" style="width: 70%;"></div>
@@ -208,8 +208,9 @@
         </div>
       </div>
 
-      <div class="due-period-visible"></div>
-      <div class="expand-task-card-button task-field" data-task-id="0"><i class="bi bi-arrow-down-circle expand-task-card-button-icon"></i></div>
+      <div class="due-period-visible" title="Deadline"></div>
+      <div class="expand-task-card-button task-field" data-task-id="0" title="Expand"><i class="bi bi-arrow-down-circle expand-task-card-button-icon"></i></div>
+      <div class="repeatable-task-icon" title="Task is repeatable" style="display:none;"><i class="bi bi-arrow-repeat"></i></div>
     </div>
   </div>
 </template>
@@ -247,7 +248,8 @@
       const taskCard = document.getElementById(`task-${task.id}`);
 
       if (!taskCard) {
-        console.log("Task card not found");
+        // uncomment to debug
+        // console.log("Task card not found");
         return;
       }
 
@@ -256,15 +258,28 @@
         ".task-modified-date-value-actual"
       ).textContent;
 
-      console.log("pageTaskModifiedDate: " + pageTaskModifiedDate);
-      console.log("task.modified_date: " + task.modified_date);
+      // uncomment to debug
+      // console.log("pageTaskModifiedDate: " + pageTaskModifiedDate);
+      // console.log("task.modified_date: " + task.modified_date);
 
       if (pageTaskModifiedDate == task.modified_date) {
-        console.log("task " + task.id + " has not been modified continuing");
+        // uncomment to debug
+        //console.log("task " + task.id + " has not been modified continuing");
         return;
       }
 
-      console.log("task " + task.id + " has been modified - updating");
+      // uncomment to debug
+      //console.log("task " + task.id + " has been modified - updating");
+
+
+      //* Show or hide the repeatable task icon
+      const recurringTaskIcon = taskCard.querySelector(".repeatable-task-icon");
+
+      if(task.type == "recurring" && task.status == "done") {
+        recurringTaskIcon.style.display = "none";
+      } else {
+        recurringTaskIcon.style.display = "inline";
+      }
 
       const taskFields = taskCard.querySelectorAll(".task-field");
 
@@ -275,9 +290,8 @@
         console.log(taskFieldValue);
         console.log(task[taskField.getAttribute("data-field-name")]);
 
-        //* skip following fields, they will be handled differently -
+
         if(taskField.classList.contains("mark-as-todo-btn")) {
-          // if task is done and task type is single then make redo button visible
           if(task.status == "done" && task.type == "recurring") {
             taskField.style.display = "inline";
           } else {
@@ -290,9 +304,7 @@
         if (taskField.classList.contains("mark-as-done-btn")) {
           // if task is not done then make the mark as done button visible
           const duePeriodElement = taskCard.querySelector(".due-period-visible");
-          console.log("HOLYYYYYYYYYYY")
-          console.log(task)
-          console.log("HOLYYYYYYYYYYY")
+
           if (task.status != "done") {
             // find element with class 'due-period-visible' within the card and make it visible
             if(task.due_date) {
@@ -679,6 +691,10 @@
         taskCard.querySelector(".task-completed-date-label").style.display = "none";
         taskCard.querySelector(".task-completed-date-value").style.display = "none";
         taskCard.querySelector(".due-period-visible").innerHTML = task.due_date ? dateTostring(task.due_date) + ' <i class="bi bi-clock-history"></i>' : "";
+
+        if(task.type == "recurring") {
+          taskCard.querySelector(".repeatable-task-icon").style.display = "inline";
+        }
       }
 
       //* hide due date if value is not set or 'N/A'
