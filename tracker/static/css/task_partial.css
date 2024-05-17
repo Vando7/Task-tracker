@@ -24,44 +24,122 @@
 .card-header {
   font-weight: bold;
   font-size: 20px;
-  display:flex;
-  flex-direction:row;
-  flex-wrap:nowrap;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   padding: 0px;
   justify-content: space-between;
   padding: 0px 0px 0px 0px;
+  text-shadow: 0px 0px 4px black;
+  border: 0px;
 }
 
-.card-header span{
-  margin:auto;
+.card-header span {
+  margin: auto;
   padding: 10px;
 }
 
-.mark-as-done-btn, .mark-as-todo-btn{
-  border:0;
+.mark-as-done-btn,
+.mark-as-todo-btn {
+  border: 0;
   border-radius: 0px 5px 0px 0px;
 }
 
-.due-period-visible{
-  font-size:15px;
+.mark-as-done-btn.active {
+  animation: glow-done 0.2s ease-in-out alternate;
+}
+
+@keyframes glow-done {
+  0% {
+    box-shadow:
+      0 0 0px #28a745,
+      0 0 1px #28a745,
+      0 0 2px #28a745,
+      0 0 3px #28a745,
+      0 0 4px #28a745,
+      0 0 5px #28a745,
+      0 0 6px #28a745;
+  }
+
+  100% {
+    box-shadow:
+      0 0 64px #28a745,
+      0 0 32px #28a745,
+      0 0 16px #28a745,
+      0 0 8px #28a745,
+      0 0 4px #28a745,
+      0 0 2px #28a745,
+      0 0 1px #28a745;
+  }
+}
+
+.mark-as-todo-btn.active {
+  animation: glow-todo 0.2s ease-in-out alternate;
+}
+
+@keyframes glow-todo {
+  0% {
+    box-shadow:
+      0 0 0px #0FAACF,
+      0 0 1px #0FAACF,
+      0 0 2px #0FAACF,
+      0 0 3px #0FAACF,
+      0 0 4px #0FAACF,
+      0 0 5px #0FAACF,
+      0 0 6px #0FAACF;
+  }
+
+  100% {
+    box-shadow:
+      0 0 64px #0FAACF,
+      0 0 32px #0FAACF,
+      0 0 16px #0FAACF,
+      0 0 8px #0FAACF,
+      0 0 4px #0FAACF,
+      0 0 2px #0FAACF,
+      0 0 1px #0FAACF;
+  }
+}
+
+.due-period-visible {
+  font-size: 15px;
   display: inline;
-  position:absolute;
-  color:deeppink;
-  top:-12px;
+  position: absolute;
+  color: deeppink;
+  top: -12px;
   left: -5px;
   text-shadow: 4px 2px 4px #000000;
   transition: 0.2s ease-in-out;
 }
 
 .due-period-visible:hover {
-  font-size:16px;
+  font-size: 16px;
+}
+
+.due-period-visible.late {
+  animation: wiggle 0.5s ease-in-out infinite; /* Infinite wiggle animation */
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+  75% {
+    transform: rotate(-1deg);
+  }
 }
 
 .expand-task-card-button {
   position: absolute;
   margin-left: auto;
   margin-right: auto;
-  bottom: -25px;
+  bottom: -26px;
   left: 0;
   right: 0;
   text-align: center;
@@ -69,19 +147,12 @@
   cursor: pointer;
 }
 
-
 .expand-task-card-button-icon {
   font-size: 25px;
   text-shadow: 0px 0px 4px hsl(0, 0%, 65%);
   color: #dee2e6e0;
   border-radius: 50%;
   transition: 0.2s ease-in-out;
-
-  /* Gradient background */
-  background: linear-gradient(rgba(255,255,255,0) 30%, rgba(255,255,255,1));
-  -webkit-background-clip: text;
-          background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .expand-task-card-button-icon:hover {
@@ -103,7 +174,7 @@
 
 .repeatable-task-icon {
   font-size: 20px;
-  color: rgb(13,202,240);
+  color: rgb(13, 202, 240);
   text-shadow: 0px 0px 3px hsl(0, 0%, 0%);
   position: absolute;
   right: -7px;
@@ -114,6 +185,10 @@
 
 .repeatable-task-icon:hover {
   text-shadow: 0px 0px 3px hsl(0, 0%, 60%);
+}
+
+.card-body {
+  padding-top: 0px;
 }
 
 .card {
@@ -131,14 +206,14 @@
   border: 0;
   /* Darker border for dark mode */
   border-radius: 5px;
-  background-color: #2A2A2A;
+  background-color: #2a2a2a;
   /* Dark card background */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   /* Stronger shadow for contrast */
 }
 
 .card-loading-header {
-  background-color: #272B2F;
+  background-color: #272b2f;
   height: 53px;
   /* Align items to the left */
 }
@@ -153,17 +228,16 @@
   height: 20px;
   margin-bottom: 8px;
   /* Space between rectangles */
-  background-color: #2A2A2A;
+  background-color: #2a2a2a;
   /* Darker rectangle for loading */
   animation: loading 1.5s infinite;
 }
 
 .loading-rectangle-header {
-  margin:15px;
+  margin: 15px;
 }
 
 @keyframes loading {
-
   0%,
   100% {
     background-color: #333;
@@ -173,4 +247,91 @@
     background-color: #444;
     /* Slightly lighter during animation */
   }
+}
+
+.congrats-banner {
+  display: none;
+  background-image: url("/static/images/congrats.webp");
+  background-color: #28a74696; /* Green background */
+  background-size: cover; /* Ensures the image covers the entire container */
+  background-position: center; /* Centers the image */
+  background-repeat: no-repeat; /* Prevents the image from repeating */
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 5px black;
+  text-shadow:
+    0px 0px 15px  rgba(0,0,0,1),
+    0px 0px 15px  rgba(0,0,0,1),
+    0px 0px 15px  rgba(0,0,0,1),
+    0px 0px 10px  rgba(0,0,0,1),
+    0px 0px 10px  rgba(0,0,0,1),
+    0px 0px 10px  rgba(0,0,0,1),
+    0px 0px 5px  rgba(0,0,0,1),
+    0px 0px 5px  rgba(0,0,0,1),
+    0px 0px 5px  rgba(0,0,0,1),
+    0px 0px 2px  rgba(0,0,0,1),
+    0px 0px 2px  rgba(0,0,0,1),
+    0px 0px 2px  rgba(0,0,0,1);
+  text-align: center;
+  margin-bottom: 40px;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.congrats-banner h1 {
+  font-size: 2em;
+  margin: 0;
+}
+
+.congrats-banner p {
+  font-size: 1.2em;
+  margin: 10px 0;
+}
+
+.special-task{
+  /* box shadows in orange, blue and green */
+  box-shadow:
+    5px 5px 30px #ffa6003b,
+    -5px -5px 30px rgba(0, 0, 255, 0.226),
+    -5px 5px 30px rgba(0, 255, 0, 0.219);
+}
+
+.urgent-task{
+  /* box shadows in orange, blue and green */
+  box-shadow:
+    10px -10px 30px rgba(255, 0, 0, 0.226),
+    -10px 10px 30px rgba(255, 102, 0, 0.226);
+}
+
+.task-category-visual {
+  padding:0;
+  margin:0;
+  margin-left: 4px;
+  font-size: 11px;
+  color: rgba(128, 128, 128, 0.63);
+}
+
+.urgent-task-visual {
+  color: salmon;
+}
+
+.special-task-visual {
+  color: olivedrab;
+}
+
+.completed-task-icon {
+  font-size: 50px;
+  color: rgb(70, 156, 0);
+  text-shadow: 0px 0px 3px hsl(0, 0%, 0%);
+  position: absolute;
+  right: -10px;
+  bottom: -30px;
+  text-align: center;
+  transition: 0.2s ease-in-out;
+}
+
+.completed-task-icon:hover {
+  font-size: 51px;
+  text-shadow: 0px 0px 10px hsl(106, 100%, 27%);
 }

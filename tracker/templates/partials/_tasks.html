@@ -12,6 +12,12 @@
               font-size: 20px;
               margin-bottom: 20px">Pending tasks</div>
   <div id="pending_tasks_holder">
+    <div id="no-tasks-congrats" class="congrats-banner">
+      <div class="congrats-content">
+        <h1>Congratulations!</h1>
+        <p>You have completed all your tasks. Great job!</p>
+      </div>
+    </div>
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main" style="width:100%;">
         <div class="card-header card-loading-header">
@@ -122,6 +128,9 @@
                 <i class="bi bi-arrow-repeat" style="font-size: 30px; text-shadow: 0px 0px 6px black;"></i>
         </button>
       </div>
+
+      <p class="task-category-visual"></p>
+
       <div class="card-body collapse show">
         <div class="task-field-container">
           <span class="task-description task-field"
@@ -209,15 +218,16 @@
       </div>
 
       <div class="due-period-visible" title="Deadline"></div>
-      <div class="expand-task-card-button task-field" data-task-id="0" title="Expand"><i class="bi bi-arrow-down-circle expand-task-card-button-icon"></i></div>
+      <div class="expand-task-card-button task-field" data-task-id="0" title="Expand"><i class="bi bi-arrow-bar-down expand-task-card-button-icon"></i></div>
       <div class="repeatable-task-icon" title="Task is repeatable" style="display:none;"><i class="bi bi-arrow-repeat"></i></div>
+      <div class="completed-task-icon" title="Task is completed" style="display:none;"><i class="bi bi-check2-circle"></i></div>
     </div>
   </div>
 </template>
 <script>
   var fieldsLoaded = 0;
   var noChangesCounter = 0;
-  var updateIntervalSeconds = 10;
+  var updateIntervalSeconds = 1;
   let latestTimestamp = null;
 
 
@@ -234,10 +244,37 @@
     const pending_tasks = await fetchTasks(false);
     const done_tasks = await fetchTasks(true);
 
+    // show/hide display banner
+    if (pending_tasks.length === 0) {
+      document.getElementById("no-tasks-congrats").style.display = "block";
+    } else {
+      document.getElementById("no-tasks-congrats").style.display = "none";
+    }
+
+
     allTasks = pending_tasks.concat(done_tasks);
     updateTasksOnPage(allTasks);
-    //addMissingTasks(allTasks);
+    addMissingTasks(allTasks);
+    initialize_fields();
   }
+
+
+  function addMissingTasks(tasks) {
+    tasks.forEach((task) => {
+      const taskCard = document.getElementById(`task-${task.id}`);
+
+      if(taskCard) {
+        return;
+      }
+
+      if(task.status == "done") {
+        renderTasks([task], "done_tasks_holder");
+      } else {
+        renderTasks([task], "pending_tasks_holder");
+      }
+    });
+  }
+
 
   function updateTasksOnPage(tasks) {
     /*
@@ -275,10 +312,66 @@
       //* Show or hide the repeatable task icon
       const recurringTaskIcon = taskCard.querySelector(".repeatable-task-icon");
 
-      if(task.type == "recurring" && task.status == "done") {
-        recurringTaskIcon.style.display = "none";
+      if(task.status == "done") {
+        taskCard.querySelector(".completed-task-icon").style.display = "inline";
       } else {
-        recurringTaskIcon.style.display = "inline";
+        taskCard.querySelector(".completed-task-icon").style.display = "none";
+      }
+
+      if(task.type == "recurring") {
+        if(task.status == "done") {
+          recurringTaskIcon.style.display = "none";
+        } else {
+          recurringTaskIcon.style.display = "inline";
+        }
+      }
+
+      if(task.category == "urgent") {
+        if(task.status !== "done") {
+          var shadowClassElement = taskCard.querySelector(".shadow");
+
+          shadowClassElement.classList.remove("shadow");
+          shadowClassElement.classList.add("urgent-task");
+          taskCard.querySelector(".task-category-visual").innerHTML = "Urgent";
+          taskCard.querySelector(".task-category-visual").classList.add("urgent-task-visual");
+
+          var cardBodyElement = taskCard.querySelector(".card-body");
+          cardBodyElement.style.paddingTop = "0px";
+        } else {
+          var shadowClassElement = taskCard.querySelector(".urgent-task");
+
+          shadowClassElement.classList.remove("urgent-task");
+          shadowClassElement.classList.add("shadow");
+          taskCard.querySelector(".task-category-visual").innerHTML = "";
+          taskCard.querySelector(".task-category-visual").classList.remove("urgent-task-visual");
+
+          var cardBodyElement = taskCard.querySelector(".card-body");
+          cardBodyElement.style.paddingTop = "10px";
+        }
+      }
+
+      if(task.category == "special") {
+        if(task.status !== "done") {
+          var shadowClassElement = taskCard.querySelector(".shadow");
+
+          shadowClassElement.classList.remove("shadow");
+          shadowClassElement.classList.add("special-task");
+          taskCard.querySelector(".task-category-visual").innerHTML = "Special";
+          taskCard.querySelector(".task-category-visual").classList.add("special-task-visual");
+
+          var cardBodyElement = taskCard.querySelector(".card-body");
+          cardBodyElement.style.paddingTop = "0px";
+        } else {
+          var shadowClassElement = taskCard.querySelector(".special-task");
+
+          shadowClassElement.classList.remove("special-task");
+          shadowClassElement.classList.add("shadow");
+          taskCard.querySelector(".task-category-visual").innerHTML = "";
+          taskCard.querySelector(".task-category-visual").classList.remove("special-task-visual");
+
+          var cardBodyElement = taskCard.querySelector(".card-body");
+          cardBodyElement.style.paddingTop = "10px";
+        }
       }
 
       const taskFields = taskCard.querySelectorAll(".task-field");
@@ -309,6 +402,13 @@
             // find element with class 'due-period-visible' within the card and make it visible
             if(task.due_date) {
               duePeriodElement.innerHTML = dateTostring(task.due_date) + '<i class="bi bi-clock-history"></i>';
+
+              // if task.due_date is in the past
+              if(duePeriodElement.innerHTML.includes("ago")) {
+                duePeriodElement.classList.add("late");
+              } else {
+                duePeriodElement.classList.remove("late");
+              }
             }
 
             taskField.style.display = "inline";
@@ -351,6 +451,10 @@
         // due date indicator
         if(taskField.classList.contains("due-period-visible")) {
           taskField.innerHTML = dateTostring(task[taskField.getAttribute("data-field-name")]) + '<i class="bi bi-clock-history"></i>';
+          // if taskfield innerhtml contains "ago" then the date is in the past
+          if( taskField.innerHTML.includes("ago") ) {
+            taskField.classList.add("late");
+          }
           return;
         }
 
@@ -438,41 +542,47 @@
 
     markAsDoneBtns.forEach(function(markAsDoneBtn) {
       console.log("Mark as done button found");
-      markAsDoneBtn.addEventListener("click", function() {
+
+      //skip if an on click event is already attached
+
+      if(markAsDoneBtn.getAttribute("has-event-listener") == "true") {
+        return;
+      }
+      markAsDoneBtn.setAttribute("has-event-listener", "true");
+
+      markAsDoneBtn.addEventListener("click", async function() {
+        markAsDoneBtn.classList.add("active");
+
+        setTimeout(function () {
+          markAsDoneBtn.classList.remove("active");
+        }, 200);
+
         console.log("Mark as done button clicked");
         var taskId = this.getAttribute("data-task-id");
         var fieldName = this.getAttribute("data-field-name");
         var value = this.getAttribute("data-value");
         var csrf = this.getAttribute("csrf");
+
+        var cardHolder = this.parentElement.parentElement;
+        var completedTasksHolder = document.getElementById("done_tasks_holder");
+        var cardHolder = document.getElementById("task-" + taskId);
+        var taskTypeValue = cardHolder.querySelector(".task-type-value").textContent;
+
+        if(taskTypeValue !== "recurring" && !confirm("Are you sure you want to mark this task as done?")) {
+          return;
+        }
+
+        console.log("taskTypeValue: ", taskTypeValue);
         console.log("Marking task as done");
         console.log(taskId);
         console.log(fieldName);
         console.log(value);
+
         update_task(taskId, fieldName, value, csrf);
-
-        // make the entire card slowly fade out
-        var cardHolder = this.parentElement.parentElement;
-        cardHolder.style.opacity = 1;
-        setTimeout(function() {
-          cardHolder.style.opacity = 0;
-        },
-          1000);
-
-        // move card element to the top of the completed tasks holder
-        var completedTasksHolder = document.getElementById("done_tasks_holder");
-        var cardHolder = document.getElementById("task-" + taskId);
+        await new Promise(r => setTimeout(r, 200));
 
         // append to first element in the completed tasks holder
         completedTasksHolder.insertBefore(cardHolder, completedTasksHolder.firstElementChild);
-
-        // make the card fade in
-        cardHolder.style.opacity = 0;
-        setTimeout(function() {
-          cardHolder.style.opacity = 1;
-        },
-          1000);
-
-
       });
     });
 
@@ -480,9 +590,18 @@
     var markAsToDoBtns = document.querySelectorAll(".mark-as-todo-btn");
 
     markAsToDoBtns.forEach(function(markAsToDoBtn) {
-      console.log("Mark as to_do button found");
-      markAsToDoBtn.addEventListener("click", function() {
-        console.log("Mark as to_do button clicked");
+      if(markAsToDoBtn.getAttribute("has-event-listener") == "true") {
+        return;
+      }
+      markAsToDoBtn.setAttribute("has-event-listener", "true");
+
+      markAsToDoBtn.addEventListener("click", async function() {
+        markAsToDoBtn.classList.add("active");
+
+        setTimeout(function () {
+          markAsToDoBtn.classList.remove("active");
+        }, 200);
+
         var taskId = this.getAttribute("data-task-id");
         var fieldName = this.getAttribute("data-field-name");
         var value = this.getAttribute("data-value");
@@ -495,25 +614,16 @@
 
         // make the entire card slowly fade out
         var cardHolder = this.parentElement.parentElement;
-        cardHolder.style.opacity = 1;
-        setTimeout(function() {
-          cardHolder.style.opacity = 0;
-        },
-          1000);
 
         // move card element to the top of the pending  tasks holder
         var pendingTasksHolder = document.getElementById("pending_tasks_holder");
         var cardHolder = document.getElementById("task-" + taskId);
 
+        // delay by 200ms to allow the animation to complete
+        await new Promise(r => setTimeout(r, 200));
+
         // append to first element in the pending tasks holder
         pendingTasksHolder.insertBefore(cardHolder, pendingTasksHolder.firstElementChild);
-
-        // make the card fade in
-        cardHolder.style.opacity = 0;
-        setTimeout(function() {
-          cardHolder.style.opacity = 1;
-        },
-          1000);
       });
     });
 
@@ -521,9 +631,16 @@
     // Expand task card button.
     const expandTaskCardButton = document.querySelectorAll(".expand-task-card-button");
     expandTaskCardButton.forEach(function(expandTaskCardButton) {
+      if(expandTaskCardButton.getAttribute("has-event-listener") == "true") {
+        return;
+      }
+
+      expandTaskCardButton.setAttribute("has-event-listener", "true");
+
       expandTaskCardButton.addEventListener("click", function() {
-        const arrowUpIcon = '<i class="bi bi-arrow-up-circle expand-task-card-button-icon"></i>';
-        const arrowDownIcon = '<i class="bi bi-arrow-down-circle expand-task-card-button-icon"></i>';
+
+        const arrowUpIcon = '<i class="bi bi-arrow-bar-up expand-task-card-button-icon"></i>';
+        const arrowDownIcon = '<i class="bi bi-arrow-bar-down expand-task-card-button-icon"></i>';
         const taskId = this.getAttribute("data-task-id");
         const taskCardHolder = document.getElementById("task-" + taskId);
         const hideableElements = taskCardHolder.querySelectorAll(".hideable");
@@ -631,20 +748,29 @@
 
   async function loadPendingTasks() {
     const pending_tasks = await fetchTasks(false);
+
     // fade out elements with class lading-container-pending
     const loading_containers = document.querySelectorAll(
       ".lading-container-pending"
     );
+
     loading_containers.forEach((container) => {
        container.classList.add("fade");
       // also set display to none
       container.style.display = "none";
     });
+
+    // show congrats banner if no tasks
+    if (pending_tasks.length === 0) {
+      document.getElementById("no-tasks-congrats").style.display = "block";
+    }
+
     renderTasks(pending_tasks, "pending_tasks_holder");
   }
 
   async function loadDoneTasks() {
     const done_tasks = await fetchTasks(true);
+
     renderTasks(done_tasks, "done_tasks_holder");
   }
 
@@ -681,6 +807,9 @@
         // hide "mark as done" button
         taskCard.querySelector(".mark-as-done-btn").style.display = "none";
 
+        // make completed-task-icon visible
+        taskCard.querySelector(".completed-task-icon").style.display = "inline";
+
         // hide "mark as to_do" button
         if(task.type == "single") {
           taskCard.querySelector(".mark-as-todo-btn").style.display = "none";
@@ -691,6 +820,10 @@
         taskCard.querySelector(".task-completed-date-label").style.display = "none";
         taskCard.querySelector(".task-completed-date-value").style.display = "none";
         taskCard.querySelector(".due-period-visible").innerHTML = task.due_date ? dateTostring(task.due_date) + ' <i class="bi bi-clock-history"></i>' : "";
+
+        if(taskCard.querySelector(".due-period-visible").innerHTML.includes("ago")) {
+          taskCard.querySelector(".due-period-visible").classList.add("late");
+        }
 
         if(task.type == "recurring") {
           taskCard.querySelector(".repeatable-task-icon").style.display = "inline";
@@ -703,6 +836,30 @@
         taskCard.querySelector(".task-due-date-value").style.display = "none";
       }
 
+      //* Display specific elements for special tasks
+      if(task.category == "urgent" && task.status !== "done") {
+        var shadowClassElement = taskCard.querySelector(".shadow");
+        shadowClassElement.classList.remove("shadow");
+        shadowClassElement.classList.add("urgent-task");
+        taskCard.querySelector(".task-category-visual").innerHTML = "Urgent";
+        taskCard.querySelector(".task-category-visual").classList.add("urgent-task-visual");
+      }
+
+      //* Display specific elements for urgent tasks
+      if(task.category == "special" && task.status !== "done") {
+        var shadowClassElement = taskCard.querySelector(".shadow");
+        shadowClassElement.classList.remove("shadow");
+        shadowClassElement.classList.add("special-task");
+        taskCard.querySelector(".task-category-visual").innerHTML = "Special";
+        taskCard.querySelector(".task-category-visual").classList.add("special-task-visual");
+      }
+
+      if(task.category == "normal" || task.status == "done") {
+        // find card-body element and add padding-top of 10px;
+        var cardBodyElement = taskCard.querySelector(".card-body");
+        cardBodyElement.style.paddingTop = "10px";
+
+      }
 
       //* Hide created/modified fields and labels entirely.
       // Comment these lines for debugging purposes:
