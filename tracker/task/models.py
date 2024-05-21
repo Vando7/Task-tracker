@@ -72,6 +72,7 @@ class Task(models.Model):
     creation_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(blank=True, null=True)
     completed_date = models.DateTimeField(blank=True, null=True)
+    deleted_date = models.DateTimeField(blank=True, null=True)
     rooms = models.ManyToManyField(Room, related_name="tasks")
 
     class Meta:

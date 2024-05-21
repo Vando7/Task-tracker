@@ -170,28 +170,43 @@ def fetch_tasks(request):
         num_rooms = rooms.count()
 
         # Fetch tasks associated with at least all rooms on this floor
-        tasks = (
-            Task.objects.annotate(
-                num_rooms_on_floor=Count(
-                    "rooms", filter=Q(rooms__in=rooms), distinct=True
-                ),
-                custom_order=models.Case(
-                    models.When(category="urgent", then=models.Value(1)),
-                    models.When(category="special", then=models.Value(2)),
-                    models.When(category="normal", then=models.Value(3)),
-                    default=models.Value(4),
-                    output_field=models.IntegerField(),
-                ),
-            )
-            .filter(num_rooms_on_floor=num_rooms)
-            .order_by("custom_order", "-modified_date")
-            .distinct()
-        )
+        # filter out tasks that have a deleted_date different from 0 or null
+        tasks = None
 
-        # Filter tasks based on completion status
         if completed:
-            tasks = tasks.filter(status="done")
+            recurring_tasks = Task.objects.filter(
+                Q(status="done") & Q(type="recurring"),
+            ).order_by("-modified_date")
+
+            tasks = list(recurring_tasks)
+
+            additional_tasks = Task.objects.filter(
+                Q(status="done") & ~Q(type="recurring"),
+            ).order_by(
+                "-modified_date",
+            )[:20]
+
+            tasks += list(additional_tasks)
+
         else:
+            tasks = (
+                Task.objects.annotate(
+                    num_rooms_on_floor=Count(
+                        "rooms", filter=Q(rooms__in=rooms), distinct=True
+                    ),
+                    custom_order=models.Case(
+                        models.When(category="urgent", then=models.Value(1)),
+                        models.When(category="special", then=models.Value(2)),
+                        models.When(category="normal", then=models.Value(3)),
+                        default=models.Value(4),
+                        output_field=models.IntegerField(),
+                    ),
+                )
+                .filter(num_rooms_on_floor=num_rooms)
+                .exclude(Q(deleted_date__isnull=False))
+                .order_by("custom_order", "-modified_date")
+                .distinct()
+            )
             tasks = tasks.exclude(status="done")
 
     if room_id:
@@ -214,13 +229,19 @@ def fetch_tasks(request):
             "category": task.category,
             "due_date": task.due_date.isoformat() if task.due_date else None,
             "creation_date": task.creation_date.isoformat(),
+            "deleted_date": task.deleted_date.isoformat()
+            if task.deleted_date
+            else None,
             "modified_date": task.modified_date.isoformat()
             if task.modified_date
             else None,
             "completed_date": task.completed_date.isoformat()
             if task.completed_date
             else None,
-            "rooms": {room.id: room.name for room in task.rooms.all()},
+            "rooms": {
+                room.id: {"name": room.name, "icon": room.icon}
+                for room in task.rooms.all()
+            },
         }
         for task in tasks
     ]
@@ -278,41 +299,18 @@ def remove_room(request, room_id):
 
 
 @login_required
-def room_view(request, room_id):
-    room = get_object_or_404(Room, id=room_id)
-    all_tasks = (
-        Task.objects.filter(rooms=room)
-        .annotate(
-            custom_order=models.Case(
-                models.When(category="urgent", then=models.Value(1)),
-                models.When(category="special", then=models.Value(2)),
-                models.When(category="normal", then=models.Value(3)),
-                default=models.Value(4),
-                output_field=models.IntegerField(),
-            )
-        )
-        .order_by("custom_order", "-modified_date")
-        .distinct()
+def room(request, room_id):
+    room = get_object_or_404(Room, pk=room_id)
+
+    return render(
+        request,
+        "task/room.html",
+        {
+            "room_id": room.id,
+            "room": room,
+            "today": timezone.now(),
+        },
     )
-
-    # Separate tasks into exclusive and general
-    exclusive_tasks = [task for task in all_tasks if task.rooms.count() == 1]
-    general_tasks = [task for task in all_tasks if task.rooms.count() > 1]
-
-    all_floors = Floor.objects.all().prefetch_related("rooms__tasks")
-
-    params = {
-        "view_type": "room",
-        "room_id": room.id,
-        "room_floor_id": room.floor.id,
-        "room": room,
-        "exclusive_tasks": exclusive_tasks,
-        "general_tasks": general_tasks,
-        "floors": all_floors,
-        "today": timezone.now(),
-    }
-
-    return render(request, "room_view.html", params)
 
 
 @login_required
@@ -415,8 +413,10 @@ def update_task(request):
         "category",
         "due_date",
         "description",
-        "rooms",
+        "room_remove",
+        "room_add",
     }
+
     if data["field_name"] not in editable_fields:
         return JsonResponse(
             {
@@ -427,19 +427,62 @@ def update_task(request):
         )
 
     # General field update, except for special cases
-    if data["field_name"] != "rooms":
+    if data["field_name"] != "room_remove" and data["field_name"] != "room_add":
+        write_to_log(str(data))
         setattr(task, data["field_name"], data["value"])
 
         if data["field_name"] == "status" and data["value"] == "done":
             task.completed_date = timezone.now()
 
         task.modified_date = timezone.now()
-        task.save()
 
     # Special handling for rooms
-    elif data["field_name"] == "rooms":
+    if data["field_name"] == "room_remove":
+        room = Room.objects.get(id=data["value"])
+        # remove room with ID data["value"] from task.rooms
+        task.rooms.remove(room)
+        task.modified_date = timezone.now()
+
+    if data["field_name"] == "room_add":
+        write_to_log(str(data))
+        # fetch rooms that are in data['value'] and add them to the task
         rooms = Room.objects.filter(id__in=data["value"])
-        task.rooms.set(rooms)  # Reduces database hits
+        task.rooms.add(*rooms)
+        task.modified_date = timezone.now()
+
+    task.save()
+
+    return JsonResponse({"status": "success"})
+
+
+@login_required
+@require_POST
+def delete_task(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"status": "error", "message": "Unauthorized"}, status=401)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "error", "message": "Invalid JSON"}, status=400)
+
+    task_id = data["task_id"]
+
+    # Validate that the given task_id is associated with the user.
+    selected_workspace = request.session.get("selected_workspace_id")
+    task = get_object_or_404(Task, id=task_id)
+    if not task_belongs_to_workspace(task, selected_workspace):
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "Task does not belong to the selected workspace.",
+            },
+            status=400,
+        )
+
+    task.modified_date = timezone.now()
+    task.deleted_date = timezone.now()
+    task.save()
 
     return JsonResponse({"status": "success"})
 

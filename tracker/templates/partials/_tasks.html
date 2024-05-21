@@ -2,7 +2,9 @@
 
 <link rel="stylesheet" href="{% static 'css/task_partial.css' %}" />
 </link />
-{% comment %} <script src="{% static 'js/tasks_partial.js' %}"></script> {% endcomment %}
+{% block inline_javascript %}
+ <script src="{% static 'js/tasks_partial.js' %}"></script>
+{% endblock %}
 {% if floor_id %}<div id="floor_id_holder" floor_id="{{ floor_id }}"></div>{% endif %}
 {% if room_id %}<div id="room_id_holder" room_id="{{ room_id }}"></div>{% endif %}
 <!-- placeholder for dynamically loaded tasks -->
@@ -98,6 +100,7 @@
     </div>
   </div>
 </div>
+
 <template id="task-template">
   <div class="task-holder">
     <div class="card mb-3 shadow">
@@ -139,51 +142,7 @@
                 csrf="{{ csrf_token }}"
                 data-field-name="task_description"></span>
         </div>
-        <div class="task-field-container hideable">
-          <p class="task-status-label task-label">Status</p>
-          <span class="task-status-value task-field"
-                contenteditable="true"
-                data-task-id="0"
-                csrf="{{ csrf_token }}"
-                data-field-name="status"></span>
-        </div>
-        <div class="task-field-container hideable">
-          <div class="task-type-label task-label">Type</div>
-          <span class="task-type-value task-field"
-                contenteditable="true"
-                data-task-id="0"
-                csrf="{{ csrf_token }}"
-                data-field-name="type"></span>
-        </div>
-        <div class="task-field-container hideable">
-          <div class="task-category-label task-label">Category</div>
-          <span class="task-category-value task-field"
-                contenteditable="true"
-                data-task-id="0"
-                csrf="{{ csrf_token }}"
-                data-field-name="category"></span>
-        </div>
-        <div class="task-field-container hideable">
-          <div class="task-due-date-label task-label">Due</div>
-          <span class="task-due-date-value task-field"
-                data-task-id="0"
-                csrf="{{ csrf_token }}"
-                data-field-name="due_date"></span>
-        </div>
-        <div class="task-field-container hideable">
-          <div class="task-due-date-label task-label">Due</div>
-          <span class="task-due-date-value-actual task-field"
-                data-task-id="0"
-                csrf="{{ csrf_token }}"
-                data-field-name="due_date"></span>
-        </div>
-        <div class="task-field-container hideable">
-          <div class="task-creation-date-label task-label">Created</div>
-          <span class="task-creation-date-value task-field"
-                data-task-id="0"
-                csrf="{{ csrf_token }}"
-                data-field-name="creation_date"></span>
-        </div>
+
         <div class="task-field-container hideable">
           <div class="task-modified-date-label task-label">Modified</div>
           <span class="task-modified-date-value task-field"
@@ -192,7 +151,79 @@
                 data-field-name="modified_date"
                 ></span>
         </div>
+
+        <div class="task-field-container hideable" >
+          <div class="task-type-label task-label"><i class="bi bi-clock-history" style="margin-right:5px;"></i>Type</div>
+          <select class="task-field task-field-dropdown task-type-value"
+            csrf="{{ csrf_token }}"
+            data-field-name="type"
+            data-task-id="0">
+            <option value="single">One-time</option>
+            <option value="recurring">Repeatable</option>
+          </select>
+        </div>
+
         <div class="task-field-container hideable">
+          <div class="task-category-label task-label"><i class="bi bi-tag-fill" style="margin-right:5px"></i>Category</div>
+          <select class="task-field task-field-dropdown task-category-value"
+                  csrf="{{ csrf_token }}"
+                  data-field-name="category"
+                  data-task-id="0">
+            <option value="normal">Normal</option>
+            <option value="urgent">Urgent</option>
+            <option value="special">Special</option>
+          </select>
+        </div>
+
+        <div class="task-field-container hideable">
+          <div class="task-due-date-label task-label"><i class="bi bi-calendar-date-fill" style="margin-right:5px"></i>Deadline</div>
+          <input type="date"
+                 class="task-field task-field-datepicker task-due-date-value"
+                 csrf="{{ csrf_token }}"
+                 data-field-name="due_date"
+                 title="Deadline for the task"
+                 data-task-id="0" />
+
+          <button type="button"
+                  class="btn btn-sm btn-clear-task-deadline task-field"
+                  data-task-id="0"
+                  data-field-name="due_date"
+                  csrf="{{ csrf_token }}"
+                  title="Clear due date">
+            <i class="bi bi-eraser"></i>
+          </button>
+        </div>
+
+        <div class="hideable rooms-manipulation-container">
+          <div class="rooms-heading"><i class="bi bi-box" style="margin-right:5px"></i> Rooms</div>
+          <button type="button" class="btn btn-outline-light show-room-modal-btn"
+                  data-task-id="0"
+                  data-bs-toggle="modal"
+                  data-bs-target="#add-room-modal">
+            <i class="bi bi-plus-circle-dotted"></i>
+          </button>
+        </div>
+
+        <div class="room-delete-holder hideable">
+        </div>
+
+        <div class="task-field-container debug">
+          <div class="task-due-date-label task-label">Due</div>
+          <span class="task-due-date-value-actual task-field"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="due_date"></span>
+        </div>
+
+        <div class="task-field-container debug">
+          <div class="task-creation-date-label task-label">Created</div>
+          <span class="task-creation-date-value task-field"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="creation_date"></span>
+        </div>
+
+        <div class="task-field-container debug">
           <div class="task-modified-date-label task-label">Modified ts</div>
           <span class="task-modified-date-value-actual task-field"
                 data-task-id="0"
@@ -200,20 +231,38 @@
                 data-field-name="modified_date"
                 ></span>
         </div>
-        <div class="task-field-container hideable">
+        <div class="task-field-container debug">
+          <p class="task-status-label task-label">Status</p>
+          <span class="task-status-value task-field"
+                contenteditable="true"
+                data-task-id="0"
+                csrf="{{ csrf_token }}"
+                data-field-name="status"></span>
+        </div>
+        <div class="task-field-container debug">
           <div class="task-completed-date-label task-label">Completed</div>
           <span class="task-completed-date-value task-field"
                 data-task-id="0"
                 csrf="{{ csrf_token }}"
                 data-field-name="completed_date"></span>
         </div>
-        <div class="task-field-container hideable">
+        <div class="task-field-container debug">
           <div class="task-rooms-label task-label">Rooms</div>
           <span class="task-rooms-value task-field"
                 contenteditable="true"
                 data-task-id="0"
                 csrf="{{ csrf_token }}"
                 data-field-name="rooms"></span>
+        </div>
+
+        <div class="task-field-container delete-task-button-holder hideable">
+          <!-- delete task button -->
+          <button class="btn btn-sm btn-outline-light delete-task-button task-field"
+                  data-task-id="0"
+                  csrf="{{ csrf_token }}"
+                  title="Delete task">
+                  <i class="bi bi-trash3"></i> Delete
+          </button>
         </div>
       </div>
 
@@ -224,771 +273,47 @@
     </div>
   </div>
 </template>
-<script>
-  var fieldsLoaded = 0;
-  var noChangesCounter = 0;
-  var updateIntervalSeconds = 1;
-  let latestTimestamp = null;
 
-
-  document.addEventListener("DOMContentLoaded", function() {
-    console.log("DOMContentLoaded");
-
-    loadElements();
-  });
-
-  /***********************************8
-   * UPDATE TASKS
-   */
-  async function updateTaskList() {
-    const pending_tasks = await fetchTasks(false);
-    const done_tasks = await fetchTasks(true);
-
-    // show/hide display banner
-    if (pending_tasks.length === 0) {
-      document.getElementById("no-tasks-congrats").style.display = "block";
-    } else {
-      document.getElementById("no-tasks-congrats").style.display = "none";
-    }
-
-
-    allTasks = pending_tasks.concat(done_tasks);
-    updateTasksOnPage(allTasks);
-    addMissingTasks(allTasks);
-    initialize_fields();
-  }
-
-
-  function addMissingTasks(tasks) {
-    tasks.forEach((task) => {
-      const taskCard = document.getElementById(`task-${task.id}`);
-
-      if(taskCard) {
-        return;
-      }
-
-      if(task.status == "done") {
-        renderTasks([task], "done_tasks_holder");
-      } else {
-        renderTasks([task], "pending_tasks_holder");
-      }
-    });
-  }
-
-
-  function updateTasksOnPage(tasks) {
-    /*
-     * Update the task fields in the dom for all tasks given a list of tasks from the server..
-     */
-
-    tasks.forEach((task) => {
-      const taskCard = document.getElementById(`task-${task.id}`);
-
-      if (!taskCard) {
-        // uncomment to debug
-        // console.log("Task card not found");
-        return;
-      }
-
-      // check if the last modified date is different from the one in the task card
-      const pageTaskModifiedDate = taskCard.querySelector(
-        ".task-modified-date-value-actual"
-      ).textContent;
-
-      // uncomment to debug
-      // console.log("pageTaskModifiedDate: " + pageTaskModifiedDate);
-      // console.log("task.modified_date: " + task.modified_date);
-
-      if (pageTaskModifiedDate == task.modified_date) {
-        // uncomment to debug
-        //console.log("task " + task.id + " has not been modified continuing");
-        return;
-      }
-
-      // uncomment to debug
-      //console.log("task " + task.id + " has been modified - updating");
-
-
-      //* Show or hide the repeatable task icon
-      const recurringTaskIcon = taskCard.querySelector(".repeatable-task-icon");
-
-      if(task.status == "done") {
-        taskCard.querySelector(".completed-task-icon").style.display = "inline";
-      } else {
-        taskCard.querySelector(".completed-task-icon").style.display = "none";
-      }
-
-      if(task.type == "recurring") {
-        if(task.status == "done") {
-          recurringTaskIcon.style.display = "none";
-        } else {
-          recurringTaskIcon.style.display = "inline";
-        }
-      }
-
-      if(task.category == "urgent") {
-        if(task.status !== "done") {
-          var shadowClassElement = taskCard.querySelector(".shadow");
-
-          shadowClassElement.classList.remove("shadow");
-          shadowClassElement.classList.add("urgent-task");
-          taskCard.querySelector(".task-category-visual").innerHTML = "Urgent";
-          taskCard.querySelector(".task-category-visual").classList.add("urgent-task-visual");
-
-          var cardBodyElement = taskCard.querySelector(".card-body");
-          cardBodyElement.style.paddingTop = "0px";
-        } else {
-          var shadowClassElement = taskCard.querySelector(".urgent-task");
-
-          shadowClassElement.classList.remove("urgent-task");
-          shadowClassElement.classList.add("shadow");
-          taskCard.querySelector(".task-category-visual").innerHTML = "";
-          taskCard.querySelector(".task-category-visual").classList.remove("urgent-task-visual");
-
-          var cardBodyElement = taskCard.querySelector(".card-body");
-          cardBodyElement.style.paddingTop = "10px";
-        }
-      }
-
-      if(task.category == "special") {
-        if(task.status !== "done") {
-          var shadowClassElement = taskCard.querySelector(".shadow");
-
-          shadowClassElement.classList.remove("shadow");
-          shadowClassElement.classList.add("special-task");
-          taskCard.querySelector(".task-category-visual").innerHTML = "Special";
-          taskCard.querySelector(".task-category-visual").classList.add("special-task-visual");
-
-          var cardBodyElement = taskCard.querySelector(".card-body");
-          cardBodyElement.style.paddingTop = "0px";
-        } else {
-          var shadowClassElement = taskCard.querySelector(".special-task");
-
-          shadowClassElement.classList.remove("special-task");
-          shadowClassElement.classList.add("shadow");
-          taskCard.querySelector(".task-category-visual").innerHTML = "";
-          taskCard.querySelector(".task-category-visual").classList.remove("special-task-visual");
-
-          var cardBodyElement = taskCard.querySelector(".card-body");
-          cardBodyElement.style.paddingTop = "10px";
-        }
-      }
-
-      const taskFields = taskCard.querySelectorAll(".task-field");
-
-      taskFields.forEach((taskField) => {
-        const taskFieldValue = taskField.textContent;
-
-        console.log("UPDATING TASK FIELD + " + taskField.getAttribute("data-field-name"));
-        console.log(taskFieldValue);
-        console.log(task[taskField.getAttribute("data-field-name")]);
-
-
-        if(taskField.classList.contains("mark-as-todo-btn")) {
-          if(task.status == "done" && task.type == "recurring") {
-            taskField.style.display = "inline";
-          } else {
-            taskField.style.display = "none";
-          }
-
-          return;
-        }
-
-        if (taskField.classList.contains("mark-as-done-btn")) {
-          // if task is not done then make the mark as done button visible
-          const duePeriodElement = taskCard.querySelector(".due-period-visible");
-
-          if (task.status != "done") {
-            // find element with class 'due-period-visible' within the card and make it visible
-            if(task.due_date) {
-              duePeriodElement.innerHTML = dateTostring(task.due_date) + '<i class="bi bi-clock-history"></i>';
-
-              // if task.due_date is in the past
-              if(duePeriodElement.innerHTML.includes("ago")) {
-                duePeriodElement.classList.add("late");
-              } else {
-                duePeriodElement.classList.remove("late");
-              }
-            }
-
-            taskField.style.display = "inline";
-          } else {
-            duePeriodElement.innerHTML = "";
-
-            taskField.style.display = "none";
-          }
-
-          return;
-        }
-
-        //  the due date indicator - should be set to the string value with teh actual hidden value updated.
-        if(taskField.classList.contains("task-due-date-value")) {
-          taskField.textContent = dateTostring(task[taskField.getAttribute("data-field-name")]);
-          return;
-        }
-
-        if(taskField.classList.contains("task-due-date-value-actual")) {
-          taskField.textContent = task[taskField.getAttribute("data-field-name")];
-          return;
-        }
-
-        // handle modified and modified ts fields
-        if(taskField.classList.contains("task-modified-date-value")) {
-          taskField.textContent = dateTostring(task[taskField.getAttribute("data-field-name")]);
-          return;
-        }
-
-        if(taskField.classList.contains("task-modified-date-value-actual")) {
-          taskField.textContent = task[taskField.getAttribute("data-field-name")];
-          return;
-        }
-        //  rooms
-        if(taskField.classList.contains("task-rooms-value")) {
-          taskField.textContent = Object.entries(task[taskField.getAttribute("data-field-name")]).map(([id, name]) => `${name} (ID: ${id})`).join(", ");
-          return;
-        }
-
-        // due date indicator
-        if(taskField.classList.contains("due-period-visible")) {
-          taskField.innerHTML = dateTostring(task[taskField.getAttribute("data-field-name")]) + '<i class="bi bi-clock-history"></i>';
-          // if taskfield innerhtml contains "ago" then the date is in the past
-          if( taskField.innerHTML.includes("ago") ) {
-            taskField.classList.add("late");
-          }
-          return;
-        }
-
-        //* do nothing for the expand button
-        if(taskField.classList.contains("expand-task-card-button")) {
-          return;
-        }
-
-        // set field value:
-        taskField.textContent = task[taskField.getAttribute("data-field-name")];
-      });
-
-      const taskCardElement = taskCard.querySelector(".card");
-      flashCard(taskCardElement, 2);
-    });
-  }
-
-  // make the background of the card flash
-  function flashCard(taskCardElement, flashCount){
-    // use animation param, use 'loading' keyframe
-    taskCardElement.style.animation = `loading 1s linear ${flashCount}`;
-    // after animation ends remove animation from style so it can be executed again:
-    setTimeout(() => {
-      taskCardElement.style.animation = "";
-    }, 1000);
-  }
-
-  async function fetchLatestTimestamp() {
-    let floorId = getFloorID();
-    let roomId = getRoomID();
-    let url = new URL(
-      `/task/fetch_latest_task_timestamp`,
-      window.location.origin
-    );
-
-    if (floorId) {
-      url.searchParams.append("floor_id", floorId);
-    }
-
-    if (roomId) {
-      url.searchParams.append("room_id", roomId);
-    }
-
-    try {
-      let response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      let data = await response.json();
-
-      return data.latest_timestamp;
-    } catch (error) {
-      console.error("Failed to fetch the latest timestamp:", error);
-      return null;
-    }
-  }
-
-  /**
-   ** Check whether the tasks on the page need to be updated.
-   */
-  async function checkForUpdates() {
-    let newTimestamp = await fetchLatestTimestamp();
-    // console.log("new timestamp: ", newTimestamp);
-    // console.log("latest timestamp: ", latestTimestamp);
-
-    if (newTimestamp && newTimestamp !== latestTimestamp) {
-      latestTimestamp = newTimestamp;
-
-      updateTaskList();
-      return;
-    }
-
-  }
-  // Periodic check for updates
-  setInterval(checkForUpdates, updateIntervalSeconds * 1000);
-
-  //********************************************************** */
-  /**
-   ** This Function makes it so each tasks field is editable and
-   ** when a user edits a field it sends an update to the server.
-   */
-  function initialize_fields() {
-    // Mark as done buttons.
-    var markAsDoneBtns = document.querySelectorAll(".mark-as-done-btn");
-
-    markAsDoneBtns.forEach(function(markAsDoneBtn) {
-      console.log("Mark as done button found");
-
-      //skip if an on click event is already attached
-
-      if(markAsDoneBtn.getAttribute("has-event-listener") == "true") {
-        return;
-      }
-      markAsDoneBtn.setAttribute("has-event-listener", "true");
-
-      markAsDoneBtn.addEventListener("click", async function() {
-        markAsDoneBtn.classList.add("active");
-
-        setTimeout(function () {
-          markAsDoneBtn.classList.remove("active");
-        }, 200);
-
-        console.log("Mark as done button clicked");
-        var taskId = this.getAttribute("data-task-id");
-        var fieldName = this.getAttribute("data-field-name");
-        var value = this.getAttribute("data-value");
-        var csrf = this.getAttribute("csrf");
-
-        var cardHolder = this.parentElement.parentElement;
-        var completedTasksHolder = document.getElementById("done_tasks_holder");
-        var cardHolder = document.getElementById("task-" + taskId);
-        var taskTypeValue = cardHolder.querySelector(".task-type-value").textContent;
-
-        if(taskTypeValue !== "recurring" && !confirm("Are you sure you want to mark this task as done?")) {
-          return;
-        }
-
-        console.log("taskTypeValue: ", taskTypeValue);
-        console.log("Marking task as done");
-        console.log(taskId);
-        console.log(fieldName);
-        console.log(value);
-
-        update_task(taskId, fieldName, value, csrf);
-        await new Promise(r => setTimeout(r, 200));
-
-        // append to first element in the completed tasks holder
-        completedTasksHolder.insertBefore(cardHolder, completedTasksHolder.firstElementChild);
-      });
-    });
-
-    // Mark as to_do buttons.
-    var markAsToDoBtns = document.querySelectorAll(".mark-as-todo-btn");
-
-    markAsToDoBtns.forEach(function(markAsToDoBtn) {
-      if(markAsToDoBtn.getAttribute("has-event-listener") == "true") {
-        return;
-      }
-      markAsToDoBtn.setAttribute("has-event-listener", "true");
-
-      markAsToDoBtn.addEventListener("click", async function() {
-        markAsToDoBtn.classList.add("active");
-
-        setTimeout(function () {
-          markAsToDoBtn.classList.remove("active");
-        }, 200);
-
-        var taskId = this.getAttribute("data-task-id");
-        var fieldName = this.getAttribute("data-field-name");
-        var value = this.getAttribute("data-value");
-        var csrf = this.getAttribute("csrf");
-        console.log("Marking task as to_do");
-        console.log(taskId);
-        console.log(fieldName);
-        console.log(value);
-        update_task(taskId, fieldName, value, csrf);
-
-        // make the entire card slowly fade out
-        var cardHolder = this.parentElement.parentElement;
-
-        // move card element to the top of the pending  tasks holder
-        var pendingTasksHolder = document.getElementById("pending_tasks_holder");
-        var cardHolder = document.getElementById("task-" + taskId);
-
-        // delay by 200ms to allow the animation to complete
-        await new Promise(r => setTimeout(r, 200));
-
-        // append to first element in the pending tasks holder
-        pendingTasksHolder.insertBefore(cardHolder, pendingTasksHolder.firstElementChild);
-      });
-    });
-
-
-    // Expand task card button.
-    const expandTaskCardButton = document.querySelectorAll(".expand-task-card-button");
-    expandTaskCardButton.forEach(function(expandTaskCardButton) {
-      if(expandTaskCardButton.getAttribute("has-event-listener") == "true") {
-        return;
-      }
-
-      expandTaskCardButton.setAttribute("has-event-listener", "true");
-
-      expandTaskCardButton.addEventListener("click", function() {
-
-        const arrowUpIcon = '<i class="bi bi-arrow-bar-up expand-task-card-button-icon"></i>';
-        const arrowDownIcon = '<i class="bi bi-arrow-bar-down expand-task-card-button-icon"></i>';
-        const taskId = this.getAttribute("data-task-id");
-        const taskCardHolder = document.getElementById("task-" + taskId);
-        const hideableElements = taskCardHolder.querySelectorAll(".hideable");
-
-        if(this.innerHTML === arrowDownIcon) {
-          console.log("display elements");
-          this.innerHTML = arrowUpIcon;
-          hideableElements.forEach(function(hideableElement) {
-            hideableElement.classList.add("show");
-          });
-        } else {
-          console.log("hide elements");
-          this.innerHTML = arrowDownIcon;
-          hideableElements.forEach(function(hideableElement) {
-            hideableElement.classList.remove("show");
-          });
-        }
-      });
-    });
-
-
-    //* Handle editable spans.
-    function handleFocus(event) {
-      event.target.dataset.oldValue = event.target.textContent;
-    }
-
-    async function handleEdit(event) {
-      if (event.type === "keypress" && event.key !== "Enter") {
-        return;
-      } else if (event.type === "keypress") {
-        event.preventDefault();
-        event.target.blur();
-      }
-      const oldValue = event.target.dataset.oldValue;
-      const newValue = event.target.textContent;
-
-      // Debug print
-      // console.log(`Old Value: ${oldValue}, New Value: ${newValue}`);
-      if (oldValue == newValue) {
-        // No changes made.
-        return;
-      }
-
-      // Update the task.
-      spanElement = event.target;
-      console.log(spanElement);
-
-      task_id = spanElement.getAttribute("data-task-id");
-      field_name = spanElement.getAttribute("data-field-name");
-      csrf = spanElement.getAttribute("csrf");
-
-      console.log(task_id);
-      console.log(field_name);
-      console.log(newValue);
-
-      const response = await update_task(task_id, field_name, newValue, csrf);
-      const response_json = await response.json;
-    }
-
-    // Add event listeners to each editable span
-    const editableSpans = document.querySelectorAll(
-      'span[contenteditable="true"]'
-    );
-
-    editableSpans.forEach((span) => {
-      span.addEventListener("focus", handleFocus);
-      span.addEventListener("blur", handleEdit);
-      span.addEventListener("keypress", handleEdit);
-    });
-  }
-
-  function update_task(task_id, field_name, value, csrf) {
-    var post_data = {
-      task_id: task_id,
-      field_name: field_name,
-      value: value,
-    };
-
-    console.log(post_data);
-
-    return fetch("/task/update_task/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrf,
-        },
-        body: JSON.stringify(post_data),
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        return data;
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        return {
-          status: "error"
-        };
-      });
-  }
-
-  function loadElements() {
-    loadPendingTasks();
-    loadDoneTasks();
-  }
-
-  async function loadPendingTasks() {
-    const pending_tasks = await fetchTasks(false);
-
-    // fade out elements with class lading-container-pending
-    const loading_containers = document.querySelectorAll(
-      ".lading-container-pending"
-    );
-
-    loading_containers.forEach((container) => {
-       container.classList.add("fade");
-      // also set display to none
-      container.style.display = "none";
-    });
-
-    // show congrats banner if no tasks
-    if (pending_tasks.length === 0) {
-      document.getElementById("no-tasks-congrats").style.display = "block";
-    }
-
-    renderTasks(pending_tasks, "pending_tasks_holder");
-  }
-
-  async function loadDoneTasks() {
-    const done_tasks = await fetchTasks(true);
-
-    renderTasks(done_tasks, "done_tasks_holder");
-  }
-
-  function renderTasks(tasks, elementId) {
-    const container = document.getElementById(elementId);
-    const template = document.getElementById("task-template");
-    const fragment = document.createDocumentFragment();
-
-    tasks.forEach((task) => {
-      const taskCard = template.content.cloneNode(true);
-
-      // set id attribute of the element with class task-holder to be "task-" + task.id
-      taskCard.querySelector(".task-holder").id = "task-" + task.id;
-
-      // task data
-      taskCard.querySelector(".task-name").textContent = task.task_name;
-      taskCard.querySelector(".task-description").textContent = task.task_description;
-      taskCard.querySelector(".task-status-value").textContent = task.status;
-      taskCard.querySelector(".task-type-value").textContent = task.type;
-      taskCard.querySelector(".task-category-value").textContent = task.category;
-
-      // dates
-      taskCard.querySelector(".task-due-date-value").textContent = task.due_date ? dateTostring(task.due_date) : null;
-      taskCard.querySelector(".task-due-date-value-actual").textContent = task.due_date;
-      taskCard.querySelector(".task-creation-date-value").textContent = dateTostring(task.creation_date);
-      taskCard.querySelector(".task-modified-date-value-actual").textContent = task.modified_date;
-      taskCard.querySelector(".task-modified-date-value").textContent = task.modified_date ? dateTostring(task.modified_date) : null;
-      taskCard.querySelector(".task-completed-date-value").textContent = task.completed_date ? dateTostring(task.completed_date) : null;
-
-      // rooms
-      taskCard.querySelector(".task-rooms-value").textContent = Object.entries( task.rooms ).map(([id, name]) => `${name} (ID: ${id})`).join(", ");
-
-      if (task.status == "done") {
-        // hide "mark as done" button
-        taskCard.querySelector(".mark-as-done-btn").style.display = "none";
-
-        // make completed-task-icon visible
-        taskCard.querySelector(".completed-task-icon").style.display = "inline";
-
-        // hide "mark as to_do" button
-        if(task.type == "single") {
-          taskCard.querySelector(".mark-as-todo-btn").style.display = "none";
-        }
-      } else {
-        // if task is not done, hide completed date, and redo button
-        taskCard.querySelector(".mark-as-todo-btn").style.display = "none";
-        taskCard.querySelector(".task-completed-date-label").style.display = "none";
-        taskCard.querySelector(".task-completed-date-value").style.display = "none";
-        taskCard.querySelector(".due-period-visible").innerHTML = task.due_date ? dateTostring(task.due_date) + ' <i class="bi bi-clock-history"></i>' : "";
-
-        if(taskCard.querySelector(".due-period-visible").innerHTML.includes("ago")) {
-          taskCard.querySelector(".due-period-visible").classList.add("late");
-        }
-
-        if(task.type == "recurring") {
-          taskCard.querySelector(".repeatable-task-icon").style.display = "inline";
-        }
-      }
-
-      //* hide due date if value is not set or 'N/A'
-      if (task.due_date == null || task.due_date == "N/A") {
-        taskCard.querySelector(".task-due-date-label").style.display = "none";
-        taskCard.querySelector(".task-due-date-value").style.display = "none";
-      }
-
-      //* Display specific elements for special tasks
-      if(task.category == "urgent" && task.status !== "done") {
-        var shadowClassElement = taskCard.querySelector(".shadow");
-        shadowClassElement.classList.remove("shadow");
-        shadowClassElement.classList.add("urgent-task");
-        taskCard.querySelector(".task-category-visual").innerHTML = "Urgent";
-        taskCard.querySelector(".task-category-visual").classList.add("urgent-task-visual");
-      }
-
-      //* Display specific elements for urgent tasks
-      if(task.category == "special" && task.status !== "done") {
-        var shadowClassElement = taskCard.querySelector(".shadow");
-        shadowClassElement.classList.remove("shadow");
-        shadowClassElement.classList.add("special-task");
-        taskCard.querySelector(".task-category-visual").innerHTML = "Special";
-        taskCard.querySelector(".task-category-visual").classList.add("special-task-visual");
-      }
-
-      if(task.category == "normal" || task.status == "done") {
-        // find card-body element and add padding-top of 10px;
-        var cardBodyElement = taskCard.querySelector(".card-body");
-        cardBodyElement.style.paddingTop = "10px";
-
-      }
-
-      //* Hide created/modified fields and labels entirely.
-      // Comment these lines for debugging purposes:
-      //taskCard.querySelector(".task-creation-date-label").style.display = "none";
-      //taskCard.querySelector(".task-creation-date-value").style.display = "none";
-      //taskCard.querySelector(".task-modified-date-label").style.display = "none";
-      //taskCard.querySelector(".task-modified-date-value").style.display = "none";
-
-      //* Set the data task id value in each task field.
-      const taskFields = taskCard.querySelectorAll(".task-field");
-
-      taskFields.forEach((taskField) => {
-        taskField.setAttribute("data-task-id", task.id);
-      });
-
-      //* check it modified date is newer than the latest timestamp and update the latest timestamp
-      if (!latestTimestamp || task.modified_date > latestTimestamp) {
-        latestTimestamp = task.modified_date;
-      }
-
-      fragment.appendChild(taskCard);
-    });
-
-    container.appendChild(fragment);
-
-    fieldsLoaded++;
-
-    if (fieldsLoaded == 2) {
-      initialize_fields();
-    }
-  }
-
-  /* Helper */
-  function dateTostring(date) {
-    const now = new Date();
-    const targetDate = new Date(date);
-
-    const diff = targetDate - now;
-    const absDiff = Math.abs(diff);
-
-    const minutes = Math.floor(absDiff / (1000 * 60));
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    const months = Math.floor(days / 30); // Approximate months
-    const years = Math.floor(days / 365); // Approximate years
-
-    if (diff > 0) {
-      if (years > 0) {
-        return `${years} year${years > 1 ? "s" : ""}`;
-      } else if (months > 0) {
-        return `${months} month${months > 1 ? "s" : ""}`;
-      } else if (days > 0) {
-        return `${days} day${days > 1 ? "s" : ""}`;
-      } else if (hours > 0) {
-        return `${hours} hour${hours > 1 ? "s" : ""}`;
-      } else {
-        return `${minutes} minute${minutes > 1 ? "s" : ""}`;
-      }
-    } else {
-      if (years > 0) {
-        return `${years} year${years > 1 ? "s" : ""} ago`;
-      } else if (months > 0) {
-        return `${months} month${months > 1 ? "s" : ""} ago`;
-      } else if (days > 0) {
-        return `${days} day${days > 1 ? "s" : ""} ago`;
-      } else if (hours > 0) {
-        return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-      } else {
-        return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-      }
-    }
-  }
-
-  /* Helper */
-  function getRoomID() {
-    var room_id_holder = document.getElementById("room_id_holder");
-    var room_id = null;
-
-    if (room_id_holder) {
-      room_id = room_id_holder.getAttribute("room_id");
-    }
-
-    return room_id;
-  }
-
-  /* Helper */
-  function getFloorID() {
-    var floor_id_holder = document.getElementById("floor_id_holder");
-    var floor_id = null;
-
-    if (floor_id_holder) {
-      floor_id = floor_id_holder.getAttribute("floor_id");
-    }
-
-    return floor_id;
-  }
-
-  /* Helper */
-  function fetchTasks(completed = false) {
-    let floor_id = getFloorID();
-    let room_id = getRoomID();
-    let url = new URL(`/task/fetch_tasks`, window.location.origin);
-
-    if (floor_id) {
-      url.searchParams.append("floor_id", floor_id);
-    }
-
-    if (room_id) {
-      url.searchParams.append("room_id", room_id);
-    }
-
-    url.searchParams.append("completed", completed);
-
-    // Return the fetch promise
-    return fetch(url)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.json();
-      })
-      .then((tasks) => {
-        console.log("Tasks:", tasks);
-        return tasks;
-      })
-      .catch((error) => {
-        console.error("Failed to fetch tasks:", error);
-        return [];
-      });
-  }
-
-</script>
+<template id="room-remover-template">
+  <div class="room-remover">
+    <div class="room-icon-label">🛋</div>
+    <div class="room-name-label">Living room</div>
+    <button type="button"
+      class="btn btn-outline-light room-delete-button"
+      data-task-id="0"
+      data-field-name="room_remove"
+      data-room-id="0"
+      csrf="{{ csrf_token }}"
+      title="Remove room">
+      <i class="bi bi-x-lg"></i>
+  </button>
+  </div>
+</template>
+
+<div class="modal fade" id="add-room-modal" tabindex="-1" aria-labelledby="add-room-modal" aria-hidden="true" data-task-id="0">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="add-room-modal">Add rooms to task</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body task-modal-body">
+        {% for floor in request.session.sidebar_floors %}
+          <div class="floor-label-modal"
+               style="text-shadow: 1px 1px 20px {{ floor.color }};">{{ floor.icon }} {{ floor.name }}</div>
+          <div class="room-add-modal-container" style="border-color:{{ floor.color }};">
+          {% for room in floor.rooms %}
+            <div class="room-label-modal" data-room-id="{{ room.id }}">
+              <i class="bi bi-circle room-icon-label" data-task-id="0"></i>{{ room.icon }} {{ room.name }}
+            </div>
+          {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="close-room-modal" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="save-room-selection-modal" csrf="{{ csrf_token }}">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>

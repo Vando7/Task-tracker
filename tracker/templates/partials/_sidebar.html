@@ -46,9 +46,13 @@
         </li>
         <hr />
         <li class="nav-item">
-            <a href="{% url 'home' %}" class="nav-link active" aria-current="page" style="background-color: blueviolet;
+            <a href="{% url 'home' %}"
+                  class="btn btn btn-outline-info"
+                  aria-current="page"
+                  style="
                    margin-bottom:15px;
                    border-radius:20px;
+                   width: 100%;
                    text-align:center">
                 <strong>🏡 Home</strong>
             </a>
@@ -84,11 +88,14 @@
                     </a>
                     <style>
                         .sidebar-btn-group-{{ floor.id }}{
-                            transition: all 1s ease;
+                            transition: all 0.1s ease;
                         }
 
                         .sidebar-btn-group-{{ floor.id }}:hover {
                             filter: drop-shadow(0 0 0.75rem {{ floor.color }});
+                            box-shadow:
+                              0 0 5px black,
+                              0 0 10px black;
                         }
                     </style>
                 </div>
@@ -96,10 +103,10 @@
 
             <div class="nav flex-column ms-3 collapse-sidebar collapse show"
                 id="collapsible-sidebar-{{ floor.id }}">
-                <ul style="display:block; padding-left:10px" class="sidebar-ul">
+                <ul style="display:block; padding-left:10px; margin-top:5px;" class="sidebar-ul">
                     {% for room in floor.rooms %}
                     <li class="nav-item">
-                        <a href="#" class="nav-link" style="color:#E0E0E0">{{ room.icon }} {{ room.name }}</a>
+                        <a href="{% url 'task:room' room.id %}" class="nav-link sidebar-room-button" style="color:#E0E0E0">{{ room.icon }} {{ room.name }}</a>
                     </li>
                     {% endfor %}
                 </ul>
@@ -129,5 +136,16 @@
 
     .sidebar-ul {
         list-style-type: none;
+    }
+
+    .sidebar-room-button {
+      transition: 0.1s;
+      width: fit-content;
+    }
+
+    .sidebar-room-button:hover {
+      box-shadow:
+        0 0 5px black,
+        0 0 10px black;
     }
 </style>
