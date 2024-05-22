@@ -185,7 +185,7 @@ function initSidebar() {
 
       sidebarHolder.style.width = "0px";
 
-      collapseSidebarButton.style.left ="0px"
+      collapseSidebarButton.style.left ="5px"
 
       secondIconElement.classList.remove("bi-arrow-left");
       secondIconElement.classList.add("bi-arrow-right");
@@ -201,13 +201,13 @@ function initSidebar() {
         mainSidebar.style.display = "block";
         sidebarHolder.style.width = "250px";
 
-        collapseSidebarButton.style.left ="245px"
+        collapseSidebarButton.style.left ="260px"
       } else {
         mainSidebar.style.width = "100vw";
         mainSidebar.style.display = "block";
         sidebarHolder.style.width = "100vw";
 
-        collapseSidebarButton.style.left ="0px"
+        collapseSidebarButton.style.left ="5px"
       }
 
       secondIconElement.classList.add("bi-arrow-left");

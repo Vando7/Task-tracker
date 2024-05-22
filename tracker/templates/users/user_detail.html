@@ -6,35 +6,53 @@
   User: {{ object.name }}
 {% endblock title %}
 
+{% block viewSpecificCss %}
+  <style>
+    .container {
+      display:flex;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      align-content: center;
+      padding:0;
+    }
+
+    .button-container {
+      margin:15px;
+    }
+  </style>
+{% endblock viewSpecificCss %}
+
 {% block content %}
-  <div class="container mt-4">
-    <div class="row">
-      <div class="col-md-12">
-        <h1 class="display-4">{{ object.name }}</h1>
-        <p class="lead">Manage your profile and settings.</p>
-      </div>
-    </div>
+<div class="container">
+  <div class="col-md-12" style="text-align: center;">
+    <h1 class="display-4">{{ object.name }}</h1>
+    <p class="lead">Manage your profile and settings.</p>
+  </div>
+</div>
+  <div class="container mt-4" style="text-align: center;">
     {% if object == request.user %}
       <!-- Action buttons -->
-      <div class="row g-3 mt-3">
-        <div class="col-md-6 col-lg-3">
+      <div class="container">
+        <div class="button-container">
           <a class="btn btn-primary w-100" href="{% url 'users:update' %}" role="button">
-            <i class="bi bi-pencil-square me-2"></i>Edit My Info &#x1F4DD;
+            <i class="bi bi-pencil-square me-2"></i>Edit My Info
           </a>
         </div>
-        <div class="col-md-6 col-lg-3">
+        <div class="button-container">
           <a class="btn btn-secondary w-100" href="{% url 'account_email' %}" role="button">
-            <i class="bi bi-envelope-fill me-2"></i>Change E-Mail &#x2709;
+            <i class="bi bi-envelope-fill me-2"></i>Change E-Mail
           </a>
         </div>
-        <div class="col-md-6 col-lg-3">
+        <div class="button-container">
           <a class="btn btn-info w-100" href="{% url 'mfa_index' %}" role="button">
-            <i class="bi bi-shield-lock-fill me-2"></i>Manage MFA &#x1F512;
+            <i class="bi bi-shield-lock-fill me-2"></i>Manage 2FA
           </a>
         </div>
-        <div class="col-md-6 col-lg-3">
+        <div class="button-container">
           <a class="btn btn-warning w-100" href="{% url 'socialaccount_connections' %}" role="button">
-            <i class="bi bi-people-fill me-2"></i>Manage Social Connections &#x1F465;
+            <i class="bi bi-people-fill me-2"></i>Third Party Accounts
           </a>
         </div>
       </div>

@@ -12,6 +12,11 @@ urlpatterns = [
         views.set_workspace,
         name="set_workspace",
     ),  # For setting the selected workspace
+    path(
+        "set_default_workspace/",
+        views.set_default_workspace,
+        name="set_default_workspace",
+    ),
     path("add_floor/", views.add_floor, name="add_floor"),
     path("remove_floor/<int:floor_id>/", views.remove_floor, name="remove_floor"),
     path("add_room/", views.add_room, name="add_room"),
@@ -28,4 +33,14 @@ urlpatterns = [
         name="fetch_latest_task_timestamp",
     ),
     path("workspaces/", views.wokspaces_view, name="workspaces"),
+    path(
+        "add_user_to_workspace/",
+        views.add_user_to_workspace,
+        name="add_user_to_workspace",
+    ),
+    path(
+        "remove_user_from_workspace/",
+        views.remove_user_from_workspace,
+        name="remove_user_from_workspace",
+    ),
 ]

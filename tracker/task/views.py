@@ -21,6 +21,7 @@ from tracker.task.models import Floor
 from tracker.task.models import Room
 from tracker.task.models import Task
 from tracker.task.models import Workspace
+from tracker.users.models import User
 
 
 @login_required
@@ -59,18 +60,6 @@ def index(request):
 
 @login_required
 @require_POST
-def set_workspace(request):
-    workspace_id = request.POST.get("workspace_id")
-    # todo: validate that the given workspace_id is associated with the user.
-    if workspace_id:
-        request.session["selected_workspace_id"] = workspace_id
-        set_sidebar_floors(request, workspace_id)
-
-    return redirect(reverse("task:index"))
-
-
-@login_required
-@require_POST
 def add_floor(request):
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
@@ -102,16 +91,16 @@ def remove_floor(request, floor_id):
 @login_required
 @require_POST
 def add_room(request):
-    # debug
-    # params = request.POST
-    # write_to_log(str(params))
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
+
     floor_id = request.POST.get("floor_id")
     room_name = request.POST.get("room_name")
     room_icon = request.POST.get("room_emoji")
     floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
+
     Room.objects.create(name=room_name, floor=floor, icon=room_icon)
+
     return redirect(reverse("task:index"))
 
 
@@ -210,7 +199,6 @@ def fetch_tasks(request):
             tasks = tasks.exclude(status="done")
 
     if room_id:
-        write_to_log("hey")
         room = get_object_or_404(Room, id=room_id, floor__workspace__users=request.user)
 
         # Apply the same completion filter to room-specific tasks
@@ -339,7 +327,6 @@ def room(request, room_id):
 
     # get floor that the room is assigned to
     floor = room.floor
-    write_to_log(str(floor))
 
     return render(
         request,
@@ -470,7 +457,6 @@ def update_task(request):
 
     # General field update, except for special cases
     if data["field_name"] != "room_remove" and data["field_name"] != "room_add":
-        write_to_log(str(data))
         setattr(task, data["field_name"], data["value"])
 
         if data["field_name"] == "status" and data["value"] == "done":
@@ -486,7 +472,6 @@ def update_task(request):
         task.modified_date = timezone.now()
 
     if data["field_name"] == "room_add":
-        write_to_log(str(data))
         # fetch rooms that are in data['value'] and add them to the task
         rooms = Room.objects.filter(id__in=data["value"])
         task.rooms.add(*rooms)
@@ -498,10 +483,39 @@ def update_task(request):
 
 
 @login_required
+@require_POST
+def set_workspace(request):
+    workspace_id = request.POST.get("workspace_id")
+
+    if workspace_id:
+        # * validate that the given workspace_id is associated with the user
+        _ = get_object_or_404(Workspace, id=workspace_id, users=request.user)
+        request.session["selected_workspace_id"] = workspace_id
+        set_sidebar_floors(request, workspace_id)
+
+    return redirect(reverse("task:workspaces"))
+
+
+# function to set default workspace
+@login_required
+@require_POST
+def set_default_workspace(request):
+    workspace_id = request.POST.get("workspace_id")
+
+    if workspace_id:
+        # * validate that the given workspace_id is associated with the user
+        _ = get_object_or_404(Workspace, id=workspace_id, users=request.user)
+        request.user.default_workspace = Workspace.objects.get(id=workspace_id)
+        request.user.save()
+        set_sidebar_floors(request, workspace_id)
+
+    return redirect(reverse("task:workspaces"))
+
+
+@login_required
 @require_GET
 def wokspaces_view(request):
-    write_to_log("hello")
-    workspaces = Workspace.objects.filter(users=request.user)
+    workspaces = Workspace.objects.filter(users=request.user).all
     selected_workspace_id = request.session.get("selected_workspace_id", None)
     selected_workspace = Workspace.objects.get(id=selected_workspace_id)
     default_workspace = request.user.default_workspace
@@ -510,12 +524,41 @@ def wokspaces_view(request):
         request,
         "task/workspaces.html",
         {
-            "worskpaces": workspaces,
+            "workspaces": workspaces,
             "selected_workspace": selected_workspace,
             "default_workspace": default_workspace,
             "today": timezone.now(),
         },
     )
+
+
+@login_required
+@require_POST
+def add_user_to_workspace(request):
+    email = request.POST.get("email")
+    user = User.objects.get(email=email)
+    workspace = Workspace.objects.get(created_by=request.user)
+
+    workspace.users.add(user)
+    workspace.save()
+
+    return redirect(reverse("task:workspaces"))
+
+
+@login_required
+@require_POST
+def remove_user_from_workspace(request):
+    email = request.POST.get("email")
+
+    write_to_log(str(email))
+
+    user = User.objects.get(email=email)
+    workspace = Workspace.objects.get(created_by=request.user)
+
+    workspace.users.remove(user)
+    workspace.save()
+
+    return redirect(reverse("task:workspaces"))
 
 
 @login_required

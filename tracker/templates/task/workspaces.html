@@ -3,16 +3,204 @@
 {% load static i18n %}
 
 {% block viewSpecificCss %}
+  <style>
+    .workspace-selector-dropdown > button {
+      width: 100%;
+    }
+
+    .card-body, .card-header, .card {
+      border: 0;
+    }
+
+    .card-header {
+      text-align: center;
+    }
+
+    .card {
+      max-width: 600px;
+      margin: 20px;
+      height: 100%;
+      box-shadow:
+        0 0 15px black;
+    }
+
+    .list-group {
+      box-shadow:
+        0 0 10px rgb(0,0,0, 0.4);
+    }
+
+    .page-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      align-content: center;
+      padding:0;
+    }
+  </style>
 {% endblock viewSpecificCss %}
 
-{% block page_title %}
-{% endblock page_title %}
-
 {% block content %}
-  <div>workspaces - {{ workspspaces }}</div>
-  <div>selected workspace id - {{ selected_workspace_id }}</div>
-  <div>default workspace id - {{ default_workspace_id }}</div>
-  {% for workspace in worskpaces %}
-    <div>{{ workspace.name }} created by  {{ workspace.created_by }}</div>
-  {% endfor %}
+<h2 class="mb-4" style="text-align: center; margin-top:20px;">
+  Workspaces <span class="badge bg-primary">{{ workspaces|length }}</span>
+</h2>
+  <div class="container mx-auto page-container">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h4 class="card-title">Select active Workspace</h4>
+      </div>
+      <div class="card-body">
+        <p><i class="bi bi-info-circle" style="color:darkturquoise"></i> Select which workspace tasks to appear on the app</p>
+        <ul class="list-group">
+          <div class="dropdown workspace-selector-dropdown">
+            <button class="btn btn-secondary dropdown-toggle dropdown-toggle-workspace bg-dark text-light"
+                    type="button"
+                    id="workspaceDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    style="overflow: hidden;
+                           text-overflow: ellipsis;
+                           white-space: nowrap">
+              {% for workspace in global_workspaces %}
+                {% if workspace.id|stringformat:"s" == request.session.selected_workspace_id|stringformat:"s" %}
+                  {{ workspace.name }}
+                {% endif %}
+              {% endfor %}
+            </button>
+            <ul class="dropdown-menu bg-dark" aria-labelledby="workspaceDropdown">
+              {% for workspace in global_workspaces %}
+                <li>
+                  <!-- Each dropdown item is now a form that sends a POST request -->
+                  <form action="{% url 'task:set_workspace' %}"
+                        method="post"
+                        class="dropdown-item">
+                    {% csrf_token %}
+                    <input type="hidden" name="workspace_id" value="{{ workspace.id }}" />
+                    <button type="submit"
+                            class="btn btn-link p-0 text-light"
+                            style="text-decoration: none;
+                                   color: inherit">{{ workspace.name }}</button>
+                  </form>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </ul>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header">
+        <h4 class="card-title">Your Workspaces</h4>
+      </div>
+      <div class="card-body">
+        <ul class="list-group">
+          {% for workspace in workspaces %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ workspace.name }}</strong> (Created by: {{ workspace.created_by }})
+                {% if workspace.id == selected_workspace.id %}<span class="badge bg-success ms-2">Selected</span>{% endif %}
+                {% if workspace.id == default_workspace.id %}<span class="badge bg-warning text-dark ms-2">Default</span>{% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header">
+        <h4 class="card-title">Select default Workspace</h4>
+      </div>
+      <div class="card-body">
+        <p><i class="bi bi-info-circle" style="color:darkturquoise"></i> This is the workspace that will be selected when you log in.</p>
+        <ul class="list-group">
+          <div class="dropdown workspace-selector-dropdown">
+            <button class="btn btn-secondary dropdown-toggle dropdown-toggle-workspace bg-dark text-light"
+                    type="button"
+                    id="workspaceDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    style="overflow: hidden;
+                           text-overflow: ellipsis;
+                           white-space: nowrap">
+              {% for workspace in global_workspaces %}
+                {% if workspace.id|stringformat:"s" == request.session.selected_workspace_id|stringformat:"s" %}
+                  {{ workspace.name }}
+                {% endif %}
+              {% endfor %}
+            </button>
+            <ul class="dropdown-menu bg-dark" aria-labelledby="workspaceDropdown">
+              {% for workspace in global_workspaces %}
+                <li>
+                  <!-- Each dropdown item is now a form that sends a POST request -->
+                  <form action="{% url 'task:set_default_workspace' %}"
+                        method="post"
+                        class="dropdown-item">
+                    {% csrf_token %}
+                    <input type="hidden" name="workspace_id" value="{{ workspace.id }}" />
+                    <button type="submit"
+                            class="btn btn-link p-0 text-light"
+                            style="text-decoration: none;
+                                   color: inherit">{{ workspace.name }}</button>
+                  </form>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </ul>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header">
+        <h4 class="card-title">Selected Workspace info</h4>
+      </div>
+      <div class="card-body">
+        <p>
+          <strong>Created by:</strong> {{ selected_workspace.created_by }}
+        </p>
+        <h4 class="mt-4">Users with Access to this workspace</h4>
+        <ul class="list-group mb-4">
+          {% for user in selected_workspace.users.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ user.email }}
+              {% if user != selected_workspace.created_by and request.user == selected_workspace.created_by %}
+                <form method="post"
+                      action="{% url 'task:remove_user_from_workspace' %}"
+                      class="d-inline"
+                      onsubmit="return confirm('Are you sure you want to remove user {{ user.email }} from the workspace?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="email" value="{{ user.email }}" />
+                  <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        {% if request.user == selected_workspace.created_by %}
+          <h4>Add User to Workspace</h4>
+          <form method="post" action="{% url 'task:add_user_to_workspace' %}">
+            {% csrf_token %}
+            <div class="input-group">
+              <input type="email"
+                     name="email"
+                     class="form-control"
+                     placeholder="Enter user email"
+                     required />
+              <button type="submit" class="btn btn-primary">Add User</button>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <script>
+    const dropdown_toggles = document.querySelectorAll('.dropdown-toggle-workspace');
+
+    dropdown_toggles.forEach((dropdown_toggle) => {
+      dropdown_toggle.addEventListener('click', function() {
+        const dropdown_menu = dropdown_toggle.nextElementSibling;
+        dropdown_menu.classList.toggle('show');
+      });
+    });
+  </script>
 {% endblock content %}
+

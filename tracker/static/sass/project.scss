@@ -93,13 +93,14 @@ body {
 #collapse-sidebar-button {
   background-color:rgb(43,48,53);
   position:fixed;
-  left:250px;
-  font-size:20px;
-  margin-top: 5px;
-  border-radius: 0% 30% 30% 0%;
+  left:260px;
+  font-size: 20px;
+  margin-top: 15px;
+  border-radius: 24px;
   border: 0;
-  transition: 0.2s;
+  transition: 0.1s;
   z-index: 12;
+  box-shadow: 0 0 10px black;
 }
 
 #collapse-sidebar-button > i{
@@ -137,7 +138,6 @@ body {
   transition: 0.2s;
 }
 
-
 @media (max-width: 630px) {
   /* CSS that should be displayed if width is equal to or less than 800px goes here */
   #mainSidebar {
@@ -153,6 +153,10 @@ body {
   }
 
   #collapse-sidebar-button {
-    left:0;
+    left:5px;
+  }
+
+  .main-page-content {
+    margin-top:50px;
   }
 }
