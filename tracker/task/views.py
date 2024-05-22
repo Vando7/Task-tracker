@@ -210,13 +210,48 @@ def fetch_tasks(request):
             tasks = tasks.exclude(status="done")
 
     if room_id:
+        write_to_log("hey")
         room = get_object_or_404(Room, id=room_id, floor__workspace__users=request.user)
-        tasks = Task.objects.filter(rooms=room)
 
         # Apply the same completion filter to room-specific tasks
         if completed:
-            tasks = tasks.filter(status="done")
+            recurring_tasks = (
+                Task.objects.filter(
+                    Q(status="done") & Q(type="recurring"),
+                )
+                .filter(rooms=room)
+                .order_by("-modified_date")
+            )
+
+            tasks = list(recurring_tasks)
+
+            additional_tasks = (
+                Task.objects.filter(
+                    Q(status="done") & ~Q(type="recurring"),
+                )
+                .filter(rooms=room)
+                .order_by("-modified_date")[:20]
+            )
+
+            tasks += list(additional_tasks)
+
         else:
+            tasks = (
+                Task.objects.annotate(
+                    custom_order=models.Case(
+                        models.When(category="urgent", then=models.Value(1)),
+                        models.When(category="special", then=models.Value(2)),
+                        models.When(category="normal", then=models.Value(3)),
+                        default=models.Value(4),
+                        output_field=models.IntegerField(),
+                    ),
+                )
+                .exclude(Q(deleted_date__isnull=False))
+                .filter(rooms=room)
+                .order_by("custom_order", "-modified_date")
+                .distinct()
+            )
+
             tasks = tasks.exclude(status="done")
 
     task_data = [
@@ -302,10 +337,16 @@ def remove_room(request, room_id):
 def room(request, room_id):
     room = get_object_or_404(Room, pk=room_id)
 
+    # get floor that the room is assigned to
+    floor = room.floor
+    write_to_log(str(floor))
+
     return render(
         request,
         "task/room.html",
         {
+            "room_floor_id": floor.id,
+            "view_type": "room",
             "room_id": room.id,
             "room": room,
             "today": timezone.now(),
@@ -321,6 +362,7 @@ def floor(request, floor_id):
         request,
         "task/floor.html",
         {
+            "view_type": "floor",
             "floor_id": floor.id,
             "floor": floor,
             "today": timezone.now(),
@@ -453,6 +495,27 @@ def update_task(request):
     task.save()
 
     return JsonResponse({"status": "success"})
+
+
+@login_required
+@require_GET
+def wokspaces_view(request):
+    write_to_log("hello")
+    workspaces = Workspace.objects.filter(users=request.user)
+    selected_workspace_id = request.session.get("selected_workspace_id", None)
+    selected_workspace = Workspace.objects.get(id=selected_workspace_id)
+    default_workspace = request.user.default_workspace
+
+    return render(
+        request,
+        "task/workspaces.html",
+        {
+            "worskpaces": workspaces,
+            "selected_workspace": selected_workspace,
+            "default_workspace": default_workspace,
+            "today": timezone.now(),
+        },
+    )
 
 
 @login_required

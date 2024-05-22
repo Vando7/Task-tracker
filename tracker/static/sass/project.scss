@@ -72,13 +72,6 @@ body {
   color: #ECF0F1;
 }
 
-.sidebar {
-  height: 100vh;
-  position: fixed;
-  flex-shrink: 0;
-  padding: 0;
-}
-
 .flex-container {
   display: flex;
   min-height: 100vh;
@@ -95,4 +88,71 @@ body {
 
 #popover-content .form-control {
   margin-bottom: 10px;
+}
+
+#collapse-sidebar-button {
+  background-color:rgb(43,48,53);
+  position:fixed;
+  left:250px;
+  font-size:20px;
+  margin-top: 5px;
+  border-radius: 0% 30% 30% 0%;
+  border: 0;
+  transition: 0.2s;
+  z-index: 12;
+}
+
+#collapse-sidebar-button > i{
+  text-shadow: 1px 1px 15px white;
+  transition: 0.3s;
+}
+
+#collapse-sidebar-button > i:hover{
+  text-shadow: 1px 1px 20px white;
+}
+
+#sidebarHolder {
+  transition: 0.2s;
+  width: 250px;
+}
+
+#mainSidebar {
+  height: 100vh;
+  width: 250px;
+  position: fixed;
+  padding-top: 0;
+  padding-left:10px;
+  padding-right:10px;
+  overflow-y:scroll;
+  overflow-x:visible;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.404) rgb(43,48,53);
+  background-color: rgb(43,48,53);
+  transition: 0.2s;
+  z-index: 11;
+}
+
+
+.sidebar-element {
+  transition: 0.2s;
+}
+
+
+@media (max-width: 630px) {
+  /* CSS that should be displayed if width is equal to or less than 800px goes here */
+  #mainSidebar {
+    padding-left:50px;
+    padding-right:50px;
+    width:0px;
+    display:none;
+  }
+
+  #sidebarHolder {
+    transition: 0.2s;
+    width: 0px;
+  }
+
+  #collapse-sidebar-button {
+    left:0;
+  }
 }

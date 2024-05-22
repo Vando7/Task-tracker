@@ -27,4 +27,5 @@ urlpatterns = [
         views.fetch_latest_task_timestamp,
         name="fetch_latest_task_timestamp",
     ),
+    path("workspaces/", views.wokspaces_view, name="workspaces"),
 ]

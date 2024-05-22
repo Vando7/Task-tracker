@@ -45,7 +45,7 @@
     {% block body %}
       <div style="display: flex; min-height: 95vh;">
         <!-- Sidebar with fixed width -->
-        <div style="width: 250px; flex-shrink: 0; padding: 0;">{% include "partials/_sidebar.html" %}</div>
+        {% include "partials/_sidebar.html" %}
         <!-- Main content area taking the remaining space -->
         <div style="flex-grow: 1;">
           <div class="container-fluid">

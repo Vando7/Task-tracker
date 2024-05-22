@@ -1,6 +1,11 @@
 {% load static i18n %}
-<div class="d-flex flex-column flex-shrink-0 p-3 bg-body-tertiary sidebar" style="width:250px">
-    <div class="dropdown" id="userSidebarDropdown">
+<div id="sidebarHolder">
+  <button type="button" class="btn btn-dark" id="collapse-sidebar-button" title="Collapse sidebar">
+    <i class="bi bi-list"></i>
+    <i class="bi bi-arrow-left"></i>
+  </button>
+  <div class="" id="mainSidebar">
+    <div class="dropdown sidebar-element" id="userSidebarDropdown" style="margin-top:15px;">
         <a href="#" class="d-flex align-items-center link-body-emphasis text-decoration-none dropdown-toggle"
             data-bs-toggle="dropdown" id="userSidebarDropdownMenu" aria-expanded="false" style="display: flex;
                   justify-content: center;
@@ -21,7 +26,7 @@
                 <a class="dropdown-item" href="#">New project...</a>
             </li>
             <li>
-                <a class="dropdown-item" href="#">Settings(WIP?)</a>
+                <a class="dropdown-item" href="{% url 'task:workspaces' %}">Workspaces</a>
             </li>
             <li>
                 <a class="dropdown-item" href="{% url 'users:detail' request.user.pk %}">Profile</a>
@@ -37,83 +42,108 @@
             </li>
         </ul>
     </div>
-    <hr />
-    <ul class="nav nav-pills flex-column mb-auto ps-0 sidebar-ul">
-        <li class="nav-item">
-            <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#NewTaskModal"
-                style="width: 100%;"><i><span class="bi bi-journal-plus"></span> New task</i>
-            </button>
-        </li>
-        <hr />
-        <li class="nav-item">
-            <a href="{% url 'home' %}"
-                  class="btn btn btn-outline-info"
-                  aria-current="page"
-                  style="
-                   margin-bottom:15px;
-                   border-radius:20px;
-                   width: 100%;
-                   text-align:center">
-                <strong>🏡 Home</strong>
-            </a>
-        </li>
-        {% for floor in request.session.sidebar_floors %}
-        <div class="sidebar-floor-dropdown-container" style="margin-bottom:15px">
-            <li class="nav-item" style="height:38px;">
-                <div class="btn-group sidebar-floor-btn-group" style="filter: drop-shadow(0 0 0.35rem {{ floor.color }});">
+    <hr class="sidebar-element" />
+    <ul class="nav nav-pills flex-column mb-auto ps-0 sidebar-ul sidebar-element">
+      <li class="nav-item">
+        <a href="{% url 'home' %}"
+              class="btn btn btn-outline-info"
+              aria-current="page"
+              style="
+              margin-top:15px;
+              margin-bottom:15px;
+              border-radius:20px;
+              width: 100%;
+              text-align:center">
+            <strong><i class="bi bi-house-heart-fill" style="font-size: 20px; margin-right:5px;"></i> Home</strong>
+        </a>
+      </li>
+      <li class="nav-item">
+          <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#NewTaskModal"
+              style="width: 100%;border-radius:20px;margin-bottom:15px;"><i class="bi bi-plus-square-fill" style="font-size: 20px;margin-right:5px;"></i> New task
+          </button>
+      </li>
+      {% for floor in request.session.sidebar_floors %}
+      <div class="sidebar-floor-dropdown-container" style="margin-bottom:15px">
+          <li class="nav-item" style="height:38px;">
+              <div class="btn-group sidebar-floor-btn-group" style="filter: drop-shadow(0 0 0.35rem {{ floor.color }});">
 
-                    <a href="{% url 'task:floor' floor.id %}"
-                        class="btn sidebar-floor-button sidebar-btn-group-{{ floor.id }}"
-                        style="background-color: {{ floor.color }}50;
-                               border-color:{{ floor.color }}99;
-                               border-radius:20px;">
-                        <strong>{{ floor.icon }} {{ floor.name }}</strong>
-                    </a>
+                  <a href="{% url 'task:floor' floor.id %}"
+                      class="btn sidebar-floor-button sidebar-btn-group-{{ floor.id }}"
+                      style="background-color: {{ floor.color }}50;
+                              border-color:{{ floor.color }}99;
+                              {% if floor.id == floor_id %}
+                              box-shadow:
+                                0px 0px 4px black,
+                                0px 0px 6px black,
+                                0px 0px 8px {{ floor.color }};
+                                0px 0px 10px {{ floor.color }};
 
-                    <a href="#collapsible-sidebar-{{ floor.id }}"
-                        data-bs-target="collapsible-sidebar-{{ floor.id }}"
-                        class="btn btn-primary sidebar-floor-expander sidebar-btn-group-{{ floor.id }}"
-                        role="button"
-                        aria-expanded="true"
-                        aria-controls="collapsible-sidebar-{{ floor.id }}"
-                        data-bs-toggle="collapse"
-                        floor-id="{{ floor.id }}"
-                        style="
-                            background-color:{{ floor.color }}50;
-                            border-color:{{ floor.color }}99;
-                            border-radius:20px;
-                            margin-left:5px;
-                        ">
-                        <i class="bi bi-chevron-up"></i>
-                    </a>
-                    <style>
-                        .sidebar-btn-group-{{ floor.id }}{
-                            transition: all 0.1s ease;
-                        }
+                              {% endif %}
+                              border-radius:20px;">
+                      <strong>{{ floor.icon }} {{ floor.name }}</strong>
+                  </a>
 
-                        .sidebar-btn-group-{{ floor.id }}:hover {
-                            filter: drop-shadow(0 0 0.75rem {{ floor.color }});
-                            box-shadow:
-                              0 0 5px black,
-                              0 0 10px black;
-                        }
-                    </style>
-                </div>
-            </li>
+                  <a href="#collapsible-sidebar-{{ floor.id }}"
+                      data-bs-target="collapsible-sidebar-{{ floor.id }}"
+                      class="btn btn-primary sidebar-floor-expander sidebar-btn-group-{{ floor.id }}"
+                      role="button"
+                      aria-expanded="true"
+                      aria-controls="collapsible-sidebar-{{ floor.id }}"
+                      data-bs-toggle="collapse"
+                      floor-id="{{ floor.id }}"
+                      style="
+                          background-color:{{ floor.color }}50;
+                          border-color:{{ floor.color }}99;
+                          border-radius:20px;
+                          margin-left:5px;
+                      ">
+                      <i class="bi bi-chevron-up"></i>
+                  </a>
+                  <style>
+                      .sidebar-btn-group-{{ floor.id }}{
+                          transition: all 0.1s ease;
+                      }
 
-            <div class="nav flex-column ms-3 collapse-sidebar collapse show"
-                id="collapsible-sidebar-{{ floor.id }}">
-                <ul style="display:block; padding-left:10px; margin-top:5px;" class="sidebar-ul">
-                    {% for room in floor.rooms %}
-                    <li class="nav-item">
-                        <a href="{% url 'task:room' room.id %}" class="nav-link sidebar-room-button" style="color:#E0E0E0">{{ room.icon }} {{ room.name }}</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        {% endfor %}
-    </ul>
+                      .sidebar-btn-group-{{ floor.id }}:hover {
+                          filter: drop-shadow(0 0 0.75rem {{ floor.color }});
+                          box-shadow:
+                            0 0 5px black,
+                            0 0 10px black;
+                      }
+                  </style>
+              </div>
+          </li>
+
+          <div class="nav flex-column ms-3 collapse-sidebar collapse show"
+              id="collapsible-sidebar-{{ floor.id }}">
+              <ul style="display:block; padding-left:10px; margin-top:5px;" class="sidebar-ul">
+                  {% for room in floor.rooms %}
+                  <li class="nav-item">
+                      <a href="{% url 'task:room' room.id %}"
+                        class="nav-link sidebar-room-button"
+                        style="color:#E0E0E0;
+                          padding: 7px;
+                          margin: 5px;
+                        {% if room.id == room_id %}
+                          box-shadow:
+                            0px 0px 2px black,
+                            0px 0px 5px black,
+                            0px 0px 6px {{ floor.color }},
+                            0px 0px 20px {{ floor.color }};
+
+                        {% endif %}
+                        "
+                        >
+                        {{ room.icon }} {{ room.name }}
+                      </a>
+                  </li>
+                  {% endfor %}
+              </ul>
+          </div>
+      </div>
+      {% endfor %}
+  </ul>
+  </div>
 </div>
 
 <style>

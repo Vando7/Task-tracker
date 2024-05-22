@@ -31,7 +31,7 @@ class AccountAdapter(DefaultAccountAdapter):
         if not user.default_workspace:
             workspace = Workspace.objects.create(
                 name=f"{user.email}'s Workspace",
-                created_by_id=user.id,
+                created_by=user,
             )
             workspace.users.add(user)
             user.default_workspace = workspace

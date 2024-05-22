@@ -10,9 +10,11 @@
 <!-- placeholder for dynamically loaded tasks -->
 <div id="tasks" class="container">
   <div style="text-align: center;
-              text-shadow: 1px 1px 20px {{ floor.color }};
+              text-shadow:
+                1px 1px 5px {% if floor %} {{ floor.color }} {% else %} black {% endif %},
+                1px 1px 5px {% if floor %} {{ floor.color }} {% else %} black {% endif %};
               font-size: 20px;
-              margin-bottom: 20px">Pending tasks</div>
+              margin-bottom: 20px">Pending tasks for {% if room %} {{ room.icon }} {{ room.name }}{% else %} {{ floor.icon }} {{ floor.name }}{% endif %}</div>
   <div id="pending_tasks_holder">
     <div id="no-tasks-congrats" class="congrats-banner">
       <div class="congrats-content">
@@ -57,10 +59,12 @@
       </div>
     </div>
   </div>
+
   <div style="text-align: center;
-              text-shadow: 1px 1px 20px {{ floor.color }};
+              text-shadow: 1px 1px 15px  {% if floor %} {{ floor.color }} {% else %} black {% endif %};
               margin-bottom: 20px;
               font-size: 20px">Completed tasks</div>
+  <hr style="width: 70%; margin:auto;" />
   <div id="done_tasks_holder">
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main" style="width:100%;">

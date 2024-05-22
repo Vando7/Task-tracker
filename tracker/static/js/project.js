@@ -1,3 +1,4 @@
+import { main } from "@popperjs/core";
 import "../sass/project.scss";
 
 /* Project specific Javascript goes here. */
@@ -158,6 +159,65 @@ function initSidebar() {
       }
     });
   });
+
+  // check window width, if it is less than 630px console log "haha"
+  const collapseSidebarButton = document.getElementById("collapse-sidebar-button");
+
+  // select the second i element in collapsesidebarbutton
+  const secondIconElement = collapseSidebarButton.querySelector("i:nth-child(2)");
+
+  if (window.innerWidth < 630) {
+    secondIconElement.classList.remove("bi-arrow-left");
+    secondIconElement.classList.add("bi-arrow-right");
+  }
+
+  collapseSidebarButton.addEventListener("click", function () {
+    // get element with id mainSidebar
+    const mainSidebar = document.getElementById("mainSidebar");
+    const sidebarHolder = document.getElementById("sidebarHolder");
+    const sidebarElements = document.querySelectorAll(".sidebar-element");
+
+    if (secondIconElement.classList.contains("bi-arrow-left")) {
+      // sidebar is collapsing
+      // sed mainsidebar width to 0%
+      mainSidebar.style.width = "0px";
+      mainSidebar.style.display = "none";
+
+      sidebarHolder.style.width = "0px";
+
+      collapseSidebarButton.style.left ="0px"
+
+      secondIconElement.classList.remove("bi-arrow-left");
+      secondIconElement.classList.add("bi-arrow-right");
+
+      // get all elements with class sidebar-element and set their display to none
+      sidebarElements.forEach((element) => {
+        element.style.display = "none";
+      });
+    } else {
+      //sidebar is expanding
+      if (window.innerWidth > 630) {
+        mainSidebar.style.width = "250px";
+        mainSidebar.style.display = "block";
+        sidebarHolder.style.width = "250px";
+
+        collapseSidebarButton.style.left ="245px"
+      } else {
+        mainSidebar.style.width = "100vw";
+        mainSidebar.style.display = "block";
+        sidebarHolder.style.width = "100vw";
+
+        collapseSidebarButton.style.left ="0px"
+      }
+
+      secondIconElement.classList.add("bi-arrow-left");
+      secondIconElement.classList.remove("bi-arrow-right");
+
+      sidebarElements.forEach((element) => {
+        element.style.display = "block";
+      });
+    }
+  });
 }
 
 // Handle task modal logic.
@@ -180,6 +240,8 @@ function initTaskModal() {
     }
   });
 
+
+  //* Handle data submission when the "Add Task" button is clicked.
   document
     .getElementById("newTaskForm")
     .addEventListener("submit", function (event) {
@@ -204,10 +266,9 @@ function initTaskModal() {
           if (data.status === "success") {
             console.log("Task added successfully?");
 
-            var myModal = bootstrap.Modal.getOrCreateInstance(
-              document.getElementById("NewTaskModal")
-            );
-            myModal.hide();
+            //* find element with id close-task-modal-btn and click it
+            const closeTaskModalBtn = document.getElementById("close-task-modal-btn");
+            closeTaskModalBtn.click();
 
             this.reset();
           } else {
@@ -222,14 +283,14 @@ function initTaskModal() {
         });
     });
 
-  const floorCheckboxes = document.querySelectorAll(
-    '.form-check-input[name="floorIDs"]'
-  );
 
   /**
    ** Make it so whenever a floor checkbox is checked, all the room checkboxes also
    ** get checked and vice versa.
    */
+  const floorCheckboxes = document.querySelectorAll(
+    '.form-check-input[name="floorIDs"]'
+  );
   floorCheckboxes.forEach(function (floorCheckbox) {
     floorCheckbox.addEventListener("change", function () {
       hideModalError();
@@ -268,16 +329,18 @@ function initTaskModal() {
       const floorId = this.dataset.floorId;
       const floorCheckbox = document.getElementById(floorId);
       floorCheckbox.indeterminate = true;
+
       const allRoomCheckboxes = document.querySelectorAll(
         `[data-floor-id="${floorId}"]`
       );
-      console.log(Array.from(allRoomCheckboxes));
+
       const isAnyRoomChecked = Array.from(allRoomCheckboxes).some(
         (cb) => cb.checked
       );
       const areAllRoomsChecked = Array.from(allRoomCheckboxes).every(
         (cb) => cb.checked
       );
+
       if (areAllRoomsChecked) {
         console.log("All rooms are checked");
         floorCheckbox.checked = true;

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% load static i18n %}
+
+{% block viewSpecificCss %}
+{% endblock viewSpecificCss %}
+
+{% block page_title %}
+{% endblock page_title %}
+
+{% block content %}
+  <div>workspaces - {{ workspspaces }}</div>
+  <div>selected workspace id - {{ selected_workspace_id }}</div>
+  <div>default workspace id - {{ default_workspace_id }}</div>
+  {% for workspace in worskpaces %}
+    <div>{{ workspace.name }} created by  {{ workspace.created_by }}</div>
+  {% endfor %}
+{% endblock content %}

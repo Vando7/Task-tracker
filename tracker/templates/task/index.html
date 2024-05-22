@@ -5,10 +5,11 @@
 {% block viewSpecificCss %}
   <link rel="stylesheet" href="{% static 'css/task_index.css' %}" />
 {% endblock viewSpecificCss %}
+
 {% block content %}
-  <div class="d-flex flex-wrap align-items-stretch">
+  <div>
     {% for floor in workspace.floors.all %}
-      <div class="flex-grow-1"
+      <div
            style="min-width: 280px;
                   max-width: 500px;
                   margin:15px">
