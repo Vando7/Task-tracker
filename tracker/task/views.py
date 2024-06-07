@@ -128,7 +128,30 @@ def edit_floor(request, floor_id):
     # Save the updated floor
     floor.save()
 
-    # Redirect to a specific page, e.g., a floor detail page or back to index
+    return redirect(reverse("task:index"))
+
+
+@login_required
+@require_POST
+def edit_room(request, room_id):
+    if not request.user.is_authenticated:
+        return HttpResponseForbidden()
+
+    # Get the room instance
+    room = get_object_or_404(Room, id=room_id, floor__workspace__users=request.user)
+
+    # Update the room details from POST data
+    room_name = request.POST.get("room_name")
+    room_emoji = request.POST.get("room_emoji")
+
+    if room_name:
+        room.name = room_name
+    if room_emoji:
+        room.icon = room_emoji
+
+    # Save the updated room
+    room.save()
+
     return redirect(reverse("task:index"))
 
 

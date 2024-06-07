@@ -7,105 +7,182 @@ document.addEventListener("DOMContentLoaded", function () {
   initSidebar();
   initAddFloorForm();
   initAddRoomModal();
+  initEditRoomForm();
+  initEditFloorForm();
 });
+
+function initEditFloorForm() {
+  const floorEmojiElements = document.querySelectorAll(".floor-emoji");
+
+  floorEmojiElements.forEach(function (floorEmojiElement) {
+    const floorEmojiValueElement = document.getElementById(
+      floorEmojiElement.id + "-value"
+    );
+
+    attachEmojiPicker(floorEmojiElement, floorEmojiValueElement);
+  });
+
+  const editFloorExpandIconElements = document.querySelectorAll(
+    ".edit-floor-expand-button"
+  );
+
+  if(!editFloorExpandIconElements){
+    return;
+  }
+
+  editFloorExpandIconElements.forEach(function (editFloorExpandIconElement) {
+    editFloorExpandIconElement.addEventListener("click", function () {
+      console.log("clicked");
+      const editFloorForm = document.getElementById(
+        editFloorExpandIconElement.getAttribute("form-id")
+      );
+
+      if(!editFloorForm){
+        return;
+      }
+
+      if (editFloorForm.style.display != "block") {
+        editFloorForm.style.display = "block";
+      } else {
+        editFloorForm.style.display = "none";
+      }
+    });
+  });
+}
+
+function initEditRoomForm() {
+  const editRoomExpandIconElements = document.querySelectorAll(
+    ".edit-room-expand-button"
+  );
+
+  if(!editRoomExpandIconElements){
+    return;
+  }
+
+  editRoomExpandIconElements.forEach(function (editRoomExpandIconElement) {
+    editRoomExpandIconElement.addEventListener("click", function () {
+      const editRoomForm = document.getElementById(
+        editRoomExpandIconElement.getAttribute("form-id")
+      );
+
+      if(!editRoomForm){
+        return;
+      }
+
+      if (editRoomForm.style.display != "block") {
+        editRoomForm.style.display = "block";
+      } else {
+        editRoomForm.style.display = "none";
+      }
+    });
+  });
+}
 
 function initAddRoomModal() {
   const roomEmojiElements = document.querySelectorAll(".room-emoji");
 
   roomEmojiElements.forEach(function (roomEmojiElement) {
-    attachEmojiPicker(roomEmojiElement);
+    const roomEmojiValueElement = document.getElementById(
+      roomEmojiElement.id + "-value"
+    );
+
+    attachEmojiPicker(roomEmojiElement, roomEmojiValueElement);
+  });
+
+  const addRoomButtonElements = document.querySelectorAll(".add-room-button");
+
+  addRoomButtonElements.forEach(function (addRoomButtonElement) {
+    const formID = addRoomButtonElement.getAttribute("formID");
+    const addRoomFormElement = document.getElementById(formID);
+
+    addRoomButtonElement.addEventListener("click", function () {
+      const display = addRoomFormElement.style.display;
+      if (display === "block") {
+        addRoomFormElement.style.display = "none";
+      } else {
+        addRoomFormElement.style.display = "block";
+      }
+    });
   });
 }
 
 function initAddFloorForm() {
-  var collapseElementList = [].slice.call(document.querySelectorAll(".collapse-floor"));
+  //* Attach emoji picker element
+  const emojiTrigger = document.getElementById("floorEmoji");
+  const emojiValueElement = document.getElementById("floorEmoji-value");
+  attachEmojiPicker(emojiTrigger, emojiValueElement);
 
-  collapseElementList.forEach(function (collapseEl) {
-      var collapseInstance = new bootstrap.Collapse(collapseEl, {
-          toggle: false // Initialize without toggling state
-      });
+  //* Init expand button functionality
+  const addFloorExpandButton = document.getElementById("add-floor-expand-btn");
 
-      collapseEl.addEventListener("show.bs.collapse", function (event) {
-          console.log("Expanding...");
-          this.previousElementSibling.querySelector(".toggle-icon").textContent = "-";
-      });
-
-      collapseEl.addEventListener("hide.bs.collapse", function (event) {
-          console.log("Collapsing...");
-          this.previousElementSibling.querySelector(".toggle-icon").textContent = "+";
-      });
-  });
-
-  const emojiInput = document.getElementById("floorEmoji");
-  attachEmojiPicker(emojiInput);
-}
-
-function attachEmojiPicker(input) {
-  if (!input) {
+  if (!addFloorExpandButton) {
     return;
   }
 
-  const picker = new EmojiMart.Picker({
-    onEmojiSelect: (emoji) => {
-      input.value = emoji.native;
-      pickerContainer.style.display = "none";
-      document.getElementById("emojiOverlay").style.display = "none";
-    },
-    autoFocus: true,
-  });
+  addFloorExpandButton.addEventListener("click", function () {
+    const addFloorForm = document.getElementById("addFloorForm");
 
-  const pickerContainer = document.createElement("div");
-  pickerContainer.style.position = "absolute";
-  pickerContainer.style.zIndex = "101";
-  pickerContainer.style.display = "none";
-  document.body.appendChild(pickerContainer);
-  pickerContainer.appendChild(picker);
-
-  input.addEventListener("focus", () => {
-    pickerContainer.style.display = "flex";
-
-    // Function to update the position of the picker
-    function updatePosition() {
-      if (document.activeElement === input) {
-        const rect = input.getBoundingClientRect();
-        const pickerHeight = picker.offsetHeight;
-        const pickerWidth = picker.offsetWidth;
-
-        // Adjust position based on viewport edges
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceRight = window.innerWidth - rect.right;
-
-        pickerContainer.style.top = `${
-          spaceBelow < pickerHeight ? rect.top - pickerHeight : rect.bottom
-        }px`;
-        pickerContainer.style.left = `${
-          spaceRight < pickerWidth ? rect.right - pickerWidth : rect.left
-        }px`;
-      } else {
-        pickerContainer.style.display = "none";
-      }
+    if (addFloorForm.style.display !== "block") {
+      addFloorForm.style.display = "block";
+    } else {
+      addFloorForm.style.display = "none";
     }
+  });
+}
 
-    updatePosition();
+//* Whenever the triggerElement is clicked, make an emoji picker
+//* appear next to it. Upon selecting an emoji, set the value of
+//* targetElement to the emoji's native value.
+function attachEmojiPicker(triggerElement, targetElement) {
+  if (!triggerElement || !targetElement) {
+    return;
+  }
+
+  var picker = document.createElement("div");
+  picker.style.display = "none";
+
+  var emojiPicker = new EmojiMart.Picker({
+    onEmojiSelect: (emoji) =>
+      handleEmojiSelect(emoji, triggerElement, targetElement),
   });
 
-  input.addEventListener("focus", () => {
-    document.getElementById("emojiOverlay").style.display = "block";
-    pickerContainer.style.display = "flex";
-  });
+  picker.appendChild(emojiPicker);
+  triggerElement.parentNode.insertBefore(picker, triggerElement.nextSibling);
 
-  document.getElementById("emojiOverlay").addEventListener("click", () => {
-    pickerContainer.style.display = "none";
-    document.getElementById("emojiOverlay").style.display = "none";
-  });
+  const showPicker = (triggerElement) => {
+    var picker = triggerElement.nextSibling;
 
-  input.addEventListener("blur", (event) => {
-    setTimeout(() => {
-      if (!document.activeElement.closest("em-emoji-picker")) {
-        pickerContainer.style.display = "none";
-        document.getElementById("emojiOverlay").style.display = "none";
-      }
-    }, 200);
+    if (picker) {
+      picker.style.display = "block";
+    }
+  };
+
+  // Function to handle emoji selection
+  const handleEmojiSelect = (emoji, triggerElement, targetElement) => {
+    triggerElement.innerHTML = emoji.native;
+    targetElement.setAttribute("value", emoji.native);
+
+    hidePicker(triggerElement);
+  };
+
+  // Function to hide the emoji picker
+  const hidePicker = (triggerElement) => {
+    var picker = triggerElement.nextSibling;
+
+    if (picker) {
+      picker.style.display = "none";
+    }
+  };
+
+  // Attach the click event to the trigger element
+  triggerElement.addEventListener("click", () => {
+    picker = triggerElement.nextSibling;
+
+    if (picker.style.display === "none") {
+      showPicker(triggerElement);
+    } else {
+      hidePicker(triggerElement);
+    }
   });
 }
 
@@ -123,11 +200,15 @@ function initSidebar() {
     dropdownMenu.classList.toggle("show");
   });
 
-  var sidebarFloorExpanders = document.querySelectorAll('.sidebar-floor-expander');
+  var sidebarFloorExpanders = document.querySelectorAll(
+    ".sidebar-floor-expander"
+  );
 
   sidebarFloorExpanders.forEach(function (sidebarFloorExpander) {
     var floorId = sidebarFloorExpander.getAttribute("floor-id");
-    var collapseElement = document.querySelector("#collapsible-sidebar-" + floorId);
+    var collapseElement = document.querySelector(
+      "#collapsible-sidebar-" + floorId
+    );
     var bsCollapse = new bootstrap.Collapse(collapseElement, {
       toggle: false,
     });
@@ -147,7 +228,6 @@ function initSidebar() {
 
     // Add click event listener
     sidebarFloorExpander.addEventListener("click", function () {
-      console.log("inntertext: ", this.innerHTML);
       if (this.innerHTML === expandSymbol) {
         this.innerHTML = collapseSymbol;
         bsCollapse.show();
@@ -161,14 +241,17 @@ function initSidebar() {
   });
 
   // check window width, if it is less than 630px console log "haha"
-  const collapseSidebarButton = document.getElementById("collapse-sidebar-button");
+  const collapseSidebarButton = document.getElementById(
+    "collapse-sidebar-button"
+  );
 
   // select the second i element in collapsesidebarbutton
-  const secondIconElement = collapseSidebarButton.querySelector("i:nth-child(2)");
+  const firstIconElement =
+    collapseSidebarButton.querySelector("i:nth-child(1)");
 
   if (window.innerWidth < 630) {
-    secondIconElement.classList.remove("bi-arrow-left");
-    secondIconElement.classList.add("bi-arrow-right");
+    firstIconElement.classList.remove("bi-arrow-bar-left");
+    firstIconElement.classList.add("bi-arrow-bar-right");
   }
 
   collapseSidebarButton.addEventListener("click", function () {
@@ -177,7 +260,10 @@ function initSidebar() {
     const sidebarHolder = document.getElementById("sidebarHolder");
     const sidebarElements = document.querySelectorAll(".sidebar-element");
 
-    if (secondIconElement.classList.contains("bi-arrow-left")) {
+    if (firstIconElement.classList.contains("bi-arrow-bar-left")) {
+      if (window.innerWidth < 630) {
+        document.body.classList.toggle("no-scroll");
+      }
       // sidebar is collapsing
       // sed mainsidebar width to 0%
       mainSidebar.style.width = "0px";
@@ -185,10 +271,10 @@ function initSidebar() {
 
       sidebarHolder.style.width = "0px";
 
-      collapseSidebarButton.style.left ="5px"
+      collapseSidebarButton.style.left = "5px";
 
-      secondIconElement.classList.remove("bi-arrow-left");
-      secondIconElement.classList.add("bi-arrow-right");
+      firstIconElement.classList.remove("bi-arrow-bar-left");
+      firstIconElement.classList.add("bi-arrow-bar-right");
 
       // get all elements with class sidebar-element and set their display to none
       sidebarElements.forEach((element) => {
@@ -201,17 +287,18 @@ function initSidebar() {
         mainSidebar.style.display = "block";
         sidebarHolder.style.width = "250px";
 
-        collapseSidebarButton.style.left ="260px"
+        collapseSidebarButton.style.left = "260px";
       } else {
+        document.body.classList.toggle("no-scroll");
         mainSidebar.style.width = "100vw";
         mainSidebar.style.display = "block";
         sidebarHolder.style.width = "100vw";
 
-        collapseSidebarButton.style.left ="5px"
+        collapseSidebarButton.style.left = "5px";
       }
 
-      secondIconElement.classList.add("bi-arrow-left");
-      secondIconElement.classList.remove("bi-arrow-right");
+      firstIconElement.classList.add("bi-arrow-bar-left");
+      firstIconElement.classList.remove("bi-arrow-bar-right");
 
       sidebarElements.forEach((element) => {
         element.style.display = "block";
@@ -240,7 +327,6 @@ function initTaskModal() {
     }
   });
 
-
   //* Handle data submission when the "Add Task" button is clicked.
   document
     .getElementById("newTaskForm")
@@ -267,7 +353,9 @@ function initTaskModal() {
             console.log("Task added successfully?");
 
             //* find element with id close-task-modal-btn and click it
-            const closeTaskModalBtn = document.getElementById("close-task-modal-btn");
+            const closeTaskModalBtn = document.getElementById(
+              "close-task-modal-btn"
+            );
             closeTaskModalBtn.click();
 
             this.reset();
@@ -282,7 +370,6 @@ function initTaskModal() {
           );
         });
     });
-
 
   /**
    ** Make it so whenever a floor checkbox is checked, all the room checkboxes also
@@ -390,7 +477,6 @@ function initTaskModal() {
   }
 }
 
-
 /* Cookie helpers */
 
 // Function to set a cookie
@@ -398,7 +484,7 @@ function setCookie(name, value, days) {
   var expires = "";
   if (days) {
     var date = new Date();
-    date.setTime(date.getTime() + (days*24*60*60*1000));
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     expires = "; expires=" + date.toUTCString();
   }
   document.cookie = name + "=" + (value || "") + expires + "; path=/";
@@ -407,10 +493,10 @@ function setCookie(name, value, days) {
 // Function to get a cookie by name
 function getCookie(name) {
   var nameEQ = name + "=";
-  var ca = document.cookie.split(';');
+  var ca = document.cookie.split(";");
   for (var i = 0; i < ca.length; i++) {
     var c = ca[i];
-    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+    while (c.charAt(0) == " ") c = c.substring(1, c.length);
     if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
   }
   return null;

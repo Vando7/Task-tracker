@@ -91,9 +91,9 @@ body {
 }
 
 #collapse-sidebar-button {
-  background-color:rgb(43,48,53);
-  position:fixed;
-  left:260px;
+  background-color: rgb(43, 48, 53);
+  position: fixed;
+  left: 260px;
   font-size: 20px;
   margin-top: 15px;
   border-radius: 24px;
@@ -103,18 +103,19 @@ body {
   box-shadow: 0 0 10px black;
 }
 
-#collapse-sidebar-button > i{
+#collapse-sidebar-button>i {
   text-shadow: 1px 1px 15px white;
   transition: 0.3s;
 }
 
-#collapse-sidebar-button > i:hover{
+#collapse-sidebar-button>i:hover {
   text-shadow: 1px 1px 20px white;
 }
 
 #sidebarHolder {
   transition: 0.2s;
   width: 250px;
+  flex-shrink: 0;
 }
 
 #mainSidebar {
@@ -122,13 +123,13 @@ body {
   width: 250px;
   position: fixed;
   padding-top: 0;
-  padding-left:10px;
-  padding-right:10px;
-  overflow-y:scroll;
-  overflow-x:visible;
+  padding-left: 10px;
+  padding-right: 10px;
+  overflow-y: scroll;
+  overflow-x: visible;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.404) rgb(43,48,53);
-  background-color: rgb(43,48,53);
+  scrollbar-color: rgba(255, 255, 255, 0.404) rgb(43, 48, 53);
+  background-color: rgb(43, 48, 53);
   transition: 0.2s;
   z-index: 11;
 }
@@ -139,12 +140,19 @@ body {
 }
 
 @media (max-width: 630px) {
-  /* CSS that should be displayed if width is equal to or less than 800px goes here */
+  /* CSS that should be displayed if width is equal to or less than 630px goes here */
   #mainSidebar {
-    padding-left:50px;
-    padding-right:50px;
-    width:0px;
-    display:none;
+    padding-left: 50px;
+    padding-right: 50px;
+    width: 0px;
+    display: none;
+    position:fixed;
+  }
+
+  body.no-scroll {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 
   #sidebarHolder {
@@ -153,10 +161,226 @@ body {
   }
 
   #collapse-sidebar-button {
-    left:5px;
+    left: 5px;
   }
 
   .main-page-content {
-    margin-top:50px;
+    margin-top: 50px;
   }
+
+  #allauth-content-holder {
+    width: 95% !important;
+  }
+
+  .alert {
+    width: 95% !important;
+  }
+}
+
+/*
+* Task Index styling
+*/
+
+#task-index-container {
+  margin-top: 50px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: space-around;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 70px;
+}
+
+#task-index-container>.floor-item {
+  width: 350px;
+  margin: 10px;
+}
+
+.floors-index-room-redirect {
+  text-decoration: none !important;
+  color: inherit;
+}
+
+.floors-index-room-redirect>i {
+  margin-left: 5px;
+  display:none;
+  transition: 0.5s;
+}
+
+/* Display eye icon on hover over a room */
+.floors-index-room-redirect:hover>i {
+  display:inline;
+}
+
+.floors-index-item {
+  padding: 10px 10px 1px 20px;
+  margin: 0 !important;
+  transition: 0.333s ease-in-out;
+}
+
+.floors-index>.floors-index-item:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+
+.floors-index-item:hover, .floors-index-item:nth-child(even):hover  {
+  background-color: black;
+}
+
+.floor-item>.card {
+  border: 0;
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.5);
+  transition: 0.2s;
+}
+
+.floor-item>.card>.card-body {
+  padding: 0;
+}
+
+.floor-item>.card>.card-header {
+  border: 0;
+}
+
+.add-room-button {
+  display:block;
+  padding: 4px;
+  width: 100px;
+  margin-top: 7px;
+  margin-bottom: 7px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-shadow: 0 0 20px rgba(13,110,253, 0.1);
+  background-color: rgba(0,0,0,0);
+  border:0;
+  transition: 0.2s;
+}
+
+.add-room-button:hover {
+  box-shadow: 0 0 20px rgb(13,110,253);
+}
+
+.add-room-form {
+  display:none;
+  transition: 0.2s;
+  margin: 10px;
+  padding: 15px;
+  border-radius: 10px;
+  background-color: rgb(43, 48, 53);
+}
+
+.add-room-button-submit, .add-floor-btn-submit, .add-floor-button-submit {
+  display: inline-block;
+  width: 75px;
+  margin-left: 30px;
+  background-color: rgba(25,135,84, 0.6);
+  box-shadow: 0 0 15px rgba(25,135,84, 0.6);
+}
+
+.add-room-button-submit:hover, .add-floor-btn-submit:hover, .add-floor-button-submit:hover {
+  box-shadow: 0 0 20px rgba(25,135,84, 1);
+}
+
+.room-emoji {
+  margin-left: 10px;
+  padding:0;
+  border:0;
+  font-size:30px;
+  text-shadow: 0 0 15px rgba(255, 255, 0, 0.315);
+  transition: 0.3s;
+}
+
+.room-emoji:hover {
+  background-color: rgba(0, 0, 0, 0);
+  text-shadow: 0 0 15px rgba(255, 255, 0, 0.822);
+}
+
+#add-floor-expand-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 10px;
+  transform: translate(-50%, -50%);
+  box-shadow: 2px 2px 8px rgba(255, 255, 255, 0.5);
+  margin: 0 auto;
+  border-radius: 30px;
+  font-size: 20px;
+}
+
+#addFloorForm {
+  width: 250px;
+  position: fixed;
+  left: 50%;
+  bottom: -50px;
+  transform: translate(-50%, -50%);
+  background-color: rgb(33,37,41);
+  box-shadow:
+    0px 0px 10px black,
+    0px 0px 20px white,
+    0px 0px 30px black,;
+  padding: 15px;
+  border-radius: 15px;
+  display:none;
+}
+
+.floor-emoji {
+  margin-left: 10px;
+  padding:0;
+  border:0;
+  font-size:30px;
+  text-shadow: 0 0 15px rgba(255, 255, 0, 0.315);
+  transition: 0.3s;
+}
+
+.floor-emoji:hover {
+  background-color: rgba(0, 0, 0, 0);
+  text-shadow: 0 0 15px rgba(255, 255, 0, 0.822);
+}
+
+.edit-room-form {
+  display: none;
+}
+
+.edit-floor-form {
+  display:none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.842);
+}
+
+.edit-btn, .delete-btn {
+  background-color: rgba(255, 255, 255, 0);
+  border: 0;
+}
+
+/*
+* Allauth styling
+*/
+
+#allauth-content-holder {
+  margin-top: 50px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#allauth-content-holder>form>button {
+  box-shadow: 0 0 10px black;
+  margin: 5px;
+}
+
+#allauth-content-holder>form {
+  box-shadow: 0 0 10px black;
+  margin-right: 20px;
+  margin-bottom: 50px;
+  padding: 20px;
+  border-radius: 30px;
+  background-color: rgb(43, 48, 53);
+}
+
+.alert {
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
