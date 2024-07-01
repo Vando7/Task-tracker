@@ -15,7 +15,7 @@ Task Tracker is a powerful application designed to help you efficiently manage a
 - **Backend**: Django
 - **Frontend**: Bootstrap
 - **Database**: PostgreSQL
-- **Real-time Updates**: Implemented using Django Channels
+- **Real-time Updates**: Pure javascript and AJAX calls.
 
 Task Tracker is an excellent portfolio project, showcasing your ability to build a full-stack application with real-time capabilities, user authentication, and collaborative features.
 
