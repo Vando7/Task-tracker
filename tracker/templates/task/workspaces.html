@@ -40,6 +40,115 @@
   </style>
 {% endblock viewSpecificCss %}
 
+{% block help_btn %}
+  <button type="button" class="btn btn-dark help-btn help-btn-pulsing" data-bs-toggle="modal" data-bs-target="#helpModal">
+    <i class="bi bi-question-circle"></i>
+  </button>
+
+  <!-- Modal -->
+  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="border: 0;">
+          <h1 class="modal-title fs-5" id="helpModalLabel">Help</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="accordion" id="workspaceHelpAccordion">
+            <!-- Workspace Overview -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="workspaceHeadingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceCollapseOne" aria-expanded="true" aria-controls="workspaceCollapseOne">
+                  📋 Workspace Overview
+                </button>
+              </h2>
+              <div id="workspaceCollapseOne" class="accordion-collapse collapse show" aria-labelledby="workspaceHeadingOne" data-bs-parent="#workspaceHelpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    When you registered, we created a workspace just for you. This is your personal space where you can manage all your tasks, floors, and rooms. Think of it as your own digital command center!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Adding Users to Workspace -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="workspaceHeadingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceCollapseTwo" aria-expanded="false" aria-controls="workspaceCollapseTwo">
+                  👥 Adding Users to Your Workspace
+                </button>
+              </h2>
+              <div id="workspaceCollapseTwo" class="accordion-collapse collapse" aria-labelledby="workspaceHeadingTwo" data-bs-parent="#workspaceHelpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    Want to collaborate with others? You can add them to your workspace! Just enter their email in the "Add User to Workspace" section and click "Add User". It's a great way to share the load and keep everyone on the same page.
+                  </p>
+                  <img src="{% static 'images/add-users.png' %}" alt="Adding Users to Workspace" class="img-fluid mb-3" style="max-width: 100%; padding: 10px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Selecting Current Workspace -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="workspaceHeadingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceCollapseThree" aria-expanded="false" aria-controls="workspaceCollapseThree">
+                  🏠 Choosing Your Current Workspace
+                </button>
+              </h2>
+              <div id="workspaceCollapseThree" class="accordion-collapse collapse" aria-labelledby="workspaceHeadingThree" data-bs-parent="#workspaceHelpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    You can select which workspace you want to work with during your current session. Simply choose from the "Current Workspace" dropdown menu. This lets you switch between different workspaces easily.
+                  </p>
+                  <img src="{% static 'images/select-current-workspace.png' %}" alt="Selecting Current Workspace" class="img-fluid mb-3" style="max-width: 100%; padding: 10px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Selecting Default Workspace -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="workspaceHeadingFour">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceCollapseFour" aria-expanded="false" aria-controls="workspaceCollapseFour">
+                  🌟 Setting Your Default Workspace
+                </button>
+              </h2>
+              <div id="workspaceCollapseFour" class="accordion-collapse collapse" aria-labelledby="workspaceHeadingFour" data-bs-parent="#workspaceHelpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    Want to save time? Set a default workspace to be automatically selected when you log in. Go to the "Select Default Workspace" section and choose your preferred workspace. It’s like setting your homepage!
+                  </p>
+                  <img src="{% static 'images/select-default-workspace.png' %}" alt="Selecting Default Workspace" class="img-fluid mb-3" style="max-width: 100%; padding: 10px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Example Scenario -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="workspaceHeadingFive">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceCollapseFive" aria-expanded="false" aria-controls="workspaceCollapseFive">
+                  💡 Example Scenario
+                </button>
+              </h2>
+              <div id="workspaceCollapseFive" class="accordion-collapse collapse" aria-labelledby="workspaceHeadingFive" data-bs-parent="#workspaceHelpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    Here’s a quick example: You register and start setting up floors and rooms in your workspace. Later, your partner also registers. You can add them to your workspace so they can help manage tasks. Then, they can set this shared workspace as their default, making collaboration a breeze!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="modal-footer" style="border: 0;">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock help_btn %}
+
 {% block content %}
 <h2 class="mb-4" style="text-align: center; margin-top:20px;">
   Workspaces <span class="badge bg-primary">{{ workspaces|length }}</span>

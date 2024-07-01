@@ -15,7 +15,7 @@
                 data-bs-dismiss="modal"
                 aria-label="Close"></button>
       </div>
-      <form id="newTaskForm"  action="{% url 'task:create_task' %}" method="post">
+      <form id="newTaskForm" action="{% url 'task:create_task' %}" method="post">
         {% csrf_token %}
         <div class="modal-body py-2">
           <!-- New Task Form -->
@@ -23,39 +23,35 @@
           <div class="row g-2 mb-2">
             <label for="taskName" class="col-3 col-form-label" style="padding-left:15px">Task</label>
             <div class="col-9">
-              <input type="text"
-                     name="taskName"
-                     class="form-control"
-                     id="taskName"
-                     placeholder="Vacuum, Do dishes, etc.."
-                     maxlength="128"
-                     required />
+              <input type="text" name="taskName" class="form-control" id="taskName" placeholder="Vacuum, Do dishes, etc.." maxlength="128" required />
             </div>
           </div>
           <!-- Task description -->
           <div class="row g-2 mb-2">
-            <label for="taskDescription"
-                   class="col-3 col-form-label"
-                   style="padding-left:15px">Description</label>
+            <label for="taskDescription" class="col-3 col-form-label" style="padding-left:15px">
+              Info
+              <i class="bi bi-question-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Anything special or specific about this task?"></i>
+            </label>
             <div class="col-9">
-              <textarea class="form-control"
-                        name="taskDescription"
-                        id="taskDescription"
-                        placeholder="Anything special or specific about this task?"
-                        maxlength="512"
-                        required></textarea>
+              <textarea class="form-control" name="taskDescription" id="taskDescription" placeholder="Anything special or specific about this task?" maxlength="512" required></textarea>
             </div>
           </div>
           <!-- Due date -->
           <div class="row g-2 mb-2">
-            <label for="dueDate" class="col-3 col-form-label" style="padding-left:15px">Deadline</label>
+            <label for="dueDate" class="col-3 col-form-label" style="padding-left:15px">
+              Deadline
+              <i class="bi bi-question-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Select the deadline for the task."></i>
+            </label>
             <div class="col-9">
               <input type="date" class="form-control" name="dueDate" id="dueDate" />
             </div>
           </div>
           <!-- Type -->
           <div class="row g-2 mb-2">
-            <label for="type" class="col-3 col-form-label" style="padding-left:15px">Regularity</label>
+            <label for="type" class="col-3 col-form-label" style="padding-left:15px">
+              Regularity
+              <i class="bi bi-question-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Single: One-time task. Recurring: Task can be redone later."></i>
+            </label>
             <div class="col-9">
               <select class="form-select" name="type" required>
                 <option value="single" selected>Single</option>
@@ -65,7 +61,10 @@
           </div>
           <!-- Category -->
           <div class="row g-2 mb-2">
-            <label for="category" class="col-3 col-form-label" style="padding-left:15px">Category</label>
+            <label for="category" class="col-3 col-form-label" style="padding-left:15px">
+              Category
+              <i class="bi bi-question-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Normal: Standard task. Urgent: High priority. Special: Special occasion."></i>
+            </label>
             <div class="col-9">
               <select class="form-select" name="category" required>
                 <option value="normal" selected>Normal</option>
@@ -78,54 +77,25 @@
           <div class="mb-3" style="padding-top:15px">
             <div class="accordion" id="floorAccordion">
               {% for floor in request.session.sidebar_floors %}
-                {%comment%}if floor has no rooms then skip{%endcomment%}
                 {% if not floor.rooms %}
                   <!-- continue -->
                 {% else %}
                   <div class="accordion-item">
                     <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                      <button class="accordion-button {% if not view_type == 'room' or floor.id != room_floor_id %}collapsed{% endif %}"
-                              type="button"
-                              data-bs-toggle="collapse"
-                              data-bs-target="#collapse{{ floor.id }}"
-                              aria-expanded="{% if floor.id == room_floor_id %}true{% else %}false{% endif %}"
-                              aria-controls="collapse{{ forloop.counter }}">
+                      <button class="accordion-button {% if not view_type == 'room' or floor.id != room_floor_id %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ floor.id }}" aria-expanded="{% if floor.id == room_floor_id %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
                         <div class="form-check">
                           <!-- Add checked attribute for floor checkbox when in floor view -->
-                          <input class="form-check-input"
-                                 type="checkbox"
-                                 value="{{ floor.id }}"
-                                 id="floor-{{ floor.name }}"
-                                 name="floorIDs"
-                                 {% if floor_id and floor.id == floor_id %}checked{% endif %}
-                                 style="width: 25px;
-                                        height: 25px;
-                                        margin-right:10px" />
-                          <label class="form-check-label"
-                                 for="{{ floor.name }}"
-                                 style="padding-top:7px">{{ floor.name }}</label>
+                          <input class="form-check-input" type="checkbox" value="{{ floor.id }}" id="floor-{{ floor.name }}" name="floorIDs" {% if floor_id and floor.id == floor_id %}checked{% endif %} style="width: 25px; height: 25px; margin-right:10px" />
+                          <label class="form-check-label" for="{{ floor.name }}" style="padding-top:7px">{{ floor.name }}</label>
                         </div>
                       </button>
                     </h2>
-                    <div id="collapse{{ floor.id }}"
-                         class="accordion-collapse collapse {% if  view_type == 'room' and floor.id == room_floor_id or floor.id == floor_id %}show{% endif %}"
-                         aria-labelledby="heading{{ forloop.counter }}"
-                         data-bs-parent="#floorAccordion">
+                    <div id="collapse{{ floor.id }}" class="accordion-collapse collapse {% if view_type == 'room' and floor.id == room_floor_id or floor.id == floor_id %}show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#floorAccordion">
                       <div class="accordion-body">
                         {% for room in floor.rooms %}
                           <div class="form-check">
-                            <input class="form-check-input"
-                                   type="checkbox"
-                                   value="{{ room.id }}"
-                                   name="roomIDs"
-                                   data-floor-id="floor-{{ floor.name }}"
-                                   id="{{ room.name }}"
-                                   {% if room.id == room_id or floor.id == floor_id %}checked{% endif %}
-                                   style="width: 20px;
-                                          height: 20px" />
-                            <label class="form-check-label"
-                                   for="{{ room.name }}"
-                                   style="font-size: 16px">{{ room.name }}</label>
+                            <input class="form-check-input" type="checkbox" value="{{ room.id }}" name="roomIDs" data-floor-id="floor-{{ floor.name }}" id="{{ room.name }}" {% if room.id == room_id or floor.id == floor_id %}checked{% endif %} style="width: 20px; height: 20px" />
+                            <label class="form-check-label" for="{{ room.name }}" style="font-size: 16px">{{ room.name }}</label>
                           </div>
                         {% endfor %}
                       </div>
@@ -136,18 +106,10 @@
             </div>
           </div>
         </div>
-        <div class="alert alert-danger"
-             role="alert"
-             id="taskModalErrorField"
-             style="margin-left:40px;
-                    margin-right:40px;
-                    background-color:maroon;
-                    color:white;
-                    text-align:center;
-                    display:none">Please select a room or floor</div>
-        <div class="modal-footer py-2"
-             style="border: none;
-                    padding-bottom:15px !important">
+        <div class="alert alert-danger" role="alert" id="taskModalErrorField" style="margin-left:40px; margin-right:40px; background-color:maroon; color:white; text-align:center; display:none">
+          Please select a room or floor
+        </div>
+        <div class="modal-footer py-2" style="border: none; padding-bottom:15px !important">
           <!-- Reduced padding here -->
           <button type="button" class="btn btn-dark" id="close-task-modal-btn" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" id="submit-task-modal-btn" class="btn btn-info">Add task</button>
@@ -156,3 +118,12 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+  });
+</script>

@@ -9,7 +9,21 @@ document.addEventListener("DOMContentLoaded", function () {
   initAddRoomModal();
   initEditRoomForm();
   initEditFloorForm();
+  initSearchForm();
 });
+
+function initSearchForm() {
+  var searchButton = document.getElementById("button-search");
+  searchButton.addEventListener("click", function () {
+    var searchInput = document.getElementById("search-input");
+    var search = searchInput.value;
+
+    if (search.length > 0) {
+      var url = "http://" + window.location.hostname + ":" + window.location.port + "/task/search_tasks/" + search;
+      window.location.href = url;
+    }
+  });
+}
 
 function initEditFloorForm() {
   const floorEmojiElements = document.querySelectorAll(".floor-emoji");
@@ -107,11 +121,6 @@ function initAddRoomModal() {
 }
 
 function initAddFloorForm() {
-  //* Attach emoji picker element
-  const emojiTrigger = document.getElementById("floorEmoji");
-  const emojiValueElement = document.getElementById("floorEmoji-value");
-  attachEmojiPicker(emojiTrigger, emojiValueElement);
-
   //* Init expand button functionality
   const addFloorExpandButton = document.getElementById("add-floor-expand-btn");
 
@@ -146,14 +155,63 @@ function attachEmojiPicker(triggerElement, targetElement) {
       handleEmojiSelect(emoji, triggerElement, targetElement),
   });
 
+  picker.classList.add("emoji-picker");
+  picker.style.position = 'fixed';
+  picker.style.top = '50%';
+  picker.style.left = '50%';
+  picker.style.transform = 'translate(-50%, -50%)';
+  picker.style.zIndex = '1000';
+
   picker.appendChild(emojiPicker);
+
+  // Create the overlay element
+
+  // get element with id emoji-picker-overlay
+  const emojiPickerOverlay = document.getElementById("emoji-picker-overlay");
+
+  if (!emojiPickerOverlay) {
+    var overlay = document.createElement("div");
+    overlay.id = "emoji-picker-overlay";
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    overlay.style.zIndex = '500';
+    overlay.style.display = 'none';
+
+    overlay.addEventListener('click', function(event) {
+
+      const emojiPickers = document.querySelectorAll(".emoji-picker");
+
+      if (emojiPickers.length > 0) {
+        emojiPickers.forEach(function (emojiPicker) {
+
+          if(emojiPicker.style.display !== "block"){
+            return;
+          }
+
+          emojiPicker.style.display = "none";
+        });
+      }
+
+      overlay.style.display = 'none';
+    });
+
+    // Append elements to the body
+    document.body.appendChild(overlay);
+  }
+
   triggerElement.parentNode.insertBefore(picker, triggerElement.nextSibling);
 
   const showPicker = (triggerElement) => {
     var picker = triggerElement.nextSibling;
+    var overlay = document.getElementById("emoji-picker-overlay");
 
     if (picker) {
       picker.style.display = "block";
+      overlay.style.display = "block";
     }
   };
 
@@ -168,14 +226,17 @@ function attachEmojiPicker(triggerElement, targetElement) {
   // Function to hide the emoji picker
   const hidePicker = (triggerElement) => {
     var picker = triggerElement.nextSibling;
+    var overlay = document.getElementById("emoji-picker-overlay");
 
     if (picker) {
       picker.style.display = "none";
+      overlay.style.display = "none";
     }
   };
 
   // Attach the click event to the trigger element
   triggerElement.addEventListener("click", () => {
+    console.log("clicked");
     picker = triggerElement.nextSibling;
 
     if (picker.style.display === "none") {

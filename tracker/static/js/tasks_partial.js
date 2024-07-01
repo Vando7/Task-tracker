@@ -382,6 +382,8 @@ function flashCard(taskCardElement, flashCount){
 async function fetchLatestTimestamp() {
   let floorId = getFloorID();
   let roomId = getRoomID();
+  let search = getSearch();
+
   let url = new URL(
     `/task/fetch_latest_task_timestamp`,
     window.location.origin
@@ -393,6 +395,11 @@ async function fetchLatestTimestamp() {
 
   if (roomId) {
     url.searchParams.append("room_id", roomId);
+  }
+
+  if (search) {
+    console.log("polling search")
+    url.searchParams.append("search", search);
   }
 
   try {
@@ -1008,6 +1015,11 @@ async function loadPendingTasks() {
 async function loadDoneTasks() {
   const done_tasks = await fetchTasks(true);
 
+  if(done_tasks.length === 0) {
+    console.log(tasks);
+    document.getElementById("no_tasks_completed").style.display = "block";
+  }
+
   renderTasks(done_tasks, "done_tasks_holder");
 }
 
@@ -1015,6 +1027,7 @@ function renderTasks(tasks, elementId) {
   const container = document.getElementById(elementId);
   const template = document.getElementById("task-template");
   const fragment = document.createDocumentFragment();
+
 
   tasks.forEach((task) => {
     if(task.deleted_date) {
@@ -1232,10 +1245,23 @@ function getFloorID() {
   return floor_id;
 }
 
+function getSearch() {
+  var search_holder = document.getElementById("search_holder");
+  var search = null;
+
+  if (search_holder) {
+    search = search_holder.getAttribute("search");
+  }
+
+  return search;
+}
+
 /* Helper */
 function fetchTasks(completed = false) {
   let floor_id = getFloorID();
   let room_id = getRoomID();
+  let search = getSearch();
+
   let url = new URL(`/task/fetch_tasks`, window.location.origin);
 
   if (floor_id) {
@@ -1244,6 +1270,11 @@ function fetchTasks(completed = false) {
 
   if (room_id) {
     url.searchParams.append("room_id", room_id);
+  }
+
+  if (search) {
+    console.log("fetching search");
+    url.searchParams.append("search", search);
   }
 
   url.searchParams.append("completed", completed);

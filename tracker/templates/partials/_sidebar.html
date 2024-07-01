@@ -13,11 +13,13 @@
             {% if user.avatar %}
             <img src="{{ user.avatar.url }}" alt="Avatar" style="height: 32px;
                             width: 32px;
-                            border-radius: 50%" />
+                            border-radius: 50%;
+                            margin-right: 15px;" />
             {% else %}
             <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" style="height: 32px;
                             width: 32px;
-                            border-radius: 50%" />
+                            border-radius: 50%;
+                            margin-right: 15px;" />
             {% endif %}
             <strong style="padding-left:5px; margin-top:5px; font-size: 30px">{{ user.name }}</strong>
         </a>
@@ -41,19 +43,6 @@
     </div>
     <hr class="sidebar-element" />
     <ul class="nav nav-pills flex-column mb-auto ps-0 sidebar-ul sidebar-element">
-      <li class="nav-item">
-        <a href="{% url 'home' %}"
-              class="btn btn btn-outline-info"
-              aria-current="page"
-              style="
-              margin-top:15px;
-              margin-bottom:15px;
-              border-radius:20px;
-              width: 100%;
-              text-align:center">
-            <strong><i class="bi bi-house-heart-fill" style="font-size: 20px; margin-right:5px;"></i> Home</strong>
-        </a>
-      </li>
       <li class="nav-item">
           <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#NewTaskModal"
               style="width: 100%;border-radius:20px;margin-bottom:15px;"><i class="bi bi-plus-square-fill" style="font-size: 20px;margin-right:5px;"></i> New task

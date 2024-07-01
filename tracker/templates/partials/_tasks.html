@@ -5,8 +5,123 @@
 {% block inline_javascript %}
  <script src="{% static 'js/tasks_partial.js' %}"></script>
 {% endblock %}
+
+{% block help_btn %}
+  <button type="button" class="btn btn-dark help-btn help-btn-pulsing" data-bs-toggle="modal" data-bs-target="#helpModal">
+    <i class="bi bi-question-circle"></i>
+  </button>
+
+  <!-- Modal -->
+  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="border: 0;">
+          <h1 class="modal-title fs-5" id="helpModalLabel">Help</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="border: 0;">
+          <div class="accordion" id="helpAccordion">
+            <!-- Adding Tasks -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                  ➕ Adding Tasks
+                </button>
+              </h2>
+              <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    To add a new task, click on the "New Task" button. Fill in the task details such as the name, description, deadline, regularity (single or recurring), and category (normal, urgent, special). You can also select which rooms or floors the task applies to.
+                  </p>
+                  <img src="{% static 'images/new-task-form-1.png' %}" alt="New Task Form" class="img-fluid mb-3" style="max-width: 100%; padding: 10px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Managing Tasks -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                  🛠️ Managing Tasks
+                </button>
+              </h2>
+              <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    Tasks are divided into pending and completed sections. Pending tasks appear at the top, while completed tasks appear at the bottom. To mark a task as done, click the green checkmark. Repeatable tasks can be moved back to pending by clicking the blue circular arrows icon.
+                  </p>
+                  <img src="{% static 'images/task-sections.png' %}" alt="Task Sections" class="img-fluid mb-3" style="max-width: 100%; padding: 10px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Editing Tasks -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                  ✏️ Editing Tasks
+                </button>
+              </h2>
+              <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    To edit a task, click on the task to expand it. You can update the task details such as name, description, type, category, deadline, and assigned rooms. Changes are instantly saved and refreshed. Editable text fields (task name and description) can be clicked directly to modify.
+                  </p>
+                  <img src="{% static 'images/edit-task.png' %}" alt="Editing Task" class="img-fluid mb-3" style="max-width: 100%; padding: 10px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Updates -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingFour">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                  🔄 Dynamic Updates
+                </button>
+              </h2>
+              <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    When you change task details, they are instantly saved and reflected across all users' views in real-time. This means that if another user has the same page open, the tasks will update dynamically without needing a page refresh.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Task Details -->
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingFive">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                  📝 Task Details
+                </button>
+              </h2>
+              <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                  <p style="padding: 10px; line-height: 1.5;">
+                    Each task card can be expanded to reveal more details such as the room(s) it is assigned to. This section also provides controls to update more task info, and change which rooms it is assigned to. This is useful for tasks that span multiple rooms or need adjustments.
+                  </p>
+                  <img src="{% static 'images/edit-task.png' %}" alt="Editing Task" class="img-fluid mb-3" style="max-width: 100%; padding: 10px;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+        <div class="modal-footer" style="border: 0;">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock help_btn %}
+
 {% if floor_id %}<div id="floor_id_holder" floor_id="{{ floor_id }}"></div>{% endif %}
 {% if room_id %}<div id="room_id_holder" room_id="{{ room_id }}"></div>{% endif %}
+{% if search %}<div id="search_holder" search="{{ search }}"></div>{% endif %}
+{% if home_page %}<div id="home_page_holder" home_page="{{ home_page }}"></div>{% endif %}
+
 <!-- placeholder for dynamically loaded tasks -->
 <div id="tasks" class="container">
   <div style="text-align: center;
@@ -14,7 +129,11 @@
                 1px 1px 5px {% if floor %} {{ floor.color }} {% else %} black {% endif %},
                 1px 1px 5px {% if floor %} {{ floor.color }} {% else %} black {% endif %};
               font-size: 20px;
-              margin-bottom: 20px">Pending tasks for {% if room %} {{ room.icon }} {{ room.name }}{% else %} {{ floor.icon }} {{ floor.name }}{% endif %}</div>
+              margin-bottom: 20px">
+                Pending tasks for
+                {% if room %} {{ room.icon }} {{ room.name }} ({{ room.floor.name }}){% endif %}
+                {% if floor %} {{ floor.icon }} {{ floor.name }}{% endif %}
+                {% if search %} search term '{{ search }}'{% endif %}</div>
   <div id="pending_tasks_holder">
     <div id="no-tasks-congrats" class="congrats-banner">
       <div class="congrats-content">
@@ -60,12 +179,14 @@
     </div>
   </div>
 
+
   <div style="text-align: center;
               text-shadow: 1px 1px 15px  {% if floor %} {{ floor.color }} {% else %} black {% endif %};
               margin-bottom: 20px;
               font-size: 20px">Completed tasks</div>
   <hr style="width: 70%; margin:auto;" />
   <div id="done_tasks_holder">
+    <h2 id="no_tasks_completed" style="display:none; color:grey;">No tasks completed yet</h2>
     <div class="col-lg-4 col-md-6 col-sm-12 lading-container-pending task-holder">
       <div class="card mb-3 shadow card-loading-main" style="width:100%;">
         <div class="card-header card-loading-header">
@@ -103,6 +224,7 @@
       </div>
     </div>
   </div>
+
 </div>
 
 <template id="task-template">

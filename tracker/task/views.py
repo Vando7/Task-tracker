@@ -163,9 +163,12 @@ def fetch_tasks(request):
 
     floor_id = request.GET.get("floor_id")
     room_id = request.GET.get("room_id")
+    search = request.GET.get("search")
     completed = request.GET.get("completed") == "true"
 
-    if not floor_id and not room_id:
+    selected_workspace_id = request.session.get("selected_workspace_id")
+
+    if not floor_id and not room_id and not search:
         return JsonResponse({"error": "No floor or room id provided"}, status=400)
 
     if floor_id and room_id:
@@ -174,38 +177,48 @@ def fetch_tasks(request):
             status=400,
         )
 
-    tasks = Task.objects.none()  # Initialize with no tasks
+    tasks = Task.objects  # Initialize with no tasks
 
     if floor_id:
         floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
         rooms = floor.rooms.all()
-        num_rooms = rooms.count()
 
         # Fetch tasks associated with at least all rooms on this floor
         # filter out tasks that have a deleted_date different from 0 or null
         tasks = None
 
         if completed:
-            recurring_tasks = Task.objects.filter(
-                Q(status="done") & Q(type="recurring"),
-            ).order_by("-modified_date")
+            recurring_tasks = (
+                Task.objects.filter(
+                    Q(status="done") & Q(type="recurring"),
+                )
+                .order_by("-modified_date")
+                .filter(Q(rooms__floor__workspace__id=selected_workspace_id))
+            )
+
+            for room in rooms:
+                recurring_tasks = recurring_tasks.filter(rooms=room)
 
             tasks = list(recurring_tasks)
 
-            additional_tasks = Task.objects.filter(
-                Q(status="done") & ~Q(type="recurring"),
-            ).order_by(
-                "-modified_date",
-            )[:20]
+            additional_tasks = (
+                Task.objects.filter(Q(status="done") & ~Q(type="recurring"))
+                .order_by(
+                    "-modified_date",
+                )
+                .filter(Q(rooms__floor__workspace__id=selected_workspace_id))
+            )
+
+            for room in rooms:
+                additional_tasks = additional_tasks.filter(rooms=room)
+
+            additional_tasks = additional_tasks[:20]
 
             tasks += list(additional_tasks)
 
         else:
             tasks = (
                 Task.objects.annotate(
-                    num_rooms_on_floor=Count(
-                        "rooms", filter=Q(rooms__in=rooms), distinct=True
-                    ),
                     custom_order=models.Case(
                         models.When(category="urgent", then=models.Value(1)),
                         models.When(category="special", then=models.Value(2)),
@@ -214,11 +227,15 @@ def fetch_tasks(request):
                         output_field=models.IntegerField(),
                     ),
                 )
-                .filter(num_rooms_on_floor=num_rooms)
                 .exclude(Q(deleted_date__isnull=False))
                 .order_by("custom_order", "-modified_date")
                 .distinct()
+                .filter(Q(rooms__floor__workspace__id=selected_workspace_id))
             )
+
+            for room in rooms:
+                tasks = tasks.filter(rooms=room)
+
             tasks = tasks.exclude(status="done")
 
     if room_id:
@@ -227,9 +244,7 @@ def fetch_tasks(request):
         # Apply the same completion filter to room-specific tasks
         if completed:
             recurring_tasks = (
-                Task.objects.filter(
-                    Q(status="done") & Q(type="recurring"),
-                )
+                Task.objects.filter(Q(status="done") & Q(type="recurring"))
                 .filter(rooms=room)
                 .order_by("-modified_date")
             )
@@ -237,9 +252,7 @@ def fetch_tasks(request):
             tasks = list(recurring_tasks)
 
             additional_tasks = (
-                Task.objects.filter(
-                    Q(status="done") & ~Q(type="recurring"),
-                )
+                Task.objects.filter(Q(status="done") & ~Q(type="recurring"))
                 .filter(rooms=room)
                 .order_by("-modified_date")[:20]
             )
@@ -258,11 +271,26 @@ def fetch_tasks(request):
                     ),
                 )
                 .exclude(Q(deleted_date__isnull=False))
+                .filter(Q(rooms__floor__workspace__id=selected_workspace_id))
                 .filter(rooms=room)
                 .order_by("custom_order", "-modified_date")
                 .distinct()
             )
 
+            tasks = tasks.exclude(status="done")
+
+    if search:
+        write_to_log(f"search: {search}")
+        search = str(search)
+        tasks = tasks.filter(
+            Q(task_name__icontains=search) | Q(task_description__icontains=search),
+        ).distinct()
+
+        tasks = tasks.filter(Q(rooms__floor__workspace__id=selected_workspace_id))
+
+        if completed:
+            tasks = tasks.filter(status="done")
+        else:
             tasks = tasks.exclude(status="done")
 
     task_data = [
@@ -302,8 +330,10 @@ def fetch_latest_task_timestamp(request):
 
     floor_id = request.GET.get("floor_id")
     room_id = request.GET.get("room_id")
+    search = request.GET.get("search")
+    selected_workspace_id = request.session.get("selected_workspace_id")
 
-    if not floor_id and not room_id:
+    if not floor_id and not room_id and not search:
         return JsonResponse({"error": "No floor or room id provided"}, status=400)
 
     if floor_id and room_id:
@@ -312,20 +342,32 @@ def fetch_latest_task_timestamp(request):
             status=400,
         )
 
-    tasks = Task.objects.none()  # Initialize with no tasks
+    tasks = Task.objects  # Initialize with no tasks
 
     if floor_id:
         floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
         rooms = floor.rooms.all()
-        num_rooms = rooms.count()
 
-        tasks = Task.objects.annotate(
-            num_rooms_on_floor=Count("rooms", filter=Q(rooms__in=rooms), distinct=True)
-        ).filter(num_rooms_on_floor=num_rooms)
+        for room in rooms:
+            tasks = tasks.filter(rooms=room)
+
+        tasks = tasks.filter(Q(rooms__floor__workspace__id=selected_workspace_id))
 
     if room_id:
         room = get_object_or_404(Room, id=room_id, floor__workspace__users=request.user)
-        tasks = Task.objects.filter(rooms=room)
+        tasks = Task.objects.filter(rooms=room).filter(
+            Q(rooms__floor__workspace__id=selected_workspace_id),
+        )
+
+    if search:
+        search = str(search)
+        tasks = (
+            tasks.filter(Q(rooms__floor__workspace__id=selected_workspace_id))
+            .filter(
+                Q(task_name__icontains=search) | Q(task_description__icontains=search)
+            )
+            .distinct()
+        )
 
     latest_timestamp = tasks.aggregate(latest=Max("modified_date"))["latest"]
 
@@ -375,6 +417,19 @@ def floor(request, floor_id):
             "view_type": "floor",
             "floor_id": floor.id,
             "floor": floor,
+            "today": timezone.now(),
+        },
+    )
+
+
+@login_required
+def search(request, search):
+    return render(
+        request,
+        "task/search.html",
+        {
+            "view_type": "search",
+            "search": search,
             "today": timezone.now(),
         },
     )
@@ -434,6 +489,7 @@ def create_task(request):
 @login_required
 @require_POST
 def update_task(request):
+    write_to_log("update_task")
     try:
         data = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:

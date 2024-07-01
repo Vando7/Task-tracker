@@ -45,4 +45,5 @@ urlpatterns = [
     ),
     path("edit_room/<int:room_id>", views.edit_room, name="edit_room"),
     path("edit_floor/<int:floor_id>", views.edit_floor, name="edit_floor"),
+    path("search_tasks/<str:search>", views.search, name="search"),
 ]
