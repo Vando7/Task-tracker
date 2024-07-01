@@ -30,23 +30,15 @@ def index(request):
     default_workspace = user.default_workspace
     workspace = user.workspaces.all()
 
-    # Prefetch floors with related rooms
     floors_prefetch = Prefetch("floors__rooms", queryset=Room.objects.all())
-    # Use prefetch_related to optimize fetching of related objects
     selected_workspace_id = request.session.get("selected_workspace_id", None)
 
-    # Get the selected workspace ID from the session
     all_workspaces = Workspace.objects.filter(users=user).prefetch_related(
         floors_prefetch,
     )
 
     workspace = all_workspaces.get(id=selected_workspace_id)
-    # todo what if the selected_workspace_id is not in the user's workspaces?
-    # todo can that even be possible?
-    # todo maybe add validation for that idk lol :D
 
-    # Since tasks are related to rooms, they will be fetched
-    # as part of the rooms prefetch
     context = {
         "default_workspace": default_workspace,
         "workspace": workspace,
@@ -110,10 +102,8 @@ def edit_floor(request, floor_id):
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
 
-    # Get the floor instance
     floor = get_object_or_404(Floor, id=floor_id, workspace__users=request.user)
 
-    # Update the floor details from POST data
     floor_name = request.POST.get("floor_name")
     floor_color = request.POST.get("floor_color")
     floor_emoji = request.POST.get("floor_emoji")
@@ -125,7 +115,6 @@ def edit_floor(request, floor_id):
     if floor_emoji:
         floor.icon = floor_emoji
 
-    # Save the updated floor
     floor.save()
 
     return redirect(reverse("task:index"))
@@ -137,10 +126,8 @@ def edit_room(request, room_id):
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
 
-    # Get the room instance
     room = get_object_or_404(Room, id=room_id, floor__workspace__users=request.user)
 
-    # Update the room details from POST data
     room_name = request.POST.get("room_name")
     room_emoji = request.POST.get("room_emoji")
 
@@ -149,7 +136,6 @@ def edit_room(request, room_id):
     if room_emoji:
         room.icon = room_emoji
 
-    # Save the updated room
     room.save()
 
     return redirect(reverse("task:index"))
@@ -441,7 +427,6 @@ def create_task(request):
     if request.method != "POST":
         return JsonResponse({"status": "error", "error": "Invalid request method"})
 
-    # Adapt form field names as necessary based on your modal's form
     task_name = request.POST.get("taskName")
     task_description = request.POST.get("taskDescription")
     due_date = request.POST.get("dueDate")
@@ -449,7 +434,6 @@ def create_task(request):
     task_category = request.POST.get("category")
     room_ids = request.POST.getlist("roomIDs")
 
-    # Make variables null if they are empty strings
     task_name = task_name or None
     task_description = task_description or None
     due_date = due_date or None
@@ -457,13 +441,11 @@ def create_task(request):
     task_category = task_category or None
     room_ids = room_ids or []
 
-    # Ensure room_ids are integers
     room_ids = [int(id) for id in room_ids]
 
     if not room_ids:
         return JsonResponse({"status": "error", "error": "No rooms selected"})
 
-    # Convert due_date from string to datetime object, if not empty
     if due_date:
         due_date = timezone.make_aware(
             datetime.datetime.strptime(due_date, "%Y-%m-%d"),
@@ -478,8 +460,6 @@ def create_task(request):
         modified_date=timezone.now(),
     )
 
-    # todo: room ids must be validated - they must belong to a floor in the currently selected workspace
-    # Add rooms to the task if applicable
     for room_id in room_ids:
         task.rooms.add(Room.objects.get(id=room_id))
 
@@ -534,7 +514,6 @@ def update_task(request):
             status=400,
         )
 
-    # General field update, except for special cases
     if data["field_name"] != "room_remove" and data["field_name"] != "room_add":
         setattr(task, data["field_name"], data["value"])
 
@@ -543,15 +522,12 @@ def update_task(request):
 
         task.modified_date = timezone.now()
 
-    # Special handling for rooms
     if data["field_name"] == "room_remove":
         room = Room.objects.get(id=data["value"])
-        # remove room with ID data["value"] from task.rooms
         task.rooms.remove(room)
         task.modified_date = timezone.now()
 
     if data["field_name"] == "room_add":
-        # fetch rooms that are in data['value'] and add them to the task
         rooms = Room.objects.filter(id__in=data["value"])
         task.rooms.add(*rooms)
         task.modified_date = timezone.now()
@@ -575,7 +551,6 @@ def set_workspace(request):
     return redirect(reverse("task:workspaces"))
 
 
-# function to set default workspace
 @login_required
 @require_POST
 def set_default_workspace(request):
@@ -653,7 +628,6 @@ def delete_task(request):
 
     task_id = data["task_id"]
 
-    # Validate that the given task_id is associated with the user.
     selected_workspace = request.session.get("selected_workspace_id")
     task = get_object_or_404(Task, id=task_id)
     if not task_belongs_to_workspace(task, selected_workspace):
@@ -729,6 +703,7 @@ def task_belongs_to_workspace(task: Task, workspace_id: int) -> bool:
 
     first_room = task_rooms[0]
     first_room_floor = first_room.floor
+
     if first_room_floor not in selected_workspace_floors:
         return False
 
