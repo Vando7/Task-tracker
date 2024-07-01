@@ -1,15 +1,30 @@
-# taskTracker
+# Task Tracker
 
 Track house tasks easily
+
+Task Tracker is a powerful application designed to help you efficiently manage and keep track of household tasks. Inspired by the need to organize multiple tasks and avoid forgetting important chores, this app provides a convenient solution for viewing and managing tasks across different rooms and floors of your home. With Task Tracker, you can quickly see what needs to be done in each area, ensuring that no task is overlooked.
+
+## Key Features
+
+- **Dynamic Task Management**: Tasks update in real-time without the need for a page refresh. When one user adds or edits a task, all other users in the workspace will see the updates instantly.
+- **User Collaboration**: Create workspaces, add multiple users, and collaborate seamlessly. Each user can see and manage tasks assigned to them or shared within the workspace.
+- **Room and Floor Organization**: Easily categorize tasks by creating rooms and floors, providing a clear and organized view of your household tasks.
+
+## Tech Stack
+
+- **Backend**: Django
+- **Frontend**: Bootstrap
+- **Database**: PostgreSQL
+- **Real-time Updates**: Implemented using Django Channels
+
+Task Tracker is an excellent portfolio project, showcasing your ability to build a full-stack application with real-time capabilities, user authentication, and collaborative features.
+
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 License: MIT
 
-## Settings
-
-Moved to [settings](http://cookiecutter-django.readthedocs.io/en/latest/settings.html).
 
 ## Basic Commands
 
@@ -23,28 +38,6 @@ Moved to [settings](http://cookiecutter-django.readthedocs.io/en/latest/settings
 
 For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
 
-### Type checks
-
-Running type checks with mypy:
-
-    $ mypy tracker
-
-### Test coverage
-
-To run the tests, check your test coverage, and generate an HTML coverage report:
-
-    $ coverage run -m pytest
-    $ coverage html
-    $ open htmlcov/index.html
-
-#### Running tests with pytest
-
-    $ pytest
-
-### Live reloading and Sass CSS compilation
-
-Moved to [Live reloading and SASS compilation](https://cookiecutter-django.readthedocs.io/en/latest/developing-locally.html#sass-compilation-live-reloading).
-
 ### Email Server
 
 In development, it is often nice to be able to see emails that are being sent from your application. For that reason local SMTP server [Mailpit](https://github.com/axllent/mailpit) with a web interface is available as docker container.
@@ -56,17 +49,15 @@ With Mailpit running, to view messages that are sent by your application, open y
 
 ## Deployment
 
-The following details how to deploy this application.
 
 ### Docker
 
-See detailed [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html).
+To run the dev environment:
 
-### Custom Bootstrap Compilation
+    $ ./run_container_dev.sh
 
-The generated CSS is set up with automatic Bootstrap recompilation with variables of your choice.
-Bootstrap v5 is installed using npm and customised by tweaking your variables in `static/sass/custom_bootstrap_vars`.
+On first run, it will take a while to download all the dependencies.
+Afterwards, you'll need to enter the web server container and run migrations:
 
-You can find a list of available variables [in the bootstrap source](https://github.com/twbs/bootstrap/blob/v5.1.3/scss/_variables.scss), or get explanations on them in the [Bootstrap docs](https://getbootstrap.com/docs/5.1/customize/sass/).
-
-Bootstrap's javascript as well as its dependencies are concatenated into a single file: `static/js/vendors.js`.
+    $ docker exec -it task_tracked_web_1 bash
+    $ python manage.py migrate
