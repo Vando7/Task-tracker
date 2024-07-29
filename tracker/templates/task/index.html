@@ -172,6 +172,31 @@
 {% endblock help_btn %}
 
 {% block content %}
+  {% if not workspace.floors.all %}
+    <div class="message-container">
+      <p class="message-text">
+        You haven't added any floors to this workspace yet.<br>
+        Please <span class="emphasis">add some floors</span> to get started.
+      </p>
+    </div>
+  {% endif %}
+
+  {% if global_workspaces.count > 1 %}
+    <div class="message-container">
+      <p class="message-text">
+        It seems like you're assigned to multiple workspaces:
+      </p>
+      <ul class="workspace-list">
+        {% for workspace in global_workspaces %}
+          <li class="workspace-item">{{ workspace.name }}</li>
+        {% endfor %}
+      </ul>
+      <p class="message-text">
+        Click <a href="{% url 'task:workspaces' %}" class="switch-link">here</a> if you want to switch to another workspace.
+      </p>
+    </div>
+  {% endif %}
+
   <div id="task-index-container">
     {% for floor in workspace.floors.all %}
       {% if  forloop.counter0|divisibleby:3 %}
@@ -412,7 +437,68 @@
       </div>
     </div>
   </div>
-  <button type="button" class="btn btn-light" id="add-floor-expand-btn">
+  <button type="button" class="btn btn-light {%if not workspace.floors.all %} throbbing {% endif %}" id="add-floor-expand-btn">
     <i class="bi bi-plus-circle"></i> Floor
   </button>
+  <style>
+    .message-container {
+      background-color: #1e1e1e;
+      border-left: 4px solid #4dabf7;
+      border-radius: 4px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .message-text {
+      font-family: 'Arial', sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #e0e0e0;
+      margin: 0 0 10px 0;
+    }
+
+    .workspace-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0 0 15px 0;
+    }
+
+    .workspace-item {
+      background-color: #2c2c2c;
+      border-radius: 4px;
+      color: #4dabf7;
+      font-weight: 600;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+    }
+
+    .switch-link {
+      color: #74c0fc;
+      text-decoration: underline;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .switch-link:hover {
+      color: #a5d8ff;
+    }
+
+    .throbbing {
+      animation: throb 2s infinite;
+    }
+
+    @keyframes throb {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+  </style>
 {% endblock content %}
+

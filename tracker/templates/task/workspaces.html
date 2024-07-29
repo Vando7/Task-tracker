@@ -159,7 +159,7 @@
         <h4 class="card-title">Current Workspace</h4>
       </div>
       <div class="card-body">
-        <p><i class="bi bi-info-circle" style="color:darkturquoise"></i> Select which workspace tasks to appear on the app</p>
+        <p><i class="bi bi-info-circle" style="color:darkturquoise"></i> Select which workspace's tasks to appear in this session</p>
         <ul class="list-group">
           <div class="dropdown workspace-selector-dropdown">
             <button class="btn btn-secondary dropdown-toggle dropdown-toggle-workspace bg-dark text-light"
@@ -194,24 +194,6 @@
               {% endfor %}
             </ul>
           </div>
-        </ul>
-      </div>
-    </div>
-    <div class="card mb-4">
-      <div class="card-header">
-        <h4 class="card-title">All Workspaces</h4>
-      </div>
-      <div class="card-body">
-        <ul class="list-group">
-          {% for workspace in workspaces %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <strong>{{ workspace.name }}</strong> (Created by: {{ workspace.created_by }})
-                {% if workspace.id == selected_workspace.id %}<span class="badge bg-success ms-2">Selected</span>{% endif %}
-                {% if workspace.id == default_workspace.id %}<span class="badge bg-warning text-dark ms-2">Default</span>{% endif %}
-              </div>
-            </li>
-          {% endfor %}
         </ul>
       </div>
     </div>
@@ -264,7 +246,12 @@
       </div>
       <div class="card-body">
         <p>
-          <strong>Created by:</strong> {{ selected_workspace.created_by }}
+          Created by
+          {% if selected_workspace.created_by == request.user %}
+            <strong>you</strong>
+          {% else %}
+            <strong>{{ selected_workspace.created_by }}</strong>
+          {% endif %}
         </p>
         <h4 class="mt-4">Users with Access to this workspace</h4>
         <ul class="list-group mb-4">
@@ -285,7 +272,7 @@
           {% endfor %}
         </ul>
         {% if request.user == selected_workspace.created_by %}
-          <h4>Add User to Workspace</h4>
+          <h4>Add User to your Workspace</h4>
           <form method="post" action="{% url 'task:add_user_to_workspace' %}">
             {% csrf_token %}
             <div class="input-group">

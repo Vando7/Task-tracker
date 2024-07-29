@@ -14,16 +14,26 @@
             <img src="{{ user.avatar.url }}" alt="Avatar" style="height: 32px;
                             width: 32px;
                             border-radius: 50%;
-                            margin-right: 15px;" />
+                            margin-right: 10px;" />
             {% else %}
             <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" style="height: 32px;
                             width: 32px;
                             border-radius: 50%;
                             margin-right: 15px;" />
             {% endif %}
-            <strong style="padding-left:5px; margin-top:5px; font-size: 30px">{{ user.name }}</strong>
+            <strong style="
+              margin-top: 5px;
+              font-size: 30px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%; /* Adjust this value as needed */
+            ">{{ user.name }}</strong>
         </a>
         <ul class="dropdown-menu text-small shadow">
+          <li>
+            <a class="dropdown-item" href="{% url 'home' %}">Home</a>
+        </li>
             <li>
                 <a class="dropdown-item" href="{% url 'task:workspaces' %}">Workspaces</a>
             </li>
