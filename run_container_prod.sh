@@ -8,6 +8,6 @@ google_oauth_secret=$(cat ./api_credentials/google_oauth_secret)
 export google_oauth_client
 export google_oauth_secret
 
-trap 'docker-compose -f ./production.yml down' INT
+trap 'docker compose -f ./production.yml down' INT
 
-docker-compose -f ./production.yml up
+docker compose -f ./production.yml up

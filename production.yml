@@ -21,6 +21,9 @@ services:
     env_file:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
+    environment:
+      - google_oauth_client=${google_oauth_client}
+      - google_oauth_secret=${google_oauth_secret}
     command: /start
 
   postgres:
