@@ -10,4 +10,9 @@ export google_oauth_secret
 
 trap 'docker compose -f ./production.yml down' INT
 
+if [[ "$1" == "--rebuild" ]]; then
+    echo "Rebuilding Docker images..."
+    docker compose -f ./production.yml build
+fi
+
 docker compose -f ./production.yml up
