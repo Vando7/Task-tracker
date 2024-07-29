@@ -1,7 +1,7 @@
 var fieldsLoaded = 0;
 
 var noChangesCounter = 0;
-var updateIntervalSeconds = 1;
+var updateIntervalSeconds = 10;
 
 //* Keep a backup of task data in memory that can be helpful.
 var global_pending_tasks = null;
@@ -12,14 +12,14 @@ let latestTimestamp = null;
 
 
 document.addEventListener("DOMContentLoaded", function() {
-  console.log("DOMContentLoaded");
+  //console.log("DOMContentLoaded");
 
   loadElements();
 });
 
 
 
-/***********************************8
+/***********************************
  * UPDATE TASKS
  */
 async function updateTaskList() {
@@ -91,7 +91,7 @@ function updateTasksOnPage(tasks) {
 
     if (!taskCard) {
       // uncomment to debug
-      // console.log("Task card not found");
+      //// console.log("Task card not found");
       return;
     }
 
@@ -101,17 +101,17 @@ function updateTasksOnPage(tasks) {
     ).textContent;
 
     // uncomment to debug
-    // console.log("pageTaskModifiedDate: " + pageTaskModifiedDate);
-    // console.log("task.modified_date: " + task.modified_date);
+    //// console.log("pageTaskModifiedDate: " + pageTaskModifiedDate);
+    //// console.log("task.modified_date: " + task.modified_date);
 
     if (pageTaskModifiedDate == task.modified_date) {
       // uncomment to debug
-      //console.log("task " + task.id + " has not been modified continuing");
+      ////console.log("task " + task.id + " has not been modified continuing");
       return;
     }
 
     // uncomment to debug
-    //console.log("task " + task.id + " has been modified - updating");
+    ////console.log("task " + task.id + " has been modified - updating");
 
 
     //* Show or hide the repeatable task icon
@@ -251,9 +251,9 @@ function updateTasksOnPage(tasks) {
     taskFields.forEach((taskField) => {
       const taskFieldValue = taskField.textContent;
 
-      console.log("UPDATING TASK FIELD + " + taskField.getAttribute("data-field-name"));
-      console.log(taskFieldValue);
-      console.log(task[taskField.getAttribute("data-field-name")]);
+      //console.log("UPDATING TASK FIELD + " + taskField.getAttribute("data-field-name"));
+      //console.log(taskFieldValue);
+      //console.log(task[taskField.getAttribute("data-field-name")]);
 
 
       if(taskField.classList.contains("mark-as-todo-btn")) {
@@ -398,7 +398,7 @@ async function fetchLatestTimestamp() {
   }
 
   if (search) {
-    console.log("polling search")
+    //console.log("polling search")
     url.searchParams.append("search", search);
   }
 
@@ -423,8 +423,8 @@ async function fetchLatestTimestamp() {
  */
 async function checkForUpdates() {
   let newTimestamp = await fetchLatestTimestamp();
-  // console.log("new timestamp: ", newTimestamp);
-  // console.log("latest timestamp: ", latestTimestamp);
+  //// console.log("new timestamp: ", newTimestamp);
+  //// console.log("latest timestamp: ", latestTimestamp);
 
   if (newTimestamp && newTimestamp !== latestTimestamp) {
     latestTimestamp = newTimestamp;
@@ -463,7 +463,7 @@ function initialize_mark_as_done_buttons() {
   var markAsDoneBtns = document.querySelectorAll(".mark-as-done-btn");
 
   markAsDoneBtns.forEach(function(markAsDoneBtn) {
-    console.log("Mark as done button found");
+    //console.log("Mark as done button found");
 
     //skip if an on click event is already attached
 
@@ -479,7 +479,7 @@ function initialize_mark_as_done_buttons() {
         markAsDoneBtn.classList.remove("active");
       }, 200);
 
-      console.log("Mark as done button clicked");
+      //console.log("Mark as done button clicked");
       var taskId = this.getAttribute("data-task-id");
       var fieldName = this.getAttribute("data-field-name");
       var value = this.getAttribute("data-value");
@@ -494,11 +494,11 @@ function initialize_mark_as_done_buttons() {
         return;
       }
 
-      console.log("taskTypeValue: ", taskTypeValue);
-      console.log("Marking task as done");
-      console.log(taskId);
-      console.log(fieldName);
-      console.log(value);
+      //console.log("taskTypeValue: ", taskTypeValue);
+      //console.log("Marking task as done");
+      //console.log(taskId);
+      //console.log(fieldName);
+      //console.log(value);
 
       update_task(taskId, fieldName, value, csrf);
       await new Promise(r => setTimeout(r, 200));
@@ -532,10 +532,10 @@ function initialize_mark_as_to_do_buttons() {
       var fieldName = this.getAttribute("data-field-name");
       var value = this.getAttribute("data-value");
       var csrf = this.getAttribute("csrf");
-      console.log("Marking task as to_do");
-      console.log(taskId);
-      console.log(fieldName);
-      console.log(value);
+      //console.log("Marking task as to_do");
+      //console.log(taskId);
+      //console.log(fieldName);
+      //console.log(value);
       update_task(taskId, fieldName, value, csrf);
 
       // make the entire card slowly fade out
@@ -575,13 +575,13 @@ function initialize_expand_buttons(){
       const hideableElements = taskCardHolder.querySelectorAll(".hideable");
 
       if(this.innerHTML === arrowDownIcon) {
-        console.log("display elements");
+        //console.log("display elements");
         this.innerHTML = arrowUpIcon;
         hideableElements.forEach(function(hideableElement) {
           hideableElement.classList.add("show");
         });
       } else {
-        console.log("hide elements");
+        //console.log("hide elements");
         this.innerHTML = arrowDownIcon;
         hideableElements.forEach(function(hideableElement) {
           hideableElement.classList.remove("show");
@@ -609,7 +609,7 @@ function initialize_editable_spans(){
     const newValue = event.target.textContent;
 
     // Debug print
-    // console.log(`Old Value: ${oldValue}, New Value: ${newValue}`);
+    //// console.log(`Old Value: ${oldValue}, New Value: ${newValue}`);
     if (oldValue == newValue) {
       // No changes made.
       return;
@@ -617,15 +617,15 @@ function initialize_editable_spans(){
 
     // Update the task.
     spanElement = event.target;
-    console.log(spanElement);
+    //console.log(spanElement);
 
     task_id = spanElement.getAttribute("data-task-id");
     field_name = spanElement.getAttribute("data-field-name");
     csrf = spanElement.getAttribute("csrf");
 
-    console.log(task_id);
-    console.log(field_name);
-    console.log(newValue);
+    //console.log(task_id);
+    //console.log(field_name);
+    //console.log(newValue);
 
     const response = await update_task(task_id, field_name, newValue, csrf);
     const response_json = await response.json;
@@ -707,7 +707,7 @@ function initialize_clear_due_date_buttons(){
 
     clear_due_date_button.setAttribute("has-event-listener", "true");
     clear_due_date_button.addEventListener("click", function() {
-      console.log("Clear due date button clicked");
+      //console.log("Clear due date button clicked");
       // clear due date text field value
       const dueDatePicker = clear_due_date_button.parentElement.querySelector(".task-due-date-value");
       dueDatePicker.value = "";
@@ -717,9 +717,9 @@ function initialize_clear_due_date_buttons(){
       const field_name = this.getAttribute("data-field-name");
       const csrf = this.getAttribute("csrf");
 
-      console.log(task_id);
-      console.log(field_name);
-      console.log(csrf);
+      //console.log(task_id);
+      //console.log(field_name);
+      //console.log(csrf);
 
       update_task(task_id, field_name, null, csrf);
     });
@@ -736,24 +736,24 @@ function initialize_remove_room_buttons(){
 
     remove_room_button.setAttribute("has-event-listener", "true");
     remove_room_button.addEventListener("click", function() {
-      console.log("Remove room button clicked");
+      //console.log("Remove room button clicked");
 
       const task_id = this.getAttribute("data-task-id");
       const field_name = this.getAttribute("data-field-name");
       const room_id = this.getAttribute("data-room-id");
       const csrf = this.getAttribute("csrf");
 
-      console.log("task id ",task_id);
-      console.log("field name ",field_name);
-      console.log("room id ",room_id);
-      console.log("csrf ",csrf);
+      //console.log("task id ",task_id);
+      //console.log("field name ",field_name);
+      //console.log("room id ",room_id);
+      //console.log("csrf ",csrf);
 
       if(confirm("Are you sure you want to remove this room from the task?")) {
-        console.log("Removing room");
+        //console.log("Removing room");
         update_task(task_id, field_name, room_id, csrf);
         latestTimestamp = null;
       } else {
-        console.log("Not removing room");
+        //console.log("Not removing room");
       }
     });
   });
@@ -769,19 +769,19 @@ function initialize_task_remove_buttons(){
 
     remove_task_button.setAttribute("has-event-listener", "true");
     remove_task_button.addEventListener("click", function() {
-      console.log("Remove task button clicked");
+      //console.log("Remove task button clicked");
 
       const task_id = this.getAttribute("data-task-id");
       const csrf = this.getAttribute("csrf");
 
-      console.log("task id ",task_id);
-      console.log("csrf ",csrf);
+      //console.log("task id ",task_id);
+      //console.log("csrf ",csrf);
 
       if(confirm("Are you sure you want to remove this task?")) {
-        console.log("Removing task ", task_id);
+        //console.log("Removing task ", task_id);
         delete_task(task_id, csrf);
       } else {
-        console.log("Not removing task");
+        //console.log("Not removing task");
       }
     });
   });
@@ -799,7 +799,7 @@ function initialize_add_room_buttons(){
     addRoomButton.setAttribute("has-event-listener", "true");
 
     addRoomButton.addEventListener("click", function() {
-      console.log("Add room button clicked");
+      //console.log("Add room button clicked");
 
       const task_id = this.getAttribute("data-task-id");
       var task = global_pending_tasks.find((task) => task.id == task_id);
@@ -811,7 +811,7 @@ function initialize_add_room_buttons(){
       addRoomModal.setAttribute("data-task-id", task_id);
 
       if(!task) {
-        console.log("Task not found in pending tasks");
+        //console.log("Task not found in pending tasks");
         task = global_done_tasks.find((task) => task.id == task_id);
       }
 
@@ -870,7 +870,7 @@ function initialize_add_room_buttons(){
         return;
       }
 
-      console.log("Checkbox button clicked");
+      //console.log("Checkbox button clicked");
       if(this.classList.contains("bi-check2-circle")) {
         this.classList.remove("bi-check2-circle");
         this.classList.add("bi-circle");
@@ -891,7 +891,7 @@ function initialize_add_room_buttons(){
   saveRoomSelectionButton.setAttribute("has-event-listener", "true");
 
   saveRoomSelectionButton.addEventListener("click", function() {
-    console.log("Save room selection button clicked");
+    //console.log("Save room selection button clicked");
     const modal = document.getElementById("add-room-modal");
     const task_id = modal.getAttribute("data-task-id");
     const roomIconLabels = document.querySelectorAll(".room-icon-label");
@@ -911,7 +911,7 @@ function initialize_add_room_buttons(){
         return;
       }
 
-      console.log("room id ",roomId);
+      //console.log("room id ",roomId);
       rooms_to_add.push(roomId);
     });
 
@@ -936,10 +936,10 @@ function update_task(task_id, field_name, value, csrf) {
     value: value,
   };
 
-  console.log(post_data);
-  console.log(csrf);
+  //console.log(post_data);
+  //console.log(csrf);
 
-  return fetch("/task/update_task/", {
+  var result = fetch("/task/update_task/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -957,6 +957,10 @@ function update_task(task_id, field_name, value, csrf) {
         status: "error"
       };
     });
+
+    checkForUpdates();
+
+    return result;
 }
 
 function delete_task(task_id, csrf) {
@@ -964,7 +968,7 @@ function delete_task(task_id, csrf) {
     task_id: task_id,
   };
 
-  console.log(delete_data);
+  //console.log(delete_data);
   return fetch("/task/delete_task/", {
     method: "POST",
     headers: {
@@ -1016,7 +1020,7 @@ async function loadDoneTasks() {
   const done_tasks = await fetchTasks(true);
 
   if(done_tasks.length === 0) {
-    console.log(tasks);
+    //console.log(tasks);
     document.getElementById("no_tasks_completed").style.display = "block";
   }
 
@@ -1273,7 +1277,7 @@ function fetchTasks(completed = false) {
   }
 
   if (search) {
-    console.log("fetching search");
+    //console.log("fetching search");
     url.searchParams.append("search", search);
   }
 

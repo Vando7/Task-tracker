@@ -14,6 +14,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function initSearchForm() {
   var searchButton = document.getElementById("button-search");
+
+  if(!searchButton){
+    return;
+  }
+
   searchButton.addEventListener("click", function () {
     var searchInput = document.getElementById("search-input");
     var search = searchInput.value;
