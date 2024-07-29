@@ -188,7 +188,13 @@
       </p>
       <ul class="workspace-list">
         {% for workspace in global_workspaces %}
-          <li class="workspace-item">{{ workspace.name }} {% if workspace.id|stringformat:"s" == request.session.selected_workspace_id|stringformat:"s" %} <i class="bi bi-arrow-left"></i> Selected {% endif %}</li>
+          {% if workspace.id|stringformat:"s" == request.session.selected_workspace_id|stringformat:"s" %}
+            <li class="workspace-item">
+              <span style="color: #2ecc71; font-weight: bold;">Selected <i class="bi bi-arrow-right" style="color: #2ecc71;"></i></span> {{ workspace.name }}
+            </li>
+          {% else %}
+            <li class="workspace-item">{{ workspace.name }}</li>
+          {% endif %}
         {% endfor %}
       </ul>
       <p class="message-text">
