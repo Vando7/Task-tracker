@@ -28,7 +28,7 @@ certificatesResolvers:
 http:
   routers:
     web-secure-router:
-      rule: 'Host(`example.com`) || Host(`www.example.com`)'
+      rule: 'Host(`vanko.click`) || Host(`www.vanko.click`)'
       entryPoints:
         - web-secure
       middlewares:
@@ -39,7 +39,7 @@ http:
         certResolver: letsencrypt
 
     web-media-router:
-      rule: '(Host(`example.com`) || Host(`www.example.com`)) && PathPrefix(`/media/`)'
+      rule: '(Host(`vanko.click`) || Host(`www.vanko.click`)) && PathPrefix(`/media/`)'
       entryPoints:
         - web-secure
       middlewares:
