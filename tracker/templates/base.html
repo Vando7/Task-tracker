@@ -47,7 +47,9 @@
     {% block body %}
       <div style="display: flex; min-height: 95vh;">
         <!-- Sidebar with fixed width -->
-        {% include "partials/_sidebar.html" %}
+        {% if user.is_authenticated %}
+          {% include "partials/_sidebar.html" %}
+        {% endif %}
         <!-- Main content area taking the remaining space -->
         <div class="container-fluid main-page-content" style="flex-grow: 1;">
           <div class="row" style="width:100%;">
