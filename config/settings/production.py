@@ -91,7 +91,7 @@ ADMIN_URL = env("DJANGO_ADMIN_URL")
 # Anymail
 # ------------------------------------------------------------------------------
 # https://anymail.readthedocs.io/en/stable/installation/#installing-anymail
-INSTALLED_APPS += ["anymail", "django.contrib.sites"]
+INSTALLED_APPS += ["anymail"]
 SITE_ID = 1
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
