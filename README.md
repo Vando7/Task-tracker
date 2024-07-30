@@ -10,6 +10,20 @@ Task Tracker is a powerful application designed to help you efficiently manage a
 - **User Collaboration**: Create workspaces, add multiple users, and collaborate seamlessly. Each user can see and manage tasks assigned to them or shared within the workspace.
 - **Room and Floor Organization**: Easily categorize tasks by creating rooms and floors, providing a clear and organized view of your household tasks.
 
+## Example Videos
+
+### Creating Floors and Adding Rooms
+[setting up floors.webm](https://github.com/user-attachments/assets/c974d4cc-9639-4171-89bb-4b180451eeb8)
+
+
+This video demonstrates how to create floors and add rooms within the Task Tracker application. It shows the step-by-step process of setting up your home's structure in the app, allowing for organized task management.
+
+### Dynamic Task Management
+[adding tasks.webm](https://github.com/user-attachments/assets/5c10eddc-38c6-46ac-8be7-792dff6afbf0)
+
+
+This video showcases the dynamic task management feature of Task Tracker. It illustrates how tasks can be added and how they update in real-time for other users viewing the page, highlighting the collaborative nature of this application.
+
 ## Tech Stack
 
 - **Backend**: Django
