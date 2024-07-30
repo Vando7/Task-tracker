@@ -117,10 +117,21 @@
   </div>
 {% endblock help_btn %}
 
-{% if floor_id %}<div id="floor_id_holder" floor_id="{{ floor_id }}"></div>{% endif %}
-{% if room_id %}<div id="room_id_holder" room_id="{{ room_id }}"></div>{% endif %}
-{% if search %}<div id="search_holder" search="{{ search }}"></div>{% endif %}
-{% if home_page %}<div id="home_page_holder" home_page="{{ home_page }}"></div>{% endif %}
+{% if floor_id %}
+  <div id="floor_id_holder" floor_id="{{ floor_id }}"></div>
+{% endif %}
+
+{% if room_id %}
+  <div id="room_id_holder" room_id="{{ room_id }}"></div>
+{% endif %}
+
+{% if search %}
+  <div id="search_holder" search="{{ search }}"></div>
+{% endif %}
+
+{% if home_page %}
+  <div id="home_page_holder" home_page="{{ home_page }}"></div>
+{% endif %}
 
 <!-- placeholder for dynamically loaded tasks -->
 <div id="tasks" class="container">

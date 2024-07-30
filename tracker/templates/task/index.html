@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="{% static 'css/task_index.css' %}" />
 {% endblock viewSpecificCss %}
 
+{% block title %}
+  Home tasks 📝
+{% endblock title %}
+
 {% block help_btn %}
   <button type="button" class="btn btn-dark help-btn help-btn-pulsing" data-bs-toggle="modal" data-bs-target="#helpModal">
     <i class="bi bi-question-circle"></i>
@@ -181,10 +185,11 @@
     </div>
   {% endif %}
 
-  {% if global_workspaces.count > 1 %}
+  {% if global_workspaces.count > 1 and not workspace.floors.all %}
+    <hr>
     <div class="message-container">
       <p class="message-text">
-        It seems like you're assigned to multiple workspaces:
+        It seems like you're assigned to multiple workspaces
       </p>
       <ul class="workspace-list">
         {% for workspace in global_workspaces %}
@@ -454,6 +459,9 @@
       padding: 16px 20px;
       margin: 20px 0;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .message-text {
@@ -492,6 +500,10 @@
 
     .throbbing {
       animation: throb 2s infinite;
+    }
+
+    .emphasis {
+      color: orangered;
     }
 
     @keyframes throb {
