@@ -7,7 +7,7 @@ Task Tracker is a powerful application designed to help you efficiently manage a
 ## Key Features
 
 - **Dynamic Task Management**: Tasks update in real-time without the need for a page refresh. When one user adds or edits a task, all other users in the workspace will see the updates instantly.
-- **User Collaboration**: Create workspaces, add multiple users, and collaborate seamlessly. Each user can see and manage tasks assigned to them or shared within the workspace.
+- **User Collaboration**: Create workspaces, add multiple users, and collaborate seamlessly. Each user can see and manage tasks within the workspace.
 - **Room and Floor Organization**: Easily categorize tasks by creating rooms and floors, providing a clear and organized view of your household tasks.
 
 ## Example Videos
@@ -31,9 +31,6 @@ This video showcases the dynamic task management feature of Task Tracker. It ill
 - **Database**: PostgreSQL
 - **Real-time Updates**: Pure javascript and AJAX calls.
 
-Task Tracker is an excellent portfolio project, showcasing your ability to build a full-stack application with real-time capabilities, user authentication, and collaborative features.
-
-
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
@@ -56,7 +53,7 @@ For convenience, you can keep your normal user logged in on Chrome and your supe
 
 In development, it is often nice to be able to see emails that are being sent from your application. For that reason local SMTP server [Mailpit](https://github.com/axllent/mailpit) with a web interface is available as docker container.
 
-Container mailpit will start automatically when you will run all docker containers.
+Mailpit container will start automatically when you run all docker containers.
 Please check [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html) for more details how to start all containers.
 
 With Mailpit running, to view messages that are sent by your application, open your browser and go to `http://127.0.0.1:8025`
