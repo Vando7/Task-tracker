@@ -38,6 +38,9 @@ export function useEventStream({ workspaceId, currentUserId, onFlash }: Options)
       // this task belongs to, invalidate the family and let TanStack refetch the
       // views that are actually mounted.
       void queryClient.invalidateQueries({ queryKey: keys.taskList(workspaceId) })
+      // Someone else's completion moves the dashboard's tally and room staleness.
+      void queryClient.invalidateQueries({ queryKey: keys.staleness(workspaceId) })
+      void queryClient.invalidateQueries({ queryKey: keys.fairnessAll(workspaceId) })
       flashRef.current?.(task.id)
     }
 

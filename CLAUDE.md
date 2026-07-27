@@ -368,6 +368,42 @@ it into a generic board — resist that. In Tailwind the floor colour becomes a 
 once per floor subtree, so the glow/tint effects are one variable instead of the legacy app's dozens
 of inline gradients.
 
+### 5.7 The dashboard landing page
+
+> **ADDED 2026-07-27, at the user's request.** The landing route (`/w/:id`) is now a dashboard, and
+> the floor plan moved to `/w/:id/house` — which is also the only place floors and rooms are edited.
+
+The floor plan is a lovely picture of the *building*, but it never answered "what am I on the hook
+for?" — you had to open rooms one at a time to find out. The dashboard answers that in reading order:
+
+1. **Yours** — pending tasks assigned to you, overdue first, then soonest deadline, then category.
+2. **Up for grabs** — pending tasks with no assignee, each offering a one-tap "I'll do it". Unassigned
+   remains a valid resting state (§4.1); claiming is an offer, never a demand.
+3. **The house at a glance** — overdue / due-today / open / done-this-week counts, the rooms that have
+   gone longest untouched (§5.4), who is carrying what, this week's tally (§5.3), and the floor list.
+
+One `status=todo` query feeds all of it, partitioned in the client: separate mine/unassigned/others
+requests would fetch the same rows and still not give the counts. "Due today" is evaluated in the
+workspace timezone (§6, question 3), not the browser's.
+
+### 5.8 Light and dark
+
+> **ADDED 2026-07-27, at the user's request.** The legacy app was dark-only.
+
+Both themes are first-class. Every colour is a token, so components never know which theme is
+active: utilities read `var(--color-*)` and the light theme reassigns those variables under
+`:root[data-theme='light']`. A hardcoded hex or a `bg-black/30` in a component is a bug — it will look
+wrong in one theme.
+
+The preference is `light | dark | system`, defaults to `system`, and persists per device. `data-theme`
+is stamped on `<html>` by an inline script in `index.html` before first paint (or a user who chose
+light gets a dark flash on every load) and owned by `lib/useTheme.ts` from mount onwards — a
+module-level store, not per-component state, so the header toggle and the Settings selector cannot
+disagree.
+
+Chrome is inline SVG from one icon set (`components/Icon.tsx`): `currentColor`, `aria-hidden`, and
+never the only label on a control. Emoji stay for what a *user* chose — floor and room icons.
+
 ## 6. Open questions
 
 Ask when you reach the step that depends on one. Do not assume.

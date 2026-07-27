@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import type { Fairness, Me, Workspace } from '@task-tracker/shared'
+import type { Me, Workspace } from '@task-tracker/shared'
 import { useState } from 'react'
 import { Avatar } from '../components/Avatar'
+import { Icon, type IconName } from '../components/Icon'
+import { ThemeChoice } from '../components/ThemeToggle'
 import { useAddMember, useMembers, useRemoveMember } from '../features/layout/api'
 import {
   pushPermission,
@@ -11,14 +12,18 @@ import {
   useUpdateNotifyPreferences,
 } from '../features/notifications/api'
 import { useUpdateProfile, useUploadAvatar } from '../features/session/api'
-import { ApiRequestError, api } from '../lib/api'
-import { keys } from '../lib/keys'
+import { useFairness } from '../features/stats/api'
+import { ApiRequestError } from '../lib/api'
 
 export function SettingsPage({ workspace, me }: { workspace: Workspace; me: Me }) {
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
-      <FairnessPanel workspace={workspace} />
+    <div className="mx-auto max-w-2xl animate-rise space-y-4">
+      <h1 className="flex items-center gap-2 text-xl font-semibold">
+        <Icon name="sliders" size={19} className="text-text-dim" />
+        Settings
+      </h1>
+      <FairnessPanel workspace={workspace} me={me} />
+      <AppearancePanel />
       <MembersPanel workspace={workspace} me={me} />
       <NotificationsPanel />
       <ProfilePanel me={me} />
@@ -27,17 +32,22 @@ export function SettingsPage({ workspace, me }: { workspace: Workspace; me: Me }
 }
 
 function Panel({
+  icon,
   title,
   subtitle,
   children,
 }: {
+  icon: IconName
   title: string
   subtitle?: string
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl border border-edge bg-ink-raised p-4">
-      <h2 className="font-semibold">{title}</h2>
+    <section className="card p-4">
+      <h2 className="flex items-center gap-2 font-semibold">
+        <Icon name={icon} size={17} className="text-text-dim" />
+        {title}
+      </h2>
       {subtitle && <p className="mt-0.5 text-sm text-text-dim">{subtitle}</p>}
       <div className="mt-3">{children}</div>
     </section>
@@ -51,26 +61,27 @@ function Panel({
  * Gamifying chores between people who live together tends to curdle; an honest
  * tally gives the accountability without keeping score.
  */
-function FairnessPanel({ workspace }: { workspace: Workspace }) {
+function FairnessPanel({ workspace, me }: { workspace: Workspace; me: Me }) {
   const [window, setWindow] = useState<'week' | 'month'>('week')
-  const { data } = useQuery({
-    queryKey: keys.fairness(workspace.id, window),
-    queryFn: () => api<Fairness>(`/api/workspaces/${workspace.id}/stats/fairness?window=${window}`),
-  })
+  const { data } = useFairness(workspace.id, window)
 
-  const most = Math.max(1, ...(data?.rows ?? []).map((row) => row.completions))
+  const most = Math.max(...(data?.rows ?? []).map((row) => row.completions), 1)
 
   return (
-    <Panel title="Who's been doing it" subtitle="Completions from the log. No points, no streaks.">
-      <div className="mb-3 flex gap-1">
+    <Panel
+      icon="chart"
+      title="Who's been doing it"
+      subtitle="Completions from the log. No points, no streaks."
+    >
+      <div className="mb-3 inline-flex gap-1 rounded-xl border border-edge bg-ink p-1">
         {(['week', 'month'] as const).map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => setWindow(option)}
             aria-pressed={window === option}
-            className={`tap rounded-lg border px-3 text-sm ${
-              window === option ? 'border-transparent bg-ink-hover' : 'border-edge text-text-dim'
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+              window === option ? 'bg-ink-raised text-text' : 'text-text-dim hover:text-text'
             }`}
           >
             Last {option}
@@ -82,10 +93,12 @@ function FairnessPanel({ workspace }: { workspace: Workspace }) {
         {data?.rows.map((row) => (
           <li key={row.user.id} className="flex items-center gap-2">
             <Avatar user={row.user} size={26} />
-            <span className="w-24 shrink-0 truncate text-sm">{row.user.name}</span>
-            <span className="h-2 flex-1 overflow-hidden rounded-full bg-ink">
+            <span className="w-24 shrink-0 truncate text-sm">
+              {row.user.id === me.user.id ? 'You' : row.user.name}
+            </span>
+            <span className="h-2 flex-1 overflow-hidden rounded-full bg-ink-sunken">
               <span
-                className="block h-full rounded-full bg-done/70"
+                className="block h-full rounded-full bg-linear-to-r from-done/70 to-done transition-[width] duration-500"
                 style={{ width: `${(row.completions / most) * 100}%` }}
               />
             </span>
@@ -100,6 +113,15 @@ function FairnessPanel({ workspace }: { workspace: Workspace }) {
   )
 }
 
+/** Light, dark, or follow the device. Stored locally — it is a per-device taste. */
+function AppearancePanel() {
+  return (
+    <Panel icon="sun" title="Appearance" subtitle="Remembered on this device only.">
+      <ThemeChoice />
+    </Panel>
+  )
+}
+
 function MembersPanel({ workspace, me }: { workspace: Workspace; me: Me }) {
   const { data: members } = useMembers(workspace.id)
   const add = useAddMember(workspace.id)
@@ -110,24 +132,28 @@ function MembersPanel({ workspace, me }: { workspace: Workspace; me: Me }) {
   const isOwner = workspace.role === 'owner'
 
   return (
-    <Panel title="Household" subtitle={`${workspace.name} · ${workspace.timezone}`}>
+    <Panel icon="users" title="Household" subtitle={`${workspace.name} · ${workspace.timezone}`}>
       <ul className="space-y-2">
         {members?.map((member) => (
           <li key={member.user.id} className="flex items-center gap-2">
-            <Avatar user={member.user} size={28} />
+            <Avatar user={member.user} size={30} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm">{member.user.name}</span>
               <span className="block truncate text-xs text-text-dim">{member.user.email}</span>
             </span>
             {member.role === 'owner' && (
-              <span className="rounded-full bg-ink px-2 text-xs text-text-dim">owner</span>
+              <span className="chip">
+                <Icon name="star" size={12} />
+                owner
+              </span>
             )}
             {(isOwner || member.user.id === me.user.id) && members.length > 1 && (
               <button
                 type="button"
                 onClick={() => remove.mutate(member.user.id)}
-                className="tap rounded-lg border border-edge px-2 text-xs text-text-dim hover:text-urgent"
+                className="btn btn-sm btn-quiet-danger"
               >
+                <Icon name={member.user.id === me.user.id ? 'logOut' : 'x'} size={14} />
                 {member.user.id === me.user.id ? 'Leave' : 'Remove'}
               </button>
             )}
@@ -141,24 +167,21 @@ function MembersPanel({ workspace, me }: { workspace: Workspace; me: Me }) {
             event.preventDefault()
             add.mutate(email.trim(), { onSuccess: () => setEmail('') })
           }}
-          className="mt-3"
+          className="mt-4"
         >
           <label className="block text-sm">
             Add someone by email
-            <span className="mt-1 flex gap-1">
+            <span className="mt-1 flex gap-1.5">
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
                 placeholder="housemate@example.com"
-                className="tap min-w-0 flex-1 rounded-xl border border-edge bg-ink px-3"
+                className="field min-w-0 flex-1"
               />
-              <button
-                type="submit"
-                disabled={add.isPending}
-                className="tap rounded-xl bg-text px-4 font-medium text-ink disabled:opacity-50"
-              >
+              <button type="submit" disabled={add.isPending} className="btn btn-primary">
+                <Icon name="userPlus" size={17} />
                 Add
               </button>
             </span>
@@ -167,7 +190,11 @@ function MembersPanel({ workspace, me }: { workspace: Workspace; me: Me }) {
             They need an account already — emailed invitations aren’t built yet.
           </p>
           {error && (
-            <p role="alert" className="mt-2 rounded-lg bg-urgent/15 px-2 py-1 text-sm text-urgent">
+            <p
+              role="alert"
+              className="mt-2 flex items-center gap-2 rounded-xl bg-urgent/15 px-3 py-2 text-sm text-urgent"
+            >
+              <Icon name="alert" size={15} />
               {error.message}
             </p>
           )}
@@ -200,19 +227,18 @@ function NotificationsPanel() {
 
   return (
     <Panel
+      icon="bell"
       title="Notifications"
       subtitle="In-app always works. Push also reaches you with the tab closed."
     >
       {permission === 'unsupported' ? (
-        <p className="rounded-lg bg-ink px-3 py-2 text-sm text-text-dim">
+        <p className="flex items-center gap-2 rounded-xl bg-ink px-3 py-2 text-sm text-text-dim">
+          <Icon name="alert" size={15} />
           This browser can’t do push notifications. The in-app feed still works.
         </p>
       ) : preferences?.enabled ? (
-        <button
-          type="button"
-          onClick={() => disable.mutate()}
-          className="tap rounded-xl border border-edge px-4 text-sm"
-        >
+        <button type="button" onClick={() => disable.mutate()} className="btn">
+          <Icon name="bell" size={16} />
           Turn off push on this device
         </button>
       ) : (
@@ -220,14 +246,19 @@ function NotificationsPanel() {
           type="button"
           onClick={() => enable.mutate()}
           disabled={enable.isPending}
-          className="tap rounded-xl bg-text px-4 font-medium text-ink disabled:opacity-50"
+          className="btn btn-primary"
         >
+          <Icon name="bell" size={16} />
           {enable.isPending ? 'Asking…' : 'Turn on push notifications'}
         </button>
       )}
 
       {pushError && (
-        <p role="alert" className="mt-2 rounded-lg bg-special/15 px-2 py-1 text-sm text-special">
+        <p
+          role="alert"
+          className="mt-2 flex items-center gap-2 rounded-xl bg-special/15 px-3 py-2 text-sm text-special"
+        >
+          <Icon name="alert" size={15} />
           {pushError.message} — the in-app feed is unaffected.
         </p>
       )}
@@ -240,7 +271,7 @@ function NotificationsPanel() {
                 type="checkbox"
                 checked={preferences?.[key] ?? true}
                 onChange={(event) => update.mutate({ [key]: event.target.checked })}
-                className="size-4"
+                className="size-4 accent-accent"
               />
               {label}
             </label>
@@ -248,24 +279,30 @@ function NotificationsPanel() {
         ))}
       </ul>
 
-      <label className="mt-3 block text-sm">
-        Warn me this many hours ahead
+      <label className="mt-4 block text-sm">
+        <span className="flex items-center gap-1.5">
+          <Icon name="clock" size={14} className="text-text-dim" />
+          Warn me this many hours ahead
+        </span>
         <input
           type="number"
           min={1}
           max={336}
           value={preferences?.dueSoonLeadHours ?? 24}
           onChange={(event) => update.mutate({ dueSoonLeadHours: Number(event.target.value) })}
-          className="tap mt-1 w-24 rounded-xl border border-edge bg-ink px-3"
+          className="field mt-1 w-24 text-center"
         />
       </label>
 
-      <fieldset className="mt-3">
-        <legend className="text-sm">Quiet hours</legend>
+      <fieldset className="mt-4">
+        <legend className="flex items-center gap-1.5 text-sm">
+          <Icon name="moon" size={14} className="text-text-dim" />
+          Quiet hours
+        </legend>
         <p className="text-xs text-text-dim">
           Suppresses push only — the in-app feed still updates.
         </p>
-        <span className="mt-1 flex items-center gap-2 text-sm">
+        <span className="mt-1.5 flex items-center gap-2 text-sm">
           <input
             type="time"
             value={preferences?.quietFrom ?? ''}
@@ -276,7 +313,7 @@ function NotificationsPanel() {
                 quietTo: preferences?.quietTo ?? '07:00',
               })
             }
-            className="tap rounded-xl border border-edge bg-ink px-2"
+            className="field w-auto"
           />
           <span className="text-text-dim">to</span>
           <input
@@ -289,7 +326,7 @@ function NotificationsPanel() {
                 quietTo: event.target.value || null,
               })
             }
-            className="tap rounded-xl border border-edge bg-ink px-2"
+            className="field w-auto"
           />
         </span>
       </fieldset>
@@ -303,11 +340,12 @@ function ProfilePanel({ me }: { me: Me }) {
   const upload = useUploadAvatar()
 
   return (
-    <Panel title="You">
+    <Panel icon="user" title="You">
       <div className="flex items-center gap-3">
         <Avatar user={me.user} size={48} />
         <label className="text-sm">
-          <span className="tap inline-flex cursor-pointer items-center rounded-xl border border-edge px-3">
+          <span className="btn cursor-pointer">
+            <Icon name="upload" size={16} />
             {upload.isPending ? 'Uploading…' : 'Change avatar'}
           </span>
           <input
@@ -327,28 +365,32 @@ function ProfilePanel({ me }: { me: Me }) {
           event.preventDefault()
           update.mutate({ name: name.trim() })
         }}
-        className="mt-3"
+        className="mt-4"
       >
         <label className="block text-sm">
           Display name
-          <span className="mt-1 flex gap-1">
+          <span className="mt-1 flex gap-1.5">
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               maxLength={64}
-              className="tap min-w-0 flex-1 rounded-xl border border-edge bg-ink px-3"
+              className="field min-w-0 flex-1"
             />
             <button
               type="submit"
               disabled={update.isPending || name.trim() === me.user.name}
-              className="tap rounded-xl border border-edge px-4 text-sm disabled:opacity-40"
+              className="btn"
             >
+              <Icon name="check" size={16} />
               Save
             </button>
           </span>
         </label>
       </form>
-      <p className="mt-2 text-xs text-text-dim">{me.user.email}</p>
+      <p className="mt-3 flex items-center gap-1.5 text-xs text-text-dim">
+        <Icon name="mail" size={13} />
+        {me.user.email}
+      </p>
     </Panel>
   )
 }

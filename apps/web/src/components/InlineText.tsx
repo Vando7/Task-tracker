@@ -58,7 +58,9 @@ export function InlineText({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className={`block w-full cursor-text text-left ${className} ${isEmpty ? 'text-text-dim/60 italic' : ''}`}
+        // The faint hover tint is the only hint that this is editable, now that
+        // there is no pencil affordance crowding every line of text.
+        className={`-mx-1 block w-full cursor-text rounded-md px-1 text-left transition-colors hover:bg-ink-hover ${className} ${isEmpty ? 'text-text-dim/60 italic' : ''}`}
         aria-label={`${label}: click to edit`}
       >
         {isEmpty ? (placeholder ?? label) : value}
@@ -74,7 +76,7 @@ export function InlineText({
     'aria-label': label,
     maxLength,
     placeholder,
-    className: `w-full rounded-lg border border-edge bg-ink px-2 py-1 ${className}`,
+    className: `field py-1 ${className}`,
   }
 
   if (multiline) {

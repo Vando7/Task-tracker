@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Icon } from './components/Icon'
 import { Shell } from './components/Shell'
 import { useMe } from './features/session/api'
 import { useEventStream } from './lib/useEventStream'
-import { HomePage } from './routes/HomePage'
+import { DashboardPage } from './routes/DashboardPage'
+import { HousePage } from './routes/HousePage'
 import { NotFoundPage } from './routes/NotFoundPage'
 import { SettingsPage } from './routes/SettingsPage'
 import { SignInPage } from './routes/SignInPage'
@@ -23,7 +25,10 @@ export function App() {
   if (isPending) {
     return (
       <div className="grid min-h-dvh place-items-center text-text-dim">
-        <span className="animate-pulse">Loading…</span>
+        <span className="flex items-center gap-2">
+          <span className="size-2 animate-shimmer rounded-full bg-accent" />
+          Loading…
+        </span>
       </div>
     )
   }
@@ -45,12 +50,17 @@ export function App() {
         <Route
           path="*"
           element={
-            <div className="mx-auto max-w-md p-6 text-center">
-              <h1 className="text-xl font-semibold">Confirm your email</h1>
-              <p className="mt-2 text-text-dim">
-                We sent a link to <strong className="text-text">{me.user.email}</strong>. In
-                development it is printed to the server console.
-              </p>
+            <div className="mx-auto grid min-h-dvh max-w-md place-items-center p-6">
+              <div className="card p-6 text-center">
+                <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent/15 text-accent-soft">
+                  <Icon name="mail" size={24} />
+                </span>
+                <h1 className="mt-3 text-xl font-semibold">Confirm your email</h1>
+                <p className="mt-2 text-text-dim">
+                  We sent a link to <strong className="text-text">{me.user.email}</strong>. In
+                  development it is printed to the server console.
+                </p>
+              </div>
             </div>
           }
         />
@@ -106,7 +116,13 @@ function WorkspaceRoutes({ me }: { me: Me }) {
   return (
     <Shell me={me} workspace={workspace}>
       <Routes>
-        <Route path="/" element={<HomePage workspace={workspace} />} />
+        {/* The landing page is the dashboard — what needs doing, yours first. The
+            floor plan moved to /house, where its editing controls belong. */}
+        <Route
+          path="/"
+          element={<DashboardPage workspace={workspace} me={me} flashing={flashing} />}
+        />
+        <Route path="house" element={<HousePage workspace={workspace} />} />
         <Route path="tasks" element={<TasksPage workspace={workspace} flashing={flashing} />} />
         <Route path="settings" element={<SettingsPage workspace={workspace} me={me} />} />
         <Route path="*" element={<NotFoundPage />} />

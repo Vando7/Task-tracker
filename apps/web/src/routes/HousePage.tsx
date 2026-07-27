@@ -1,27 +1,28 @@
-import type { Workspace } from '@task-tracker/shared'
+import type { Floor, Room, Workspace } from '@task-tracker/shared'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Icon } from '../components/Icon'
 import {
   useCreateFloor,
   useCreateRoom,
   useDeleteFloor,
   useDeleteRoom,
   useLayout,
-  useStaleness,
   useUpdateFloor,
   useUpdateRoom,
 } from '../features/layout/api'
-import { stalenessLabel } from '../lib/format'
+import { useStaleness } from '../features/stats/api'
+import { stalenessLabel, stalenessShort } from '../lib/format'
 
 /**
- * The home view: the house, by floor.
+ * The house, by floor — and the only place its shape is edited.
  *
  * The spatial model is what makes this app different from a flat to-do list, so
  * this page answers "what needs attention?" spatially — badge counts plus room
  * staleness ("bathroom: nothing done in 12 days", section 5.4) rather than
- * another list.
+ * another list. The landing page is `DashboardPage`; this one is reached from it.
  */
-export function HomePage({ workspace }: { workspace: Workspace }) {
+export function HousePage({ workspace }: { workspace: Workspace }) {
   const { data: layout, isPending } = useLayout(workspace.id)
   const { data: staleness } = useStaleness(workspace.id)
   const [addingFloor, setAddingFloor] = useState(false)
@@ -36,40 +37,51 @@ export function HomePage({ workspace }: { workspace: Workspace }) {
     return (
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {[0, 1, 2].map((index) => (
-          <div
-            key={index}
-            className="h-40 animate-pulse rounded-2xl border border-edge bg-ink-raised"
-          />
+          <div key={index} className="h-44 animate-shimmer rounded-2xl bg-ink-raised" />
         ))}
       </div>
     )
   }
 
   const floors = layout?.floors ?? []
+  const roomCount = floors.reduce((total, floor) => total + floor.rooms.length, 0)
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{workspace.name}</h1>
-        <Link
-          to={`/w/${workspace.id}/tasks`}
-          className="tap flex items-center rounded-lg border border-edge px-3 text-sm text-text-dim hover:bg-ink-hover"
-        >
+    <div className="mx-auto max-w-6xl animate-rise">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="flex items-center gap-2 text-xl font-semibold">
+            <Icon name="layers" size={19} className="text-text-dim" />
+            Your house
+          </h1>
+          <p className="text-sm text-text-dim">
+            {floors.length} floor{floors.length === 1 ? '' : 's'} · {roomCount} room
+            {roomCount === 1 ? '' : 's'} in {workspace.name}. Tap a room to see its tasks.
+          </p>
+        </div>
+        <Link to={`/w/${workspace.id}/tasks`} className="btn btn-sm">
+          <Icon name="list" size={16} />
           All tasks
         </Link>
       </div>
 
       {floors.length === 0 && !addingFloor && (
-        <div className="rounded-2xl border border-dashed border-edge p-8 text-center">
-          <p className="text-text-dim">
-            No floors yet. A floor is a level of your home — “Ground floor”, “Upstairs”.
+        <div className="card p-8 text-center">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent/15 text-accent-soft">
+            <Icon name="layers" size={24} />
+          </span>
+          <h2 className="mt-3 text-lg font-semibold">Start with a floor</h2>
+          <p className="mx-auto mt-1 max-w-sm text-text-dim">
+            A floor is a level of your home — “Ground floor”, “Upstairs”. Rooms live inside it, and
+            chores live in rooms.
           </p>
           <button
             type="button"
             onClick={() => setAddingFloor(true)}
-            className="tap mt-3 animate-pulse rounded-xl bg-text px-4 font-medium text-ink"
+            className="btn btn-primary mx-auto mt-4"
           >
-            + Add your first floor
+            <Icon name="plus" size={18} />
+            Add your first floor
           </button>
         </div>
       )}
@@ -99,7 +111,7 @@ export function HomePage({ workspace }: { workspace: Workspace }) {
               { onSuccess: () => setAddingFloor(false) },
             )
           }}
-          className="mt-3 flex flex-wrap items-end gap-2 rounded-2xl border border-edge bg-ink-raised p-3"
+          className="card mt-3 flex flex-wrap items-end gap-2 p-3"
         >
           <label className="text-sm">
             Icon
@@ -107,7 +119,7 @@ export function HomePage({ workspace }: { workspace: Workspace }) {
               name="icon"
               defaultValue="🏠"
               maxLength={16}
-              className="tap mt-1 w-16 rounded-lg border border-edge bg-ink px-2 text-center"
+              className="field mt-1 w-16 text-center"
             />
           </label>
           <label className="flex-1 text-sm">
@@ -118,26 +130,18 @@ export function HomePage({ workspace }: { workspace: Workspace }) {
               maxLength={64}
               // biome-ignore lint/a11y/noAutofocus: focus belongs in the inline form the user just revealed
               autoFocus
-              className="tap mt-1 w-full rounded-lg border border-edge bg-ink px-2"
+              className="field mt-1"
             />
           </label>
           <label className="text-sm">
             Colour
-            <input
-              name="color"
-              type="color"
-              defaultValue="#8A2BE2"
-              className="tap mt-1 block w-16 rounded-lg border border-edge bg-ink"
-            />
+            <input name="color" type="color" defaultValue="#8A2BE2" className="field mt-1 w-16" />
           </label>
-          <button type="submit" className="tap rounded-xl bg-text px-4 font-medium text-ink">
-            Add
+          <button type="submit" className="btn btn-primary">
+            <Icon name="check" size={17} />
+            Add floor
           </button>
-          <button
-            type="button"
-            onClick={() => setAddingFloor(false)}
-            className="tap rounded-xl border border-edge px-3 text-text-dim"
-          >
+          <button type="button" onClick={() => setAddingFloor(false)} className="btn btn-ghost">
             Cancel
           </button>
         </form>
@@ -146,17 +150,16 @@ export function HomePage({ workspace }: { workspace: Workspace }) {
           <button
             type="button"
             onClick={() => setAddingFloor(true)}
-            className="tap mt-3 rounded-xl border border-dashed border-edge px-4 text-text-dim hover:bg-ink-hover"
+            className="btn mt-3 w-full border-dashed"
           >
-            + Floor
+            <Icon name="plus" size={17} />
+            Add a floor
           </button>
         )
       )}
     </div>
   )
 }
-
-type Floor = NonNullable<ReturnType<typeof useLayout>['data']>['floors'][number]
 
 function FloorCard({
   workspace,
@@ -194,16 +197,15 @@ function FloorCard({
         >
           {floor.name}
         </Link>
-        {floor.openTaskCount > 0 && (
-          <span className="rounded-full bg-black/30 px-2 text-xs">{floor.openTaskCount}</span>
-        )}
+        {floor.openTaskCount > 0 && <span className="count-badge">{floor.openTaskCount}</span>}
         <button
           type="button"
           onClick={() => setEditing((open) => !open)}
+          aria-expanded={editing}
           aria-label={`Edit ${floor.name}`}
-          className="tap text-text-dim hover:text-text"
+          className="icon-btn icon-btn-ghost"
         >
-          ✎
+          <Icon name={editing ? 'chevronUp' : 'pencil'} size={17} />
         </button>
       </header>
 
@@ -222,62 +224,69 @@ function FloorCard({
               { onSuccess: () => setEditing(false) },
             )
           }}
-          className="mt-2 flex flex-wrap items-end gap-2 rounded-lg bg-black/20 p-2"
+          className="mt-2 space-y-2 rounded-xl bg-ink-sunken/70 p-2"
         >
-          <input
-            name="icon"
-            defaultValue={floor.icon}
-            maxLength={16}
-            aria-label="Floor icon"
-            className="tap w-14 rounded-lg border border-edge bg-ink px-1 text-center"
-          />
-          <input
-            name="name"
-            defaultValue={floor.name}
-            maxLength={64}
-            aria-label="Floor name"
-            className="tap min-w-24 flex-1 rounded-lg border border-edge bg-ink px-2"
-          />
-          <input
-            name="color"
-            type="color"
-            defaultValue={floor.color}
-            aria-label="Floor colour"
-            className="tap w-12 rounded-lg border border-edge bg-ink"
-          />
-          <button
-            type="submit"
-            className="tap rounded-lg bg-text px-3 text-sm font-medium text-ink"
-          >
-            Save
-          </button>
-          {confirmDelete ? (
-            <span className="flex items-center gap-1 text-xs">
-              <span className="text-text-dim">Delete floor and its rooms?</span>
-              <button
-                type="button"
-                onClick={() => deleteFloor.mutate(floor.id)}
-                className="tap rounded-lg bg-urgent/25 px-2 text-urgent"
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                className="tap rounded-lg border border-edge px-2 text-text-dim"
-              >
-                No
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              className="tap rounded-lg border border-edge px-2 text-sm text-text-dim hover:text-urgent"
-            >
-              Delete
+          {/* Two rows rather than one wrapping line: at card width a single row
+              squeezed the name field down to about ten characters. */}
+          <div className="flex items-center gap-2">
+            <input
+              name="icon"
+              defaultValue={floor.icon}
+              maxLength={16}
+              aria-label="Floor icon"
+              className="field w-14 shrink-0 text-center"
+            />
+            <input
+              name="name"
+              defaultValue={floor.name}
+              maxLength={64}
+              aria-label="Floor name"
+              className="field min-w-0 flex-1"
+            />
+            <input
+              name="color"
+              type="color"
+              defaultValue={floor.color}
+              aria-label="Floor colour"
+              className="field w-12 shrink-0"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button type="submit" className="btn btn-sm btn-primary">
+              <Icon name="check" size={15} />
+              Save
             </button>
-          )}
+            {confirmDelete ? (
+              <>
+                <span className="text-xs text-text-dim">Delete the floor and its rooms?</span>
+                <button
+                  type="button"
+                  onClick={() => deleteFloor.mutate(floor.id)}
+                  className="btn btn-sm btn-danger"
+                >
+                  <Icon name="trash" size={14} />
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="btn btn-sm"
+                >
+                  Keep
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="btn btn-sm btn-quiet-danger ml-auto"
+              >
+                <Icon name="trash" size={15} />
+                Delete floor
+              </button>
+            )}
+          </div>
         </form>
       )}
 
@@ -306,14 +315,14 @@ function FloorCard({
               { onSuccess: () => setAddingRoom(false) },
             )
           }}
-          className="mt-2 flex items-end gap-1"
+          className="mt-2 flex items-center gap-1.5"
         >
           <input
             name="icon"
             defaultValue="🚪"
             maxLength={16}
             aria-label="Room icon"
-            className="tap w-14 rounded-lg border border-edge bg-ink px-1 text-center"
+            className="field w-14 text-center"
           />
           <input
             name="name"
@@ -323,22 +332,28 @@ function FloorCard({
             autoFocus
             placeholder="Room name"
             aria-label="Room name"
-            className="tap min-w-0 flex-1 rounded-lg border border-edge bg-ink px-2"
+            className="field min-w-0 flex-1"
           />
+          <button type="submit" aria-label="Add room" className="icon-btn icon-btn-primary">
+            <Icon name="check" size={17} />
+          </button>
           <button
-            type="submit"
-            className="tap rounded-lg bg-text px-3 text-sm font-medium text-ink"
+            type="button"
+            onClick={() => setAddingRoom(false)}
+            aria-label="Cancel"
+            className="icon-btn"
           >
-            Add
+            <Icon name="x" size={17} />
           </button>
         </form>
       ) : (
         <button
           type="button"
           onClick={() => setAddingRoom(true)}
-          className="tap mt-2 w-full rounded-lg border border-dashed border-edge/60 text-sm text-text-dim hover:bg-white/5"
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-edge/60 py-2 text-sm text-text-dim hover:bg-ink-hover/40 hover:text-text"
         >
-          + Room
+          <Icon name="plus" size={15} />
+          Room
         </button>
       )}
     </section>
@@ -351,7 +366,7 @@ function RoomRow({
   staleDays,
 }: {
   workspace: Workspace
-  room: Floor['rooms'][number]
+  room: Room
   staleDays: number | null
 }) {
   const [editing, setEditing] = useState(false)
@@ -374,40 +389,42 @@ function RoomRow({
               { onSuccess: () => setEditing(false) },
             )
           }}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1.5"
         >
           <input
             name="icon"
             defaultValue={room.icon}
             maxLength={16}
             aria-label="Room icon"
-            className="tap w-12 rounded-lg border border-edge bg-ink px-1 text-center"
+            className="field w-12 text-center"
           />
           <input
             name="name"
             defaultValue={room.name}
             maxLength={64}
             aria-label="Room name"
-            className="tap min-w-0 flex-1 rounded-lg border border-edge bg-ink px-2"
+            className="field min-w-0 flex-1"
           />
-          <button type="submit" className="tap rounded-lg bg-text px-2 text-sm text-ink">
-            ✓
+          <button type="submit" aria-label="Save room" className="icon-btn icon-btn-primary">
+            <Icon name="check" size={16} />
           </button>
           <button
             type="button"
             onClick={() => deleteRoom.mutate(room.id)}
             aria-label={`Delete ${room.name}`}
-            className="tap rounded-lg border border-edge px-2 text-sm text-text-dim hover:text-urgent"
+            className="icon-btn icon-btn-danger"
           >
-            ✕
+            <Icon name="trash" size={16} />
           </button>
         </form>
       </li>
     )
   }
 
+  const stale = staleDays !== null && staleDays >= 10
+
   return (
-    <li className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-white/5">
+    <li className="group flex items-center gap-2 rounded-xl px-1 py-1 hover:bg-ink-hover/40">
       <Link
         to={`/w/${workspace.id}/tasks?roomId=${room.id}`}
         className="flex min-w-0 flex-1 items-center gap-2"
@@ -415,23 +432,25 @@ function RoomRow({
         <span aria-hidden="true">{room.icon}</span>
         <span className="min-w-0 flex-1 truncate text-sm">{room.name}</span>
         {/* Excludes soft-deleted tasks, unlike the legacy badge. */}
-        {room.openTaskCount > 0 && (
-          <span className="rounded-full bg-black/30 px-2 text-xs">{room.openTaskCount}</span>
-        )}
+        {room.openTaskCount > 0 && <span className="count-badge">{room.openTaskCount}</span>}
       </Link>
+      {/* Compact here so the room name never has to truncate to make room for it;
+          the full sentence is in the tooltip, and on the dashboard's "needs
+          attention" panel, where there is space, it is spelled out. */}
       <span
-        className={`hidden text-xs sm:inline ${staleDays !== null && staleDays >= 10 ? 'text-special' : 'text-text-dim'}`}
-        title="From the completion log"
+        className={`hidden shrink-0 items-center gap-1 text-xs sm:flex ${stale ? 'text-special' : 'text-text-dim'}`}
+        title={stalenessLabel(staleDays)}
       >
-        {stalenessLabel(staleDays)}
+        <Icon name="clock" size={12} />
+        {stalenessShort(staleDays)}
       </span>
       <button
         type="button"
         onClick={() => setEditing(true)}
         aria-label={`Edit ${room.name}`}
-        className="tap text-text-dim hover:text-text"
+        className="icon-btn icon-btn-ghost"
       >
-        ✎
+        <Icon name="pencil" size={15} />
       </button>
     </li>
   )

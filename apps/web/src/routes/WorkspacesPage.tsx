@@ -1,6 +1,8 @@
 import type { Me } from '@task-tracker/shared'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Icon } from '../components/Icon'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useCreateWorkspace } from '../features/layout/api'
 import { useLogout } from '../features/session/api'
 import { ApiRequestError } from '../lib/api'
@@ -25,15 +27,22 @@ export function WorkspacesPage({ me }: { me: Me }) {
   const empty = me.workspaces.length === 0
 
   return (
-    <div className="mx-auto max-w-md p-4">
-      <h1 className="text-xl font-semibold">
-        {empty ? 'Set up your household' : 'Your households'}
-      </h1>
-      {empty && (
-        <p className="mt-1 text-text-dim">
-          A household is a home you share. You can invite the people you live with once it exists.
-        </p>
-      )}
+    <div className="mx-auto max-w-md animate-rise p-4">
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
+          <h1 className="flex items-center gap-2 text-xl font-semibold">
+            <Icon name="home" size={19} className="text-text-dim" />
+            {empty ? 'Set up your household' : 'Your households'}
+          </h1>
+          {empty && (
+            <p className="mt-1 text-text-dim">
+              A household is a home you share. You can invite the people you live with once it
+              exists.
+            </p>
+          )}
+        </div>
+        <ThemeToggle />
+      </div>
 
       {!empty && (
         <ul className="mt-4 space-y-2">
@@ -41,8 +50,14 @@ export function WorkspacesPage({ me }: { me: Me }) {
             <li key={workspace.id}>
               <Link
                 to={`/w/${workspace.id}`}
-                className="flex items-center gap-2 rounded-xl border border-edge bg-ink-raised p-3 hover:bg-ink-hover"
+                className="card hover-lift flex items-center gap-3 p-3"
               >
+                <span
+                  aria-hidden="true"
+                  className="flex size-10 items-center justify-center rounded-xl bg-accent/15 text-accent-soft"
+                >
+                  <Icon name="home" size={19} />
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{workspace.name}</span>
                   <span className="block text-xs text-text-dim">
@@ -50,9 +65,7 @@ export function WorkspacesPage({ me }: { me: Me }) {
                     {workspace.timezone} · {workspace.role}
                   </span>
                 </span>
-                <span aria-hidden="true" className="text-text-dim">
-                  →
-                </span>
+                <Icon name="chevronRight" size={18} className="text-text-dim" />
               </Link>
             </li>
           ))}
@@ -64,7 +77,7 @@ export function WorkspacesPage({ me }: { me: Me }) {
           event.preventDefault()
           create.mutate({ name: name.trim(), timezone }, { onSuccess: () => setName('') })
         }}
-        className="mt-4 rounded-xl border border-edge bg-ink-raised p-3"
+        className="card mt-4 p-3"
       >
         <label className="block text-sm">
           {empty ? 'Name your household' : 'Add another household'}
@@ -76,13 +89,20 @@ export function WorkspacesPage({ me }: { me: Me }) {
             placeholder="Flat 4B"
             // biome-ignore lint/a11y/noAutofocus: first-run setup: the only field on the page
             autoFocus={empty}
-            className="tap mt-1 w-full rounded-xl border border-edge bg-ink px-3"
+            className="field mt-1"
           />
         </label>
-        <p className="mt-1 text-xs text-text-dim">Timezone: {timezone}</p>
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-text-dim">
+          <Icon name="clock" size={12} />
+          Timezone: {timezone}
+        </p>
 
         {error && (
-          <p role="alert" className="mt-2 rounded-lg bg-urgent/15 px-2 py-1 text-sm text-urgent">
+          <p
+            role="alert"
+            className="mt-2 flex items-center gap-2 rounded-xl bg-urgent/15 px-3 py-2 text-sm text-urgent"
+          >
+            <Icon name="alert" size={15} />
             {error.message}
           </p>
         )}
@@ -90,17 +110,15 @@ export function WorkspacesPage({ me }: { me: Me }) {
         <button
           type="submit"
           disabled={create.isPending || name.trim().length === 0}
-          className="tap mt-2 w-full rounded-xl bg-text px-3 font-medium text-ink disabled:opacity-50"
+          className="btn btn-primary mt-3 w-full"
         >
-          {create.isPending ? 'Creating…' : 'Create'}
+          <Icon name="plus" size={17} />
+          {create.isPending ? 'Creating…' : 'Create household'}
         </button>
       </form>
 
-      <button
-        type="button"
-        onClick={() => logout.mutate()}
-        className="tap mt-4 w-full rounded-xl border border-edge px-3 text-sm text-text-dim"
-      >
+      <button type="button" onClick={() => logout.mutate()} className="btn btn-ghost mt-4 w-full">
+        <Icon name="logOut" size={16} />
         Sign out
       </button>
     </div>

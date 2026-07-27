@@ -6,7 +6,6 @@ import type {
   Layout,
   Member,
   Room,
-  Staleness,
   UpdateFloorInput,
   UpdateRoomInput,
   Workspace,
@@ -26,14 +25,6 @@ export function useMembers(workspaceId: string | undefined) {
   return useQuery({
     queryKey: keys.members(workspaceId ?? ''),
     queryFn: () => api<Member[]>(`/api/workspaces/${workspaceId}/members`),
-    enabled: Boolean(workspaceId),
-  })
-}
-
-export function useStaleness(workspaceId: string | undefined) {
-  return useQuery({
-    queryKey: keys.staleness(workspaceId ?? ''),
-    queryFn: () => api<Staleness>(`/api/workspaces/${workspaceId}/stats/staleness`),
     enabled: Boolean(workspaceId),
   })
 }

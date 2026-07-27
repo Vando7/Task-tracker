@@ -5,6 +5,8 @@ import { useLayout, useMembers } from '../features/layout/api'
 import { useCreateTask } from '../features/tasks/api'
 import { ApiRequestError } from '../lib/api'
 import { localInputToIso } from '../lib/format'
+import { Avatar } from './Avatar'
+import { Icon, type IconName } from './Icon'
 
 /**
  * New task.
@@ -13,6 +15,8 @@ import { localInputToIso } from '../lib/format'
  * (the legacy *form* required it while the model allowed blank), and zero rooms
  * is allowed — a whole-flat chore like "book a plumber" belongs to the household,
  * not to a room.
+ *
+ * On a phone it is a bottom sheet, because that is where a thumb is (section 5.5).
  */
 export function NewTaskDialog({
   workspace,
@@ -81,27 +85,39 @@ export function NewTaskDialog({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-(--scrim) p-0 backdrop-blur-sm sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="New task"
     >
       <form
         onSubmit={submit}
-        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-edge bg-ink-raised p-4 sm:rounded-2xl"
+        className="card max-h-[92dvh] w-full max-w-lg animate-rise overflow-y-auto rounded-t-2xl rounded-b-none p-4 sm:rounded-2xl"
       >
-        <h2 className="text-lg font-semibold">New task</h2>
+        <div className="flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="flex size-9 items-center justify-center rounded-xl bg-accent/15 text-accent-soft"
+          >
+            <Icon name="plus" size={19} />
+          </span>
+          <h2 className="flex-1 text-lg font-semibold">New task</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="icon-btn">
+            <Icon name="x" size={18} />
+          </button>
+        </div>
 
-        <label className="mt-3 block text-sm">
-          Name
+        <label className="mt-4 block text-sm">
+          What needs doing?
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
             maxLength={128}
+            placeholder="Vacuum the living room"
             // biome-ignore lint/a11y/noAutofocus: focus belongs in the dialog the user just opened
             autoFocus
-            className="tap mt-1 w-full rounded-lg border border-edge bg-ink px-2"
+            className="field mt-1"
           />
         </label>
 
@@ -112,17 +128,20 @@ export function NewTaskDialog({
             onChange={(event) => setDescription(event.target.value)}
             maxLength={512}
             rows={2}
-            className="mt-1 w-full rounded-lg border border-edge bg-ink px-2 py-1"
+            className="field mt-1 min-h-0 py-2"
           />
         </label>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
-            Category
+            <span className="flex items-center gap-1.5">
+              <Icon name="filter" size={14} className="text-text-dim" />
+              Category
+            </span>
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value as TaskCategory)}
-              className="tap mt-1 w-full rounded-lg border border-edge bg-ink px-2"
+              className="field mt-1"
             >
               <option value="urgent">Urgent</option>
               <option value="special">Special</option>
@@ -131,18 +150,20 @@ export function NewTaskDialog({
           </label>
 
           <label className="text-sm">
-            Deadline <span className="text-text-dim">(optional)</span>
+            <span className="flex items-center gap-1.5">
+              <Icon name="calendar" size={14} className="text-text-dim" />
+              Deadline <span className="text-text-dim">(optional)</span>
+            </span>
             <input
               type="datetime-local"
               value={dueDate}
               onChange={(event) => setDueDate(event.target.value)}
-              className="tap mt-1 w-full rounded-lg border border-edge bg-ink px-2"
+              className="field mt-1"
             />
           </label>
         </div>
 
-        <fieldset className="mt-3 rounded-lg border border-edge p-2">
-          <legend className="px-1 text-sm">Repeats</legend>
+        <Section icon="repeat" title="Repeats">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-text-dim">every</span>
             <input
@@ -153,20 +174,20 @@ export function NewTaskDialog({
               onChange={(event) => setEvery(event.target.value)}
               placeholder="—"
               aria-label="Repeat interval"
-              className="tap w-20 rounded-lg border border-edge bg-ink px-2"
+              className="field w-20 text-center"
             />
             <select
               value={unit}
               onChange={(event) => setUnit(event.target.value as RecurrenceUnit)}
               disabled={!recurring}
               aria-label="Repeat unit"
-              className="tap rounded-lg border border-edge bg-ink px-2 disabled:opacity-40"
+              className="field w-auto"
             >
               <option value="day">days</option>
               <option value="week">weeks</option>
               <option value="month">months</option>
             </select>
-            <span className="text-text-dim">Leave empty for a one-off.</span>
+            <span className="text-xs text-text-dim">Leave empty for a one-off.</span>
           </div>
 
           {recurring && (
@@ -176,7 +197,7 @@ export function NewTaskDialog({
                 <select
                   value={anchor}
                   onChange={(event) => setAnchor(event.target.value as 'completion' | 'dueDate')}
-                  className="tap mt-1 w-full rounded-lg border border-edge bg-ink px-2"
+                  className="field mt-1"
                 >
                   <option value="completion">when it was actually done</option>
                   <option value="dueDate">the previous due date (fixed cadence)</option>
@@ -188,26 +209,25 @@ export function NewTaskDialog({
                   type="checkbox"
                   checked={rotate}
                   onChange={(event) => setRotate(event.target.checked)}
-                  className="size-4"
+                  className="size-4 accent-accent"
                 />
+                <Icon name="swap" size={15} className="text-text-dim" />
                 Hand it to the next person each time
               </label>
             </>
           )}
-        </fieldset>
+        </Section>
 
         {(layout?.floors.length ?? 0) > 0 && (
-          <fieldset className="mt-3 rounded-lg border border-edge p-2">
-            <legend className="px-1 text-sm">
-              Rooms <span className="text-text-dim">(optional)</span>
-            </legend>
+          <Section icon="door" title="Rooms" hint="optional">
             <div className="max-h-40 space-y-2 overflow-y-auto">
               {layout?.floors.map((floor) => (
                 <div key={floor.id} style={{ '--floor': floor.color } as React.CSSProperties}>
-                  <p className="text-xs font-medium text-text-dim">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-text-dim">
+                    <span aria-hidden="true" className="floor-dot inline-block" />
                     {floor.icon} {floor.name}
                   </p>
-                  <div className="mt-1 flex flex-wrap gap-1">
+                  <div className="mt-1 flex flex-wrap gap-1.5">
                     {floor.rooms.map((room) => (
                       <button
                         key={room.id}
@@ -215,27 +235,26 @@ export function NewTaskDialog({
                         aria-pressed={roomIds.has(room.id)}
                         onClick={() => setRoomIds((current) => toggle(current, room.id))}
                         className={[
-                          'rounded-full border px-2 py-1 text-sm',
+                          'flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-sm transition-colors',
                           roomIds.has(room.id)
                             ? 'floor-tint border-transparent text-text'
-                            : 'border-edge text-text-dim',
+                            : 'border-edge text-text-dim hover:bg-ink-hover hover:text-text',
                         ].join(' ')}
                       >
-                        {room.icon} {room.name}
+                        <span aria-hidden="true">{room.icon}</span>
+                        {room.name}
+                        {roomIds.has(room.id) && <Icon name="check" size={13} />}
                       </button>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
-          </fieldset>
+          </Section>
         )}
 
-        <fieldset className="mt-3 rounded-lg border border-edge p-2">
-          <legend className="px-1 text-sm">
-            Assign to <span className="text-text-dim">(optional)</span>
-          </legend>
-          <div className="flex flex-wrap gap-1">
+        <Section icon="users" title="Assign to" hint="optional">
+          <div className="flex flex-wrap gap-1.5">
             {members?.map((member) => (
               <button
                 key={member.user.id}
@@ -243,21 +262,29 @@ export function NewTaskDialog({
                 aria-pressed={assigneeIds.has(member.user.id)}
                 onClick={() => setAssigneeIds((current) => toggle(current, member.user.id))}
                 className={[
-                  'rounded-full border px-2 py-1 text-sm',
+                  'flex items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm transition-colors',
                   assigneeIds.has(member.user.id)
-                    ? 'border-transparent bg-ink-hover text-text'
-                    : 'border-edge text-text-dim',
+                    ? 'border-accent/40 bg-accent/15 text-text'
+                    : 'border-edge text-text-dim hover:bg-ink-hover hover:text-text',
                 ].join(' ')}
               >
+                <Avatar user={member.user} size={22} />
                 {member.user.name}
+                {assigneeIds.has(member.user.id) && (
+                  <Icon name="check" size={13} className="text-accent-soft" />
+                )}
               </button>
             ))}
           </div>
-          <p className="mt-1 text-xs text-text-dim">Leave empty for “whoever gets to it”.</p>
-        </fieldset>
+          <p className="mt-1.5 text-xs text-text-dim">Leave empty for “whoever gets to it”.</p>
+        </Section>
 
         {error && (
-          <p role="alert" className="mt-3 rounded-lg bg-urgent/15 px-2 py-1 text-sm text-urgent">
+          <p
+            role="alert"
+            className="mt-3 flex items-center gap-2 rounded-xl bg-urgent/15 px-3 py-2 text-sm text-urgent"
+          >
+            <Icon name="alert" size={16} />
             {error.message}
           </p>
         )}
@@ -266,19 +293,39 @@ export function NewTaskDialog({
           <button
             type="submit"
             disabled={create.isPending || name.trim().length === 0}
-            className="tap flex-1 rounded-xl bg-text px-3 font-medium text-ink disabled:opacity-50"
+            className="btn btn-primary flex-1"
           >
+            <Icon name="check" size={18} />
             {create.isPending ? 'Adding…' : 'Add task'}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="tap rounded-xl border border-edge px-4 text-text-dim"
-          >
+          <button type="button" onClick={onClose} className="btn">
             Cancel
           </button>
         </div>
       </form>
     </div>
+  )
+}
+
+function Section({
+  icon,
+  title,
+  hint,
+  children,
+}: {
+  icon: IconName
+  title: string
+  hint?: string
+  children: React.ReactNode
+}) {
+  return (
+    <fieldset className="mt-3 rounded-xl border border-edge p-2.5">
+      <legend className="flex items-center gap-1.5 px-1 text-sm">
+        <Icon name={icon} size={14} className="text-text-dim" />
+        {title}
+        {hint && <span className="text-text-dim">({hint})</span>}
+      </legend>
+      {children}
+    </fieldset>
   )
 }

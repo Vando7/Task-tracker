@@ -107,6 +107,15 @@ packages/shared Zod schemas — the single definition of every API shape
 data/           SQLite (gitignored)
 ```
 
+Client routes, all under a workspace (`/w/:workspaceId`):
+
+| Route | Page |
+|---|---|
+| `/` | **Dashboard** — yours, then up-for-grabs, then the house at a glance |
+| `/house` | the floor plan, and the only place floors and rooms are edited |
+| `/tasks` | one list, filtered by room, floor, search and assignee via the query string |
+| `/settings` | fairness tally, appearance, household, notifications, profile |
+
 `packages/shared` is the **only** place an API shape is defined. The server validates requests *and*
 responses against those schemas; the client imports the inferred types. If the two ever disagree
 about a field, the schema is right.
@@ -160,6 +169,16 @@ catalogues the originals).
   app feel alive and the easiest thing to forget.
 - **A floor's colour is one CSS custom property** set on that floor's subtree; tints and glows derive
   from it with `color-mix`. Don't reintroduce per-element gradients.
+- **Every colour is a token, and both themes are real.** Utilities read `var(--color-*)`; the light
+  theme reassigns those variables under `:root[data-theme='light']` in `apps/web/src/index.css`. So
+  never hardcode a hex or reach for `bg-white`/`bg-black/30` in a component — it will look wrong in one
+  of the two themes. `data-theme` is stamped by an inline script in `index.html` before first paint and
+  owned by `lib/useTheme.ts` afterwards; the default follows the OS.
+- **Buttons and inputs are the `btn` / `icon-btn` / `field` / `chip` utilities**, with colour variants
+  paired (`icon-btn icon-btn-ghost`). Mixing a core utility like `bg-transparent` into one of them
+  depends on stylesheet order and will eventually lose; add or use a variant instead.
+- **Icons are the inline SVG set in `components/Icon.tsx`** — `currentColor`, `aria-hidden`, and never
+  the only label on a control. Emoji stay for the things a *user* chose: floor and room icons.
 
 ---
 

@@ -10,6 +10,8 @@ export const keys = {
   workspace: (workspaceId: string) => ['workspace', workspaceId] as const,
   layout: (workspaceId: string) => ['workspace', workspaceId, 'layout'] as const,
   members: (workspaceId: string) => ['workspace', workspaceId, 'members'] as const,
+  /** A prefix of every window, so a completion can invalidate them all. */
+  fairnessAll: (workspaceId: string) => ['workspace', workspaceId, 'fairness'] as const,
   fairness: (workspaceId: string, window: string) =>
     ['workspace', workspaceId, 'fairness', window] as const,
   staleness: (workspaceId: string) => ['workspace', workspaceId, 'staleness'] as const,

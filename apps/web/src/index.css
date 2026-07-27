@@ -1,32 +1,86 @@
 @import "tailwindcss";
 
 /**
- * The visual identity is the point (section 5.6): the spatial model plus the
- * emoji-and-floor-colour language is what makes this app not a flat to-do list.
+ * The design system, in one file.
  *
- * The key move versus the legacy app: a floor's colour is set *once* as a CSS
- * custom property on the floor's subtree, and every tint, glow and border below
- * derives from it. The legacy templates carried dozens of inline
- * `style="background: linear-gradient(...)"` attributes with hardcoded colours
- * (Part 2, problem 24).
+ * Two ideas hold it together:
+ *
+ * 1. **Every colour is a token.** Utilities reference `var(--color-*)`, and the
+ *    light theme simply reassigns those variables on `:root[data-theme='light']`.
+ *    Nothing in the components knows which theme is active — the legacy app had
+ *    hundreds of inline `style="background: #..."` attributes and four CSS files
+ *    (Part 2, problem 24), which is exactly what makes a second theme impossible.
+ *
+ * 2. **A floor's colour is set once** as `--floor` on the floor's subtree, and
+ *    every tint, glow and border below derives from it. That per-floor colour
+ *    language is the app's visual identity (section 5.6).
  */
 
 @theme {
-  --color-ink: #0b0f14;
-  --color-ink-raised: #131a23;
-  --color-ink-hover: #1a232e;
-  --color-edge: #243040;
-  --color-text: #e6edf5;
+  /* Dark is the default, so these are the dark values. */
+  --color-ink: #0a0e14;
+  --color-ink-raised: #121a24;
+  --color-ink-hover: #1b2533;
+  --color-ink-sunken: #070a0f;
+  --color-edge: #223044;
+  --color-edge-strong: #31435c;
+  --color-text: #e8eef7;
   --color-text-dim: #93a4b8;
-  --color-urgent: #ff5c5c;
+  --color-accent: #8a5cf6;
+  --color-accent-soft: #a78bfa;
+  --color-urgent: #ff5f5f;
   --color-special: #ffb340;
-  --color-done: #3fb950;
+  --color-done: #3fce6a;
+  --color-info: #4cc4f5;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35), 0 12px 32px -24px rgb(0 0 0 / 0.9);
+  --shadow-float: 0 8px 24px -8px rgb(0 0 0 / 0.55);
+
+  --radius-card: 1rem;
+
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-rise: rise 0.28s ease-out both;
 }
 
 :root {
   color-scheme: dark;
   /* Fallback, overridden per floor subtree. */
   --floor: #8a2be2;
+  /* Strength of the ambient page glow; the light theme wants far less of it. */
+  --glow-strength: 14%;
+  --scrim: rgb(3 6 12 / 0.72);
+}
+
+/**
+ * Light theme.
+ *
+ * Not an inversion: surfaces go white-on-grey (cards lift *above* the page)
+ * whereas dark goes raised-above-black. Borders and dim text are re-tuned rather
+ * than flipped, because the same contrast ratio needs different values on a light
+ * background.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-ink: #f3f6fb;
+  --color-ink-raised: #ffffff;
+  --color-ink-hover: #eaf0f8;
+  --color-ink-sunken: #e6ecf5;
+  --color-edge: #d7e0ed;
+  --color-edge-strong: #b9c7db;
+  --color-text: #101827;
+  --color-text-dim: #5b6c83;
+  --color-accent: #6d3ce4;
+  --color-accent-soft: #7c4dee;
+  --color-urgent: #d92d2d;
+  --color-special: #b06a00;
+  --color-done: #1c8a3c;
+  --color-info: #0b7fb8;
+
+  --shadow-card: 0 1px 2px rgb(16 24 39 / 0.06), 0 12px 28px -20px rgb(16 24 39 / 0.35);
+  --shadow-float: 0 10px 26px -10px rgb(16 24 39 / 0.35);
+
+  --glow-strength: 7%;
+  --scrim: rgb(16 24 39 / 0.45);
 }
 
 html,
@@ -38,18 +92,323 @@ body,
 body {
   background: var(--color-ink);
   color: var(--color-text);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   /* Respect the notch on a phone held in the kitchen. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
 }
 
+/* Ambient colour behind the whole app: two soft washes, fixed, non-interactive.
+   Cheap depth that survives both themes because it is mixed from tokens. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(
+      60rem 40rem at 12% -8%,
+      color-mix(in oklab, var(--color-accent) var(--glow-strength), transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      48rem 32rem at 92% 0%,
+      color-mix(in oklab, var(--color-info) var(--glow-strength), transparent),
+      transparent 70%
+    );
+}
+
+/* One visible focus style everywhere, since half the controls are icon buttons. */
+:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-accent) 75%, transparent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+}
+
+/* Native controls inherit the theme rather than fighting it. */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input[type="color"] {
+  padding: 2px;
+  cursor: pointer;
+}
+
+@utility tap {
+  /* 44px is the smallest reliably thumb-hittable target (section 5.5). */
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+/* --- Surfaces ------------------------------------------------------------- */
+
+@utility card {
+  background: var(--color-ink-raised);
+  border: 1px solid var(--color-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+@utility card-quiet {
+  background: color-mix(in oklab, var(--color-ink-raised) 70%, transparent);
+  border: 1px solid var(--color-edge);
+  border-radius: var(--radius-card);
+}
+
+@utility glass {
+  background: color-mix(in oklab, var(--color-ink) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+}
+
+@utility hover-lift {
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: var(--color-edge-strong);
+  }
+}
+
+/* --- Controls ------------------------------------------------------------- */
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding-inline: 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-edge);
+  background: var(--color-ink-raised);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease,
+    opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-ink-hover);
+    border-color: var(--color-edge-strong);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+@utility btn-primary {
+  border-color: transparent;
+  background-image: linear-gradient(
+    135deg,
+    var(--color-accent),
+    color-mix(in oklab, var(--color-info) 55%, var(--color-accent))
+  );
+  color: #fff;
+  box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--color-accent) 90%, transparent);
+
+  &:hover:not(:disabled) {
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-accent) 88%, white),
+      color-mix(in oklab, var(--color-info) 60%, var(--color-accent))
+    );
+    border-color: transparent;
+  }
+}
+
+@utility btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-dim);
+
+  &:hover:not(:disabled) {
+    background: var(--color-ink-hover);
+    color: var(--color-text);
+    border-color: transparent;
+  }
+}
+
+@utility btn-danger {
+  border-color: color-mix(in oklab, var(--color-urgent) 45%, var(--color-edge));
+  background: color-mix(in oklab, var(--color-urgent) 14%, transparent);
+  color: var(--color-urgent);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-urgent) 22%, transparent);
+    border-color: var(--color-urgent);
+  }
+}
+
+/** Quiet until you hover it, then clearly destructive. For Delete affordances. */
+@utility btn-quiet-danger {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-dim);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-urgent) 14%, transparent);
+    border-color: transparent;
+    color: var(--color-urgent);
+  }
+}
+
+@utility btn-sm {
+  min-height: 2rem;
+  min-width: 2rem;
+  padding-inline: 0.6rem;
+  border-radius: 0.6rem;
+  font-size: 0.8125rem;
+}
+
+/** A square icon-only button. Still 44px on a phone; snug on a pointer device. */
+@utility icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-edge);
+  background: var(--color-ink-raised);
+  color: var(--color-text-dim);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-ink-hover);
+    color: var(--color-text);
+    border-color: var(--color-edge-strong);
+  }
+  &:disabled {
+    opacity: 0.45;
+  }
+
+  @media (pointer: fine) {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+/**
+ * Colour variants for `icon-btn`, applied as `class="icon-btn icon-btn-ghost"`.
+ *
+ * Deliberately paired custom utilities rather than mixing in `bg-transparent`
+ * and friends: within one stylesheet, later definitions win predictably, whereas
+ * a core utility landing on either side of a custom one is a coin flip.
+ */
+@utility icon-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+@utility icon-btn-primary {
+  border-color: transparent;
+  background-image: linear-gradient(
+    135deg,
+    var(--color-accent),
+    color-mix(in oklab, var(--color-info) 55%, var(--color-accent))
+  );
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    border-color: transparent;
+    color: #fff;
+    filter: brightness(1.08);
+  }
+}
+
+@utility icon-btn-danger {
+  border-color: transparent;
+  background: transparent;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-urgent) 14%, transparent);
+    border-color: transparent;
+    color: var(--color-urgent);
+  }
+}
+
+@utility field {
+  width: 100%;
+  min-height: 2.75rem;
+  padding-inline: 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-edge);
+  background: var(--color-ink);
+  color: var(--color-text);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+
+  &::placeholder {
+    color: color-mix(in oklab, var(--color-text-dim) 80%, transparent);
+  }
+  &:hover:not(:disabled) {
+    border-color: var(--color-edge-strong);
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-ink-hover);
+  color: var(--color-text-dim);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/** A count badge that reads on a floor-tinted background in either theme. */
+@utility count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-ink-sunken) 78%, var(--floor));
+  border: 1px solid color-mix(in oklab, var(--floor) 30%, transparent);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- The floor colour language ------------------------------------------- */
+
 @utility floor-tint {
   /* One variable, not a bespoke gradient per element. */
   background-image: linear-gradient(
     160deg,
-    color-mix(in oklab, var(--floor) 22%, transparent),
+    color-mix(in oklab, var(--floor) 20%, transparent),
     transparent 65%
   );
   border-color: color-mix(in oklab, var(--floor) 35%, var(--color-edge));
@@ -57,15 +416,19 @@ body {
 
 @utility floor-glow {
   box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--floor) 30%, transparent),
-    0 8px 30px -12px color-mix(in oklab, var(--floor) 45%, transparent);
+    0 0 0 1px color-mix(in oklab, var(--floor) 26%, transparent),
+    0 10px 34px -16px color-mix(in oklab, var(--floor) 55%, transparent);
 }
 
-@utility tap {
-  /* 44px is the smallest reliably thumb-hittable target. */
-  min-height: 2.75rem;
-  min-width: 2.75rem;
+@utility floor-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--floor);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--floor) 22%, transparent);
 }
+
+/* --- Motion --------------------------------------------------------------- */
 
 /* The flash-on-change animation from the legacy app was genuinely nice. Kept —
    but now driven by an SSE event for a known entity rather than by diffing
@@ -79,11 +442,41 @@ body {
   }
 }
 
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .flash {
   animation: flash-change 1.2s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore-start lint/complexity/noImportantStyles: honouring a reduced-motion request has to beat any animation utility, whatever its specificity */
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    /* biome-ignore-end lint/complexity/noImportantStyles: end of the reduced-motion override */
+  }
   .flash {
     animation: none;
   }

@@ -27,6 +27,9 @@ export function useTasks(workspaceId: string | undefined, filters: TaskFilters) 
  * Every mutation below invalidates the workspace's task list family. The SSE
  * event tells *other* clients; this keeps our own cache honest if a write
  * changed more than the entity we sent (a rotation, a rescheduled recurrence).
+ *
+ * The completion-log stats go too: a completion moves the fairness tally and a
+ * room's staleness, both of which the dashboard shows next to the task itself.
  */
 function useTaskInvalidation(workspaceId: string) {
   const queryClient = useQueryClient()
@@ -34,6 +37,8 @@ function useTaskInvalidation(workspaceId: string) {
     if (task) queryClient.setQueryData(keys.task(task.id), task)
     void queryClient.invalidateQueries({ queryKey: keys.taskList(workspaceId) })
     void queryClient.invalidateQueries({ queryKey: keys.layout(workspaceId) })
+    void queryClient.invalidateQueries({ queryKey: keys.staleness(workspaceId) })
+    void queryClient.invalidateQueries({ queryKey: keys.fairnessAll(workspaceId) })
   }
 }
 

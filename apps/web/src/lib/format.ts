@@ -48,6 +48,68 @@ export function stalenessLabel(days: number | null): string {
   return `nothing done in ${days} days`
 }
 
+/**
+ * The same fact, compact enough to sit beside a room name without either one
+ * truncating. The full sentence goes in the `title`.
+ */
+export function stalenessShort(days: number | null): string {
+  if (days === null) return 'never'
+  if (days === 0) return 'today'
+  return `${days}d`
+}
+
+/**
+ * Calendar day in the workspace timezone, as `YYYY-MM-DD`.
+ *
+ * "Due today" is a household-wide question, so it is answered in the household's
+ * zone rather than the browser's — one home, one notion of today (section 6,
+ * question 3). Mirrors `calendarDayInZone` on the server.
+ */
+export function calendarDayIn(value: string | Date, timeZone: string): string {
+  const date = typeof value === 'string' ? new Date(value) : value
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((candidate) => candidate.type === type)?.value ?? ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
+export function isDueToday(
+  dueDate: string | null,
+  timeZone: string,
+  now: Date = new Date(),
+): boolean {
+  if (!dueDate) return false
+  return calendarDayIn(dueDate, timeZone) === calendarDayIn(now, timeZone)
+}
+
+/** "Friday, 27 July" in the household's zone. */
+export function longDateIn(timeZone: string, now: Date = new Date()): string {
+  return new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(now)
+}
+
+/** "Good morning" / "Good afternoon" / "Good evening", by the household's clock. */
+export function greetingIn(timeZone: string, now: Date = new Date()): string {
+  const hour =
+    Number(
+      new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hour12: false }).format(now),
+      // `hour12: false` renders midnight as 24 in some engines.
+    ) % 24
+  if (hour < 5) return 'Still up'
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export function formatDateTimeLocal(iso: string | null): string {
   if (!iso) return ''
   // `datetime-local` wants `YYYY-MM-DDTHH:mm` with no zone.

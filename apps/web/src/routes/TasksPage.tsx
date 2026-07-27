@@ -1,5 +1,6 @@
 import type { Workspace } from '@task-tracker/shared'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Icon } from '../components/Icon'
 import { TaskCard } from '../components/TaskCard'
 import { useLayout, useMembers } from '../features/layout/api'
 import { useTasks } from '../features/tasks/api'
@@ -44,35 +45,70 @@ export function TasksPage({
     .flatMap((floor) => floor.rooms)
     .find((candidate) => candidate.id === roomId)
   const floor = layout?.floors.find((candidate) => candidate.id === floorId)
+  const floorColor = room
+    ? layout?.floors.find((candidate) => candidate.id === room.floorId)?.color
+    : floor?.color
 
-  const heading = room
-    ? `${room.icon} ${room.name}`
+  const scopeIcon = room?.icon ?? floor?.icon
+  const heading = room?.name ?? floor?.name ?? (search ? `“${search}”` : 'All tasks')
+  const subtitle = room
+    ? layout?.floors.find((candidate) => candidate.id === room.floorId)?.name
     : floor
-      ? `${floor.icon} ${floor.name}`
+      ? `${floor.rooms.length} room${floor.rooms.length === 1 ? '' : 's'}`
       : search
-        ? `Search: “${search}”`
-        : 'All tasks'
+        ? 'Search results'
+        : workspace.name
+
+  const filtered = Boolean(roomId || floorId || search || assignee !== 'anyone')
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-xl font-semibold">{heading}</h1>
+    <div
+      className="mx-auto max-w-3xl animate-rise"
+      style={floorColor ? ({ '--floor': floorColor } as React.CSSProperties) : undefined}
+    >
+      <header className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className={`flex size-11 items-center justify-center rounded-2xl border text-xl ${
+            scopeIcon ? 'floor-tint' : 'border-edge bg-ink-raised'
+          }`}
+        >
+          {scopeIcon ?? <Icon name="list" size={20} className="text-text-dim" />}
+        </span>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold">{heading}</h1>
+          <p className="truncate text-sm text-text-dim">{subtitle}</p>
+        </div>
+      </header>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <input
-          type="search"
-          defaultValue={search ?? ''}
-          placeholder="Search tasks…"
-          aria-label="Search tasks"
-          onChange={(event) => setParam('search', event.target.value.trim() || undefined)}
-          className="tap min-w-40 flex-1 rounded-xl border border-edge bg-ink-raised px-3"
-        />
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <label className="relative min-w-40 flex-1">
+          <span className="sr-only">Search tasks</span>
+          <Icon
+            name="search"
+            size={16}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-text-dim"
+          />
+          <input
+            type="search"
+            defaultValue={search ?? ''}
+            placeholder="Search tasks…"
+            onChange={(event) => setParam('search', event.target.value.trim() || undefined)}
+            className="field pl-9"
+          />
+        </label>
 
-        <label className="text-sm">
+        <label className="relative">
           <span className="sr-only">Filter by assignee</span>
+          <Icon
+            name="filter"
+            size={15}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-text-dim"
+          />
           <select
             value={assignee}
             onChange={(event) => setParam('assignee', event.target.value)}
-            className="tap rounded-xl border border-edge bg-ink-raised px-2 text-sm"
+            className="field w-auto pr-2 pl-9 text-sm"
           >
             <option value="anyone">Anyone</option>
             <option value="mine">Mine</option>
@@ -85,35 +121,47 @@ export function TasksPage({
           </select>
         </label>
 
-        {(roomId || floorId || search || assignee !== 'anyone') && (
+        {filtered && (
           <button
             type="button"
             onClick={() => setParams(new URLSearchParams(), { replace: true })}
-            className="tap rounded-xl border border-edge px-3 text-sm text-text-dim hover:bg-ink-hover"
+            className="btn btn-sm"
           >
+            <Icon name="x" size={14} />
             Clear
           </button>
         )}
       </div>
 
       <section className="mt-5">
-        <h2 className="text-sm font-medium tracking-wide text-text-dim uppercase">Pending</h2>
+        <h2 className="flex items-center gap-2 text-sm font-medium tracking-wide text-text-dim uppercase">
+          <Icon name="inbox" size={15} />
+          Pending
+          {pending.data && pending.data.total > 0 && (
+            <span className="chip tabular-nums">{pending.data.total}</span>
+          )}
+        </h2>
 
         {pending.isPending && (
           <div className="mt-2 space-y-2">
             {[0, 1, 2].map((index) => (
-              <div
-                key={index}
-                className="h-20 animate-pulse rounded-xl border border-edge bg-ink-raised"
-              />
+              <div key={index} className="h-20 animate-shimmer rounded-2xl bg-ink-raised" />
             ))}
           </div>
         )}
 
         {pending.data?.tasks.length === 0 && (
-          <p className="mt-2 rounded-xl border border-done/30 bg-done/10 p-4 text-center">
-            Congratulations! Nothing pending here. 🎉
-          </p>
+          <div className="mt-2 flex items-center gap-3 rounded-2xl border border-done/30 bg-done/10 p-4">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-done/15 text-done">
+              <Icon name="sparkles" size={20} />
+            </span>
+            <p>
+              <strong className="block font-medium">Nothing pending here</strong>
+              <span className="text-sm text-text-dim">
+                {filtered ? 'Try widening the filters.' : 'This part of the house is clear.'}
+              </span>
+            </p>
+          </div>
         )}
 
         <div className="mt-2 space-y-2">
@@ -129,11 +177,12 @@ export function TasksPage({
         </div>
       </section>
 
-      <section className="mt-6">
-        <h2 className="text-sm font-medium tracking-wide text-text-dim uppercase">
+      <section className="mt-7">
+        <h2 className="flex items-center gap-2 text-sm font-medium tracking-wide text-text-dim uppercase">
+          <Icon name="checkCircle" size={15} />
           Completed
           {completed.data && completed.data.total > 0 && (
-            <span className="ml-2 normal-case">({completed.data.total})</span>
+            <span className="chip tabular-nums">{completed.data.total}</span>
           )}
         </h2>
 
@@ -161,6 +210,16 @@ export function TasksPage({
           </p>
         )}
       </section>
+
+      {!room && !floor && (
+        <p className="mt-8 text-center text-sm text-text-dim">
+          Looking for a particular room?{' '}
+          <Link to={`/w/${workspace.id}/house`} className="text-accent-soft hover:underline">
+            Open the floor plan
+          </Link>
+          .
+        </p>
+      )}
     </div>
   )
 }

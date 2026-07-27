@@ -1,13 +1,35 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <!-- Phone is the primary target, not a media-query afterthought (section 5.5). -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b0f14" />
+    <meta name="theme-color" content="#0a0e14" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <title>Task Tracker</title>
+    <!--
+      Resolve the theme before first paint, or a user who chose light mode gets a
+      dark flash on every load. Deliberately inline and dependency-free: it has to
+      run before the stylesheet and before React. Kept in sync with
+      `src/lib/useTheme.ts`, which owns it from mount onwards.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("tt-theme");
+          var light =
+            stored === "light" ||
+            (stored !== "dark" && window.matchMedia("(prefers-color-scheme: light)").matches);
+          document.documentElement.dataset.theme = light ? "light" : "dark";
+          if (light) {
+            document.querySelector('meta[name="theme-color"]').content = "#f3f6fb";
+          }
+        } catch (error) {
+          /* Storage unavailable: dark, as marked up. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
