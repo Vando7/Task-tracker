@@ -375,16 +375,52 @@ Ask when you reach the step that depends on one. Do not assume.
 1. **Existing production data.** There is a deployed Postgres with real households in it. Do we
    migrate it into SQLite (a one-off export/import script, plus forced password resets for Google-only
    accounts), or start clean? This changes whether the schema needs to accommodate legacy ids.
+
+   > **ANSWERED (2026-07-27): start clean.** No legacy id columns anywhere in the schema, and no
+   > export/import script. Existing households re-register. If this is ever revisited, note that the
+   > schema has no space reserved for legacy ids — adding them later is a migration, not a no-op.
+
 2. **Recurrence anchoring** — next due date from the completion, or from the previous due date? (§5.2)
+
+   > **ANSWERED (2026-07-27): from the completion, by default.** Implemented as a per-task
+   > `recurrenceAnchor` (`completion | dueDate`) defaulting to `completion`, because both behaviours
+   > are legitimate and the column is cheap. `dueDate` mode keeps stepping until the result is in the
+   > future, so a task completed five weeks late does not come back already overdue. Both paths, plus
+   > the DST and short-month cases, are covered in `apps/server/src/test/recurrence.test.ts`.
+
 3. **Workspace timezone** — per workspace, or per user? Affects "due today", overdue, and quiet hours.
+
+   > **ANSWERED (2026-07-27): per workspace.** `Workspace.timezone`, so every member of a household
+   > agrees on what "today" means. Quiet hours stay per-user, since those are about sleep. Note that
+   > *overdue* turned out not to need a timezone at all — it is an instant comparison. The zone is
+   > load-bearing for "due today", quiet hours, the fairness window, and stepping a recurrence across
+   > a DST boundary.
+
 4. **Workspace lifecycle.** The legacy app auto-created a workspace on first login and offered no way
    to create, rename, or delete one. Confirm the rewrite gets real workspace CRUD, and whether a user
    can belong to several (the legacy model allowed it and the UI half-supported it).
+
+   > **ASSUMED, NOT CONFIRMED — please review.** Built as full CRUD with multi-workspace membership:
+   > create/rename/delete (delete is owner-only), a user may belong to several, and belonging to *none*
+   > is a normal state the UI handles with a create prompt rather than auto-creating one. There is no
+   > auto-creation on login at all. This seemed strongly implied by §4.1 and by problem 10, but it was
+   > not explicitly confirmed.
+
 5. **Invitations.** Legacy could only add an existing account by exact email. Do we want emailed
    invite links with a pending state?
+
+   > **STILL OPEN — legacy behaviour shipped as the interim.** `POST /api/workspaces/:id/members`
+   > takes an email and requires that the account already exist; an unknown address is a 400 worded so
+   > it is not an account-existence oracle. The settings UI says as much. Emailed invite links with a
+   > pending state would need an `Invite` table and a token flow — not built.
+
 6. **Scope for v1 of the rewrite** — is it feature parity plus assignees, with recurrence and
    notifications following? Or is recurrence in from the start? (§5.2 argues it's the highest-value
    addition, and it's cheap once the completion log exists.)
+
+   > **RESOLVED BY THE HANDOFF ORDER: everything.** Steps 1–10 of the handoff already sequence
+   > recurrence at 8 and notifications at 9, so all of it is in. Recurrence was indeed cheap once
+   > `TaskCompletion` existed.
 
 ## 7. Dev commands (rewrite)
 
@@ -402,7 +438,15 @@ pnpm dev                  # server (tsx watch, :3001) + web (vite, :5173) togeth
 pnpm test                 # vitest
 pnpm check                # biome lint + format
 pnpm build                # tsc + vite build; server then serves web/dist in production
+
+./scripts/server.sh start # run api and/or web detached; also stop|restart|status|logs|health
 ```
+
+One deviation from the line above, worth knowing: **`pnpm build` typechecks but does not emit server
+JavaScript.** `packages/shared` is consumed as TypeScript source so that it stays the single
+definition of every API shape; compiling the server separately would mean either building `shared`
+twice or emitting an import that cannot resolve at runtime. So the server runs through `tsx` in
+production too (esbuild transpile-on-load), and `tsc --noEmit` is the gate that fails the build.
 
 Setup notes:
 

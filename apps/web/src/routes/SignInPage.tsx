@@ -1,3 +1,4 @@
+import { LIMITS } from '@task-tracker/shared'
 import { useState } from 'react'
 import { useLogin, useRegister } from '../features/session/api'
 import { ApiRequestError } from '../lib/api'
@@ -79,12 +80,14 @@ export function SignInPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                minLength={mode === 'register' ? 10 : 1}
+                minLength={mode === 'register' ? LIMITS.passwordMin : 1}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 className="tap mt-1 w-full rounded-xl border border-edge bg-ink-raised px-3"
               />
               {mode === 'register' && (
-                <span className="mt-1 block text-xs text-text-dim">At least 10 characters.</span>
+                <span className="mt-1 block text-xs text-text-dim">
+                  At least {LIMITS.passwordMin} characters.
+                </span>
               )}
             </label>
 

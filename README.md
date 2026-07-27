@@ -1,78 +1,155 @@
 # Task Tracker
 
-Track house tasks easily
+Household chores, organised by the physical layout of a home: **workspace (household) → floors →
+rooms**, shared between the people living there.
 
-Task Tracker is a powerful application designed to help you efficiently manage and keep track of household tasks. Inspired by the need to organize multiple tasks and avoid forgetting important chores, this app provides a convenient solution for viewing and managing tasks across different rooms and floors of your home. With Task Tracker, you can quickly see what needs to be done in each area, ensuring that no task is overlooked.
+This branch is the TypeScript rewrite. The Django implementation it replaces lives on `main`, and
+`CLAUDE.md` holds the full rewrite brief plus a behavioural spec of the legacy app.
 
-## Key Features
+---
 
-- **Dynamic Task Management**: Tasks update in real-time without the need for a page refresh. When one user adds or edits a task, all other users in the workspace will see the updates instantly.
-- **User Collaboration**: Create workspaces, add multiple users, and collaborate seamlessly. Each user can see and manage tasks within the workspace.
-- **Room and Floor Organization**: Easily categorize tasks by creating rooms and floors, providing a clear and organized view of your household tasks.
+## Getting started
 
-## Example Videos
+Node 22+ and pnpm. Nothing else — no database service, no mail server, no Redis, no Docker.
 
-### Creating Floors and Adding Rooms
-[setting up floors.webm](https://github.com/user-attachments/assets/c974d4cc-9639-4171-89bb-4b180451eeb8)
+```bash
+pnpm install
+pnpm db:migrate          # create data/app.db and apply migrations
+pnpm db:seed             # a plausible two-floor flat with three housemates
+pnpm dev                 # API on :3001, client on :5173
+```
 
+Then open <http://localhost:5173> and sign in as any of the seeded users:
 
-This video demonstrates how to create floors and add rooms within the Task Tracker application. It shows the step-by-step process of setting up your home's structure in the app, allowing for organized task management.
+| Email | Password |
+|---|---|
+| `ivan@example.com` | `chores-are-fair` |
+| `mira@example.com` | `chores-are-fair` |
+| `deyan@example.com` | `chores-are-fair` |
 
-### Dynamic Task Management
-[adding tasks.webm](https://github.com/user-attachments/assets/5c10eddc-38c6-46ac-8be7-792dff6afbf0)
+No `.env` is needed for development; every variable has a working default and `.env.example`
+documents the rest. Verification and password-reset links are printed to the server console, so
+there is no mail server to run.
 
+### Running the processes in the background
 
-This video showcases the dynamic task management feature of Task Tracker. It illustrates how tasks can be added and how they update in real-time for other users viewing the page, highlighting the collaborative nature of this application.
+`pnpm dev` runs both in the foreground, which is what you want interactively. When you'd rather have
+them detached:
 
-## Tech Stack
+```bash
+./scripts/server.sh start          # both, detached, waits until each answers
+./scripts/server.sh status         # what's up, on which port
+./scripts/server.sh logs api       # follow the log
+./scripts/server.sh restart web
+./scripts/server.sh stop
+```
 
-- **Backend**: Django
-- **Frontend**: Bootstrap
-- **Database**: PostgreSQL
-- **Real-time Updates**: Pure javascript and AJAX calls.
+Targets are `api`, `web`, or `all`. Logs and pidfiles go in `.run/` (gitignored). The script refuses
+to start on a port something else already owns rather than fighting over it, and `stop` signals the
+whole process group so watchers don't leak.
 
-[![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+### Resetting
 
-License: MIT
+`data/app.db` is the whole database. Delete it and re-run `pnpm db:migrate && pnpm db:seed`.
 
+---
 
-## Basic Commands
+## Commands
 
-### Setting Up Your Users
+| Command | What it does |
+|---|---|
+| `pnpm dev` | API (`tsx watch`, :3001) + client (Vite, :5173); Vite proxies `/api` |
+| `pnpm test` | Vitest, against a separate `data/test.db` |
+| `pnpm check` | Biome lint + format |
+| `pnpm typecheck` | `tsc --noEmit` across all three packages |
+| `pnpm build` | typecheck, then build the client |
+| `pnpm db:migrate` · `db:seed` · `db:studio` · `db:reset` | Prisma |
 
-- To create a **normal user account**, just go to Sign Up and fill out the form. Once you submit it, you'll see a "Verify Your E-mail Address" page. Go to your console to see a simulated email verification message. Copy the link into your browser. Now the user's email should be verified and ready to go.
+---
 
-- To create a **superuser account**, use this command:
+## Layout
 
-      $ python manage.py createsuperuser
+```
+apps/server     Fastify API: routes/ stay thin, services/ hold the logic,
+                events/ is the SSE hub, jobs/ is the scheduler tick
+apps/web        React 19 + Vite client
+packages/shared Zod schemas — the single definition of every API shape
+data/           SQLite (gitignored)
+```
 
-For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
+`packages/shared` is the **only** place an API shape is defined. The server validates requests *and*
+responses against those schemas; the client imports the inferred types. If the two ever disagree
+about a field, the schema is right.
 
-### Email Server
+Note the two types per request schema: `CreateTaskInput` is the parsed output (`dueDate` is a `Date`),
+`CreateTaskBody` is what a client can actually send (an ISO string). The client wants the `Body` one.
 
-In development, it is often nice to be able to see emails that are being sent from your application. For that reason local SMTP server [Mailpit](https://github.com/axllent/mailpit) with a web interface is available as docker container.
+---
 
-Mailpit container will start automatically when you run all docker containers.
-Please check [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html) for more details how to start all containers.
+## Stack
 
-With Mailpit running, to view messages that are sent by your application, open your browser and go to `http://127.0.0.1:8025`
+TypeScript throughout, strict. Node 22, Fastify, Zod, Prisma 7 over SQLite in WAL mode via the
+better-sqlite3 driver adapter, React 19 + Vite, TanStack Query, Tailwind v4, hand-rolled sessions
+with argon2id, Server-Sent Events, Web Push, Vitest, Biome.
 
-> **Note:** this app is being rewritten from scratch (TypeScript, React, SQLite — Django is being
-> dropped). Everything below describes the current/legacy Django version. The rewrite spec, the
-> full behavioural spec, and the handoff notes live in `CLAUDE.md`.
+Deliberately absent: Next.js, Postgres, Redis, any message broker or worker process, an auth library,
+GraphQL and tRPC. `CLAUDE.md` §1 explains each.
+
+The notification scheduler is a single `setInterval` in the API process. That is safe because delivery
+is idempotent — see below.
+
+---
+
+## Things worth knowing before you change something
+
+Each of these is load-bearing, and most exist because the legacy app got it wrong (`CLAUDE.md` Part 2
+catalogues the originals).
+
+- **`Task.workspaceId` is a direct foreign key.** Authorization is one indexed lookup,
+  `requireMember(request, workspaceId)`, and every scoped query filters by it — so there is no
+  post-hoc ownership check to forget. Inferring the workspace through `rooms → floor → workspace` was
+  the root of nearly every authorization bug in the old app.
+- **Out-of-workspace reads answer 404, not 403.** A 403 confirms the thing exists.
+- **`TaskCompletion` is append-only and is the truth.** `Task.status` is a fast path. Recurrence,
+  the fairness tally, room staleness and "last done 3 days ago" all read the log.
+- **Notification delivery writes its ledger row first** and treats a unique-constraint violation as
+  "already sent". That ordering is what makes overlapping scheduler ticks safe. The uniqueness key
+  includes a `cycleKey`; keyed on only `(user, task, kind)`, a recurring task's reminder would fire
+  once and then never again.
+- **Overdue is an instant comparison** (`dueDate < now`), computed server-side. The workspace
+  timezone is used for the things that genuinely need a calendar: "due today", quiet hours, the
+  fairness window, and stepping a recurrence so a fortnightly 09:00 chore stays at 09:00 across a DST
+  boundary.
+- **A floor filter is the union of that floor's rooms.** The legacy one meant the intersection, so
+  adding a room silently hid every existing floor-wide task.
+- **Zero rooms and zero assignees are both valid.** A task belongs to the workspace directly, and
+  unassigned means "whoever gets to it" — never render it as missing data.
+- **Floors and rooms soft-delete**, and deleting one detaches it from tasks rather than cascading the
+  join rows away.
+- **Every mutation another member can see must publish an SSE event.** It is the thing that makes the
+  app feel alive and the easiest thing to forget.
+- **A floor's colour is one CSS custom property** set on that floor's subtree; tints and glows derive
+  from it with `color-mix`. Don't reintroduce per-element gradients.
+
+---
+
+## Tests
+
+```bash
+pnpm test
+```
+
+Vitest with Fastify's `.inject()`, so no listening socket. The suite is organised around the legacy
+bug list — the IDOR cases, floor-filter semantics, badge counts excluding soft-deleted tasks, enum
+and length validation, recurrence anchoring (including the DST and short-month cases), rotation, and
+notification idempotency across repeated ticks.
+
+---
 
 ## Deployment
 
+`Dockerfile` builds a single image: build the client, install production dependencies, run one
+Fastify process serving both, with `data/` and `uploads/` as volumes.
 
-### Docker
-
-To run the dev environment:
-
-    $ ./run_container_dev.sh
-
-On first run, it will take a while to download all the dependencies.
-Afterwards, you'll need to enter the web server container and run migrations:
-
-    $ docker exec -it task_tracked_web_1 bash
-    $ python manage.py migrate
+**It has never been built or run** — per the handoff in `CLAUDE.md` it was authored as a reviewable
+artifact, not part of the dev loop. Treat its versions and paths as unverified.

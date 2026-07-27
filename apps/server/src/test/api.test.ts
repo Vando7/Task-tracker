@@ -71,6 +71,36 @@ describe('health and auth', () => {
     expect(await prisma.user.count({ where: { email: 'taken@example.com' } })).toBe(1)
   })
 
+  it('enforces the 8-character password minimum on register but not on login', async () => {
+    const app = await getApp()
+
+    const tooShort = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { email: 'short@example.com', password: '1234567', name: 'Short' },
+    })
+    expect(tooShort.statusCode).toBe(400)
+    expect(await prisma.user.count({ where: { email: 'short@example.com' } })).toBe(0)
+
+    const exactly8 = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { email: 'eight@example.com', password: '12345678', name: 'Eight' },
+    })
+    expect(exactly8.statusCode).toBe(202)
+    expect(await prisma.user.count({ where: { email: 'eight@example.com' } })).toBe(1)
+
+    // Login deliberately does *not* apply the policy: a password that predates a
+    // change to the minimum must still authenticate, and rejecting it at the
+    // schema would leak the policy for free.
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { email: 'eight@example.com', password: 'x' },
+    })
+    expect(login.statusCode).toBe(401)
+  })
+
   it('logs in with a correct password and returns the session', async () => {
     const app = await getApp()
     await makeUser('real@example.com')

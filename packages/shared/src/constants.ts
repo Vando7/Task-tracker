@@ -75,7 +75,7 @@ export const LIMITS = {
   icon: 16,
   search: 128,
   colorHex: 7,
-  passwordMin: 10,
+  passwordMin: 8,
   passwordMax: 200,
   timezone: 64,
 } as const

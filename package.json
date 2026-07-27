@@ -10,6 +10,11 @@
   },
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "start:bg": "./scripts/server.sh start",
+    "stop": "./scripts/server.sh stop",
+    "restart": "./scripts/server.sh restart",
+    "status": "./scripts/server.sh status",
+    "logs": "./scripts/server.sh logs",
     "build": "pnpm typecheck && pnpm --filter @task-tracker/web build",
     "start": "pnpm --filter @task-tracker/server start",
     "typecheck": "pnpm -r typecheck",
