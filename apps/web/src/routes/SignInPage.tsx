@@ -30,7 +30,7 @@ export function SignInPage() {
         <h1 className="text-2xl font-semibold">Task Tracker</h1>
         <p className="mt-1 text-text-dim">Chores, organised by the shape of your home.</p>
 
-        {register.isSuccess && mode === 'register' ? (
+        {register.isSuccess && mode === 'register' && register.data?.verificationRequired ? (
           <div className="mt-6 rounded-xl border border-done/40 bg-done/10 p-4">
             <p className="font-medium">Check your inbox</p>
             <p className="mt-1 text-sm text-text-dim">

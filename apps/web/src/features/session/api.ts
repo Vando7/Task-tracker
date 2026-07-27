@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { LoginInput, Me, RegisterInput, SelfUser } from '@task-tracker/shared'
+import type { LoginInput, Me, RegisterInput, RegisterResult, SelfUser } from '@task-tracker/shared'
 import { api, apiUpload } from '../../lib/api'
 import { keys } from '../../lib/keys'
 
@@ -22,10 +22,30 @@ export function useLogin() {
   })
 }
 
+/**
+ * Register, and sign straight in when the server isn't requiring a confirmation
+ * link (the development default). Otherwise the only way forward would be a link
+ * printed to a server log, which is not a flow anyone can follow from a browser.
+ */
 export function useRegister() {
+  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: RegisterInput) =>
-      api<{ ok: true }>('/api/auth/register', { method: 'POST', body: input }),
+    mutationFn: async (input: RegisterInput) => {
+      const result = await api<RegisterResult>('/api/auth/register', {
+        method: 'POST',
+        body: input,
+      })
+
+      if (!result.verificationRequired) {
+        await api<{ ok: true }>('/api/auth/login', {
+          method: 'POST',
+          body: { email: input.email, password: input.password },
+        })
+      }
+
+      return result
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.me() }),
   })
 }
 

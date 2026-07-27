@@ -14,6 +14,7 @@ import {
   SESSION_COOKIE_NAME,
   sessionCookieOptions,
 } from '../auth/session'
+import { autoVerifyEmail } from '../env'
 import { parseOrThrow } from '../lib/validate'
 import { login, register, requestPasswordReset, resetPassword, verifyEmail } from '../services/auth'
 
@@ -43,8 +44,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.post('/register', sensitive, async (request, reply) => {
     const input = parseOrThrow(registerSchema, request.body)
     await register(input)
-    // Always 202, whether or not the address was already taken.
-    return reply.code(202).send({ ok: true })
+    // Always 202, whether or not the address was already taken. The flag is a
+    // property of the server's configuration, not of this account, so reporting
+    // it leaks nothing.
+    return reply.code(202).send({ ok: true, verificationRequired: !autoVerifyEmail })
   })
 
   app.post('/verify', async (request) => {

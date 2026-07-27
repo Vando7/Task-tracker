@@ -41,6 +41,20 @@ const envSchema = z
     SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(10_000).max(3_600_000).default(120_000),
 
     MAIL_TRANSPORT: z.enum(['console', 'smtp']).default('console'),
+
+    /**
+     * Skip email verification entirely: accounts are usable the moment they are
+     * created. Defaults on in development, where waiting on a link printed to a
+     * server log is friction with no security value on a local database.
+     *
+     * `z.coerce.boolean()` is deliberately not used here — it would read the
+     * string "false" as true, which is the worst possible failure mode for a
+     * flag that disables an auth check.
+     */
+    AUTO_VERIFY_EMAIL: z
+      .enum(['true', 'false', '1', '0', 'yes', 'no'])
+      .transform((value) => value === 'true' || value === '1' || value === 'yes')
+      .optional(),
   })
   .refine(
     (value) => value.NODE_ENV !== 'production' || value.SESSION_SECRET !== DEV_SESSION_SECRET,
@@ -52,6 +66,11 @@ const envSchema = z
   .refine((value) => Boolean(value.VAPID_PUBLIC_KEY) === Boolean(value.VAPID_PRIVATE_KEY), {
     error: 'VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be set together, or both left unset',
     path: ['VAPID_PUBLIC_KEY'],
+  })
+  // Refuse to boot rather than silently accept unverified addresses in production.
+  .refine((value) => !(value.NODE_ENV === 'production' && value.AUTO_VERIFY_EMAIL === true), {
+    error: 'AUTO_VERIFY_EMAIL cannot be enabled in production',
+    path: ['AUTO_VERIFY_EMAIL'],
   })
 
 const parsed = envSchema.safeParse(process.env)
@@ -68,6 +87,12 @@ export const env = parsed.data
 export const isProduction = env.NODE_ENV === 'production'
 export const isTest = env.NODE_ENV === 'test'
 export const isDevelopment = env.NODE_ENV === 'development'
+
+/**
+ * Defaults to on in development only — deliberately *not* `!isProduction`, so the
+ * test suite keeps exercising the real mandatory-verification path.
+ */
+export const autoVerifyEmail = env.AUTO_VERIFY_EMAIL ?? isDevelopment
 
 /** Push is optional infrastructure. Without keys the app runs in-app-only. */
 export const pushEnabled = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)

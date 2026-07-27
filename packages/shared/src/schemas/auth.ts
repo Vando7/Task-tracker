@@ -15,6 +15,19 @@ export const registerSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>
 
 /**
+ * Whether the new account still needs an emailed link before it can sign in.
+ *
+ * The client cannot infer this — it depends on the server's `AUTO_VERIFY_EMAIL`
+ * setting — and getting it wrong means telling someone to check an inbox that
+ * will never receive anything.
+ */
+export const registerResultSchema = z.object({
+  ok: z.literal(true),
+  verificationRequired: z.boolean(),
+})
+export type RegisterResult = z.infer<typeof registerResultSchema>
+
+/**
  * Login does not reuse `passwordSchema`: a legacy password that predates the
  * current minimum length must still be able to authenticate, and rejecting it
  * at the schema would leak the policy to an attacker for free.

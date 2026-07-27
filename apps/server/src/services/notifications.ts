@@ -61,9 +61,15 @@ const COPY: Record<NotifyKind, (taskName: string) => { title: string; body: stri
 /**
  * Record, then fan out.
  *
- * Writing the ledger row *first* and treating a unique violation as "already
- * sent" makes this safe against two scheduler ticks overlapping, which a
- * check-then-send would not be.
+ * Two layers, and both are needed. The cheap existence check short-circuits the
+ * overwhelmingly common case — the scheduler re-examining a task it has already
+ * reminded about — without attempting a doomed INSERT. The insert is still
+ * wrapped, because a check alone loses a race between two overlapping ticks.
+ *
+ * The check is not merely an optimisation. Relying on the caught constraint
+ * violation alone meant Prisma logged the failed INSERT at `error` level on every
+ * single tick, which made a normal control-flow path look like a fault and buried
+ * everything else in the log.
  */
 async function deliver(target: NotifyTarget): Promise<boolean> {
   const preference = await prisma.notifyPreference.findUnique({
@@ -82,6 +88,18 @@ async function deliver(target: NotifyTarget): Promise<boolean> {
   // No row yet means the user has never visited settings. In-app still applies;
   // push cannot, because they have no subscription either.
   if (preference && !preference[PREFERENCE_FLAG[target.kind]]) return false
+
+  // Already delivered for this cycle: nothing to do, and nothing to log about.
+  const alreadySent = await prisma.notifyLog.findFirst({
+    where: {
+      userId: target.userId,
+      taskId: target.taskId,
+      kind: target.kind,
+      cycleKey: target.cycleKey,
+    },
+    select: { id: true },
+  })
+  if (alreadySent) return false
 
   let logRow: { id: string } | null = null
   try {

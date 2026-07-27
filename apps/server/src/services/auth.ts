@@ -3,7 +3,7 @@ import { hashPassword, verifyPassword } from '../auth/password'
 import { destroyAllSessions } from '../auth/session'
 import { hashToken, randomToken } from '../auth/tokens'
 import { prisma } from '../db'
-import { isDevelopment } from '../env'
+import { autoVerifyEmail, isDevelopment } from '../env'
 import { badRequest, forbidden, unauthorized } from '../lib/errors'
 import { passwordResetEmail, sendMail, verificationEmail } from './mail'
 import { ensurePreference } from './notifications'
@@ -54,11 +54,19 @@ export async function register(input: RegisterInput): Promise<void> {
       email: input.email,
       name: input.name,
       passwordHash: await hashPassword(input.password),
+      // In development the account is usable immediately; there is no link to go
+      // and find in a server log.
+      emailVerifiedAt: autoVerifyEmail ? new Date() : null,
     },
     select: { id: true, email: true },
   })
 
   await ensurePreference(user.id)
+
+  if (autoVerifyEmail) {
+    console.log(`  [auth] ${user.email} created and auto-verified (AUTO_VERIFY_EMAIL)`)
+    return
+  }
 
   const token = await issueToken(user.id, 'verify', VERIFY_TTL_MS)
   await sendMail(verificationEmail(user.email, token))
@@ -104,11 +112,22 @@ export async function login(email: string, password: string): Promise<{ userId: 
   const ok = await verifyPassword(user.passwordHash, password)
   if (!ok) throw unauthorized('Email or password is incorrect')
 
-  // Verification is mandatory before login succeeds (section 4.2). A distinct
-  // message here is a deliberate trade: it tells an attacker the address exists,
-  // but a user who cannot work out why their correct password is rejected will
-  // simply leave.
   if (!user.emailVerifiedAt) {
+    // Also verify on the way in, so an account created *before* the flag was
+    // turned on isn't permanently stuck behind a link nobody kept.
+    if (autoVerifyEmail) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerifiedAt: new Date() },
+      })
+      console.log(`  [auth] ${email} auto-verified on login (AUTO_VERIFY_EMAIL)`)
+      return { userId: user.id }
+    }
+
+    // Verification is mandatory before login succeeds (section 4.2). A distinct
+    // message here is a deliberate trade: it tells an attacker the address exists,
+    // but a user who cannot work out why their correct password is rejected will
+    // simply leave.
     throw forbidden('Confirm your email address first — check your inbox for the link')
   }
 
