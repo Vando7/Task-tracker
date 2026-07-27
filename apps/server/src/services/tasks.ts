@@ -24,6 +24,23 @@ import { serializeTask, taskInclude } from './serialize'
 
 const rankFor = (category: TaskCategory): number => TASK_CATEGORY_RANK[category]
 
+/**
+ * The workspace a task belongs to, for the `requireMember` call a route makes
+ * before anything else.
+ *
+ * One indexed lookup of one column, which is the entire reason the direct
+ * `Task.workspaceId` foreign key was worth the redesign. Comment routes need the
+ * same answer, so it lives here rather than in one route file.
+ */
+export async function workspaceIdForTask(taskId: string): Promise<string> {
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, deletedAt: null },
+    select: { workspaceId: true },
+  })
+  if (!task) throw notFound('Task not found')
+  return task.workspaceId
+}
+
 async function fetchTask(taskId: string): Promise<Task> {
   const row = await prisma.task.findUnique({ where: { id: taskId }, include: taskInclude })
   if (!row) throw notFound('Task not found')

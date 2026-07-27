@@ -1,7 +1,9 @@
-import type { Member, Task, TaskCategory } from '@task-tracker/shared'
+import type { Member, RecurrenceUnit, Task, TaskCategory } from '@task-tracker/shared'
 import { useState } from 'react'
+import { useLayout } from '../features/layout/api'
 import {
   useAssignUser,
+  useAttachRoom,
   useCompleteTask,
   useDeleteTask,
   useDetachRoom,
@@ -17,6 +19,7 @@ import {
   relativeTime,
 } from '../lib/format'
 import { AssigneeStack, Avatar } from './Avatar'
+import { CommentThread } from './CommentThread'
 import { Icon, type IconName } from './Icon'
 import { InlineText } from './InlineText'
 
@@ -64,6 +67,7 @@ export function TaskCard({
   members,
   flashing,
   claimUserId,
+  defaultExpanded = false,
 }: {
   task: Task
   workspaceId: string
@@ -75,8 +79,10 @@ export function TaskCard({
    * resting state — this is an offer, not a demand.
    */
   claimUserId?: string
+  /** Open on mount, for the card a notification deep-links to. */
+  defaultExpanded?: boolean
 }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const update = useUpdateTask(workspaceId)
@@ -85,10 +91,14 @@ export function TaskCard({
   const remove = useDeleteTask(workspaceId)
   const assign = useAssignUser(workspaceId)
   const unassign = useUnassignUser(workspaceId)
+  const attachRoom = useAttachRoom(workspaceId)
   const detachRoom = useDetachRoom(workspaceId)
+  // Already fetched by every page that renders a card, so this is a cache read.
+  const { data: layout } = useLayout(workspaceId)
 
   const done = task.status === 'done'
   const assignedIds = new Set(task.assignees.map((assignee) => assignee.user.id))
+  const attachedRoomIds = new Set(task.rooms.map((room) => room.id))
   const category = CATEGORY_META[task.category]
   const canClaim = Boolean(claimUserId) && !done && task.assignees.length === 0
 
@@ -205,6 +215,22 @@ export function TaskCard({
                 <Icon name="checkCircle" size={13} />
                 {lastDoneLabel(task.lastCompletedAt)}
               </span>
+            )}
+
+            {/* Rendered from the count on the task itself, so a collapsed card
+                costs no request. Opens the card rather than being decoration. */}
+            {task.commentCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="chip hover:text-text"
+                aria-label={`${task.commentCount} note${
+                  task.commentCount === 1 ? '' : 's'
+                } on "${task.name}"`}
+              >
+                <Icon name="comment" size={13} />
+                <span className="tabular-nums">{task.commentCount}</span>
+              </button>
             )}
 
             {task.rooms.map((room) => (
@@ -354,6 +380,164 @@ export function TaskCard({
               </p>
             )}
           </fieldset>
+
+          {/*
+            Rooms, which had no edit control at all: the attach endpoint and its
+            hook both existed, and nothing on a card ever called them, so a room
+            could be removed and never put back. Same floor-grouped picker as the
+            new-task sheet, because it is the same choice.
+          */}
+          {(layout?.floors.length ?? 0) > 0 && (
+            <fieldset>
+              <legend className="flex items-center gap-1.5 text-xs text-text-dim">
+                <Icon name="door" size={13} />
+                Rooms
+              </legend>
+              <div className="mt-1.5 max-h-40 space-y-2 overflow-y-auto">
+                {layout?.floors.map((floor) => (
+                  <div key={floor.id} style={{ '--floor': floor.color } as React.CSSProperties}>
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-text-dim">
+                      <span aria-hidden="true" className="floor-dot inline-block" />
+                      {floor.icon} {floor.name}
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {floor.rooms.map((room) => {
+                        const attached = attachedRoomIds.has(room.id)
+                        return (
+                          <button
+                            key={room.id}
+                            type="button"
+                            aria-pressed={attached}
+                            onClick={() =>
+                              attached
+                                ? detachRoom.mutate({ taskId: task.id, roomId: room.id })
+                                : attachRoom.mutate({ taskId: task.id, roomId: room.id })
+                            }
+                            className={[
+                              'flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-sm transition-colors',
+                              attached
+                                ? 'floor-tint border-transparent text-text'
+                                : 'border-edge text-text-dim hover:bg-ink-hover hover:text-text',
+                            ].join(' ')}
+                          >
+                            <span aria-hidden="true">{room.icon}</span>
+                            {room.name}
+                            {attached && <Icon name="check" size={13} />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {task.rooms.length === 0 && (
+                <p className="mt-1.5 text-xs text-text-dim">
+                  No room — a whole-flat chore belongs to the household.
+                </p>
+              )}
+            </fieldset>
+          )}
+
+          {/*
+            Recurrence, also previously uneditable after creation: `updateTaskSchema`
+            has accepted these four fields all along. `every` and `unit` must move
+            together — the schema rejects one without the other, since an interval
+            with no unit is meaningless and a unit with no interval never fires.
+          */}
+          <fieldset>
+            <legend className="flex items-center gap-1.5 text-xs text-text-dim">
+              <Icon name="repeat" size={13} />
+              Repeats
+            </legend>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm">
+              <span className="text-xs text-text-dim">every</span>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={task.recurrenceEvery ?? ''}
+                placeholder="—"
+                aria-label="Repeat interval"
+                onChange={(event) => {
+                  const value = event.target.value.trim()
+                  if (value === '') {
+                    update.mutate({
+                      taskId: task.id,
+                      recurrenceEvery: null,
+                      recurrenceUnit: null,
+                    })
+                    return
+                  }
+                  const every = Number(value)
+                  if (!Number.isInteger(every) || every < 1 || every > 365) return
+                  update.mutate({
+                    taskId: task.id,
+                    recurrenceEvery: every,
+                    // Clearing it leaves no unit behind, so supply the default
+                    // alongside the first interval.
+                    recurrenceUnit: task.recurrenceUnit ?? 'week',
+                  })
+                }}
+                className="field w-20 text-center"
+              />
+              <select
+                value={task.recurrenceUnit ?? 'week'}
+                disabled={!task.isRecurring}
+                aria-label="Repeat unit"
+                onChange={(event) =>
+                  update.mutate({
+                    taskId: task.id,
+                    recurrenceEvery: task.recurrenceEvery,
+                    recurrenceUnit: event.target.value as RecurrenceUnit,
+                  })
+                }
+                className="field w-auto"
+              >
+                <option value="day">days</option>
+                <option value="week">weeks</option>
+                <option value="month">months</option>
+              </select>
+              {!task.isRecurring && <span className="text-xs text-text-dim">One-off.</span>}
+            </div>
+
+            {task.isRecurring && (
+              <>
+                <label className="mt-2 block text-xs text-text-dim">
+                  Measured from
+                  <select
+                    value={task.recurrenceAnchor}
+                    onChange={(event) =>
+                      update.mutate({
+                        taskId: task.id,
+                        recurrenceAnchor: event.target.value as Task['recurrenceAnchor'],
+                      })
+                    }
+                    className="field mt-1 text-sm"
+                  >
+                    <option value="completion">when it was actually done</option>
+                    <option value="dueDate">the previous due date (fixed cadence)</option>
+                  </select>
+                </label>
+
+                <label className="mt-2 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={task.rotateAssignees}
+                    onChange={(event) =>
+                      update.mutate({ taskId: task.id, rotateAssignees: event.target.checked })
+                    }
+                    className="size-4 accent-accent"
+                  />
+                  <Icon name="swap" size={15} className="text-text-dim" />
+                  Hand it to the next person each time
+                </label>
+              </>
+            )}
+          </fieldset>
+
+          <div className="border-t border-edge pt-3">
+            <CommentThread taskId={task.id} workspaceId={workspaceId} />
+          </div>
 
           <div className="flex items-center justify-between gap-2">
             <span className="chip bg-transparent">

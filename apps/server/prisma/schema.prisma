@@ -36,6 +36,8 @@ model User {
   assignments       TaskAssignee[]     @relation("AssigneeUser")
   assignmentsMade   TaskAssignee[]     @relation("AssignedByUser")
   completions       TaskCompletion[]
+  comments          TaskComment[]
+  reactions         CommentReaction[]
   pushSubscriptions PushSubscription[]
   notifyPreference  NotifyPreference?
   notifyLogs        NotifyLog[]        @relation("NotifyRecipient")
@@ -195,6 +197,7 @@ model Task {
   rooms       TaskRoom[]
   assignees   TaskAssignee[]
   completions TaskCompletion[]
+  comments    TaskComment[]
   notifyLogs  NotifyLog[]
 
   @@index([workspaceId, deletedAt, status, categoryRank, updatedAt])
@@ -249,6 +252,53 @@ model TaskCompletion {
   @@index([completedById, completedAt])
 }
 
+/// A note on a task, for the things a description is the wrong home for.
+///
+/// The description defines what the chore *is*; a comment records what happened
+/// on one occasion. Keeping both in `description` meant the second kind of note
+/// lived exactly until the next person tidied the first kind up.
+///
+/// Not editable, deliberately: no `updatedAt`, no "edited" marker, and no second
+/// event type. The author can delete their own, and reactions cascade with it.
+model TaskComment {
+  id        String   @id @default(uuid(7))
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  /// SetNull, like `TaskCompletion.completedById` — a departed housemate's note
+  /// is still the reason the chore is done the way it is.
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime @default(now())
+
+  reactions CommentReaction[]
+
+  /// Threads are read oldest-first, in full, for one task at a time.
+  @@index([taskId, createdAt])
+}
+
+/// A one-tap acknowledgement on a comment.
+///
+/// On comments only, never on tasks or completions. A reaction on a chore someone
+/// finished is scorekeeping, and this app deliberately has no points, streaks or
+/// badges; a reaction on a *note* is just "seen, thanks", which is the opposite —
+/// it lets someone acknowledge without adding another line to the thread.
+///
+/// The composite primary key is the toggle: one emoji per person per comment, so
+/// re-posting the same one is an unambiguous delete rather than a duplicate row.
+/// Reactions never notify anyone.
+model CommentReaction {
+  commentId String
+  comment   TaskComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime    @default(now())
+
+  @@id([commentId, userId, emoji])
+  @@index([userId])
+}
+
 // ----------------------------------------------------------- notifications
 
 model PushSubscription {
@@ -272,6 +322,7 @@ model NotifyPreference {
   onDueSoon          Boolean  @default(true)
   onOverdue          Boolean  @default(true)
   onCompletedByOther Boolean  @default(true)
+  onCommented        Boolean  @default(true)
   dueSoonLeadHours   Int      @default(24)
   /// "HH:MM" local to the workspace timezone. Suppresses push, not the in-app feed.
   quietFrom          String?

@@ -223,6 +223,7 @@ function NotificationsPanel() {
     ['onDueSoon', 'When something is due soon'],
     ['onOverdue', 'When something goes overdue'],
     ['onCompletedByOther', 'When someone else finishes my chore'],
+    ['onCommented', 'When someone writes a note on a chore I’m involved in'],
   ] as const
 
   return (

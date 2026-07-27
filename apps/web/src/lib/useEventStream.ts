@@ -75,6 +75,17 @@ export function useEventStream({ workspaceId, currentUserId, onFlash }: Options)
           void queryClient.invalidateQueries({ queryKey: keys.taskList(workspaceId) })
           break
 
+        // Comment events carry ids, not the comment: `canDelete` and `mine` are
+        // per-viewer answers and this payload is shared by the whole workspace.
+        // So refetch the thread instead of writing it — cheap, because only an
+        // open card has one. The task list goes too, for the count on the card.
+        case 'comment.created':
+        case 'comment.updated':
+        case 'comment.deleted':
+          void queryClient.invalidateQueries({ queryKey: keys.comments(event.data.taskId) })
+          void queryClient.invalidateQueries({ queryKey: keys.taskList(workspaceId) })
+          break
+
         case 'floor.created':
         case 'floor.updated':
         case 'floor.deleted':

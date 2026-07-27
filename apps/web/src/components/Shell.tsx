@@ -116,20 +116,28 @@ export function Shell({
                   <li className="px-1 py-3 text-sm text-text-dim">Nothing yet.</li>
                 )}
                 {notifications?.notifications.map((item) => (
-                  <li
-                    key={item.id}
-                    className={`flex items-start gap-2 rounded-xl px-2 py-2 text-sm ${
-                      item.readAt ? 'text-text-dim' : 'bg-ink-hover'
-                    }`}
-                  >
-                    <Icon name={KIND_ICON[item.kind] ?? 'bell'} size={15} className="mt-0.5" />
-                    <span className="min-w-0">
-                      <span className="font-medium">{KIND_LABEL[item.kind]}</span>
-                      {item.taskName && <> · {item.taskName}</>}
-                      <span className="block text-xs text-text-dim">
-                        {relativeTime(item.sentAt)}
+                  <li key={item.id}>
+                    {/*
+                      Opens the task with its card expanded — the same URL push
+                      notifications use. A feed entry that could not be acted on
+                      made the reader go and find the task by hand.
+                    */}
+                    <Link
+                      to={item.taskId ? `${base}/tasks?task=${item.taskId}` : base}
+                      onClick={closeNav}
+                      className={`flex items-start gap-2 rounded-xl px-2 py-2 text-sm hover:bg-ink-hover ${
+                        item.readAt ? 'text-text-dim' : 'bg-ink-hover'
+                      }`}
+                    >
+                      <Icon name={KIND_ICON[item.kind] ?? 'bell'} size={15} className="mt-0.5" />
+                      <span className="min-w-0">
+                        <span className="font-medium">{KIND_LABEL[item.kind]}</span>
+                        {item.taskName && <> · {item.taskName}</>}
+                        <span className="block text-xs text-text-dim">
+                          {relativeTime(item.sentAt)}
+                        </span>
                       </span>
-                    </span>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -324,6 +332,7 @@ const KIND_LABEL: Record<string, string> = {
   due_soon: 'Due soon',
   overdue: 'Overdue',
   completed_by_other: 'Done by someone else',
+  commented: 'New note',
 }
 
 const KIND_ICON: Record<string, IconName> = {
@@ -331,4 +340,5 @@ const KIND_ICON: Record<string, IconName> = {
   due_soon: 'clock',
   overdue: 'alert',
   completed_by_other: 'checkCircle',
+  commented: 'comment',
 }

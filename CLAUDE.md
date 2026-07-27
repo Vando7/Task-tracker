@@ -49,6 +49,12 @@ implementation went wrong, and each is cheap to honour and expensive to retrofit
 
 - **`TaskCompletion` is append-only and is the truth.** `Task.status` is a fast path. Recurrence, the
   fairness tally, room staleness and "last done 3 days ago" all read the log.
+- **A comment is not editable, and reactions live on comments only.** A note records one occasion, so
+  there is no edit state, no "edited" marker and no second event type — the author can delete theirs.
+  Reactions never go on a task or a completion: a 👍 on a chore someone finished is scorekeeping, which
+  this app deliberately does not do. Reactions notify nobody and never touch `NotifyLog`.
+- **The description says what the chore *is*; a note says what happened.** Never fold one into the
+  other — the second kind of note used to survive exactly until someone tidied up the first.
 - **Zero rooms and zero assignees are both valid.** A task belongs to the workspace directly, and
   unassigned means "whoever gets to it" — never render either as missing data or as an empty slot
   demanding to be filled.
@@ -64,6 +70,10 @@ implementation went wrong, and each is cheap to honour and expensive to retrofit
 
 - **Every mutation another member can see publishes an SSE event.** Not optional — it is the thing
   that makes the app feel alive and the easiest thing to forget.
+- **Nothing per-viewer goes in an event payload.** `hub.publish` serialises one object for every
+  subscriber in the workspace, so a field that answers "for *you*" would be broadcast with one
+  person's answer. That is why `comment.*` events carry `{ id, taskId }` rather than the comment,
+  which has `canDelete` and `mine`: receivers refetch the thread instead.
 - **Notification delivery writes its ledger row first** and treats a unique-constraint violation as
   "already sent". That ordering is what makes overlapping scheduler ticks safe.
 
@@ -137,9 +147,9 @@ apps/
       db.ts                 # Prisma client singleton
       auth/                 # password hashing, sessions, tokens, middleware
       routes/               # one file per resource: auth, me, workspaces, layout,
-                            #   tasks, events (SSE), notifications
-      services/             # business logic — tasks, layout, recurrence, notifications,
-                            #   push, mail, time, workspaces, serialize
+                            #   tasks, comments, events (SSE), notifications
+      services/             # business logic — tasks, comments, layout, recurrence,
+                            #   notifications, push, mail, time, workspaces, serialize
       events/hub.ts         # SSE hub: per-workspace subscriber registry
       jobs/scheduler.ts     # the scheduler tick
       lib/                  # HttpError, request validation
@@ -149,8 +159,10 @@ apps/
     src/
       main.tsx, App.tsx     # routing and the workspace shell
       routes/               # one file per page
-      components/           # Shell, TaskCard, NewTaskDialog, Avatar, Icon, InlineText, ThemeToggle
-      features/             # tasks/, layout/, session/, stats/, notifications/ — hooks per domain
+      components/           # Shell, TaskCard, CommentThread, NewTaskDialog, Avatar, Icon,
+                            #   InlineText, ThemeToggle
+      features/             # tasks/, comments/, layout/, session/, stats/, notifications/
+                            #   — hooks per domain
       lib/                  # api client, useEventStream, useTheme, formatting, query keys
     public/sw.js            # service worker (push handling)
 packages/
@@ -195,10 +207,13 @@ Task            id, workspaceId, name, description, category, categoryRank, stat
 TaskRoom        taskId, roomId                             # composite PK
 TaskAssignee    taskId, userId, assignedAt, assignedById?  # composite PK
 TaskCompletion  id, taskId, completedById?, completedAt    # append-only
+TaskComment     id, taskId, authorId?, body, createdAt     # not editable
+CommentReaction commentId, userId, emoji                   # composite PK is the toggle
 
 PushSubscription  id, userId, endpoint (unique), p256dh, auth
 NotifyPreference  userId (PK), enabled, onAssigned, onDueSoon, onOverdue,
-                  onCompletedByOther, dueSoonLeadHours, quietFrom?, quietTo?
+                  onCompletedByOther, onCommented, dueSoonLeadHours,
+                  quietFrom?, quietTo?
 NotifyLog         id, userId, workspaceId, taskId?, kind, cycleKey, actorId?, sentAt, readAt?
                   # unique (userId, taskId, kind, cycleKey)
 ```
@@ -213,7 +228,12 @@ Points worth knowing:
 - **`status` is `todo | done` only.** Overdue is derived, never stored.
 - **`NotifyLog` is both the delivery ledger and the in-app feed.** `cycleKey` is part of the unique
   constraint on purpose: keyed on only `(user, task, kind)`, a recurring task's reminder would fire
-  once and then never again — which is the bug you get from fixing re-delivery carelessly.
+  once and then never again — which is the bug you get from fixing re-delivery carelessly. For
+  `commented` the cycle key is the comment's own id, which is the cleanest fit in the table: every
+  note is genuinely its own occurrence, so a retry cannot double-send and the next note is never
+  suppressed.
+- **`TaskComment` has no `updatedAt`**, because a note is not editable. `authorId` is `SetNull` like
+  `completedById`: a departed housemate's note is still the reason a chore is done the way it is.
 - Timestamps are stored UTC.
 - `sortOrder` on Floor and Room, so the layout can be arranged.
 
@@ -246,6 +266,9 @@ Errors are `{ error: { message, code, fields? } }`.
 | POST | `/api/tasks/:id/complete` · `/reopen` | complete (drives recurrence), manual reset |
 | POST/DELETE | `/api/tasks/:id/rooms[/:roomId]` | attach, detach |
 | POST/DELETE | `/api/tasks/:id/assignees[/:userId]` | assign, unassign |
+| GET/POST | `/api/tasks/:id/comments` | the thread, oldest first; post a note |
+| DELETE | `/api/comments/:commentId` | author only, hard delete |
+| POST | `/api/comments/:commentId/reactions` | toggle one reaction |
 | GET | `/api/events?workspaceId=` | the SSE stream |
 | GET | `/api/events/stats` | hub subscriber counts |
 | GET/PATCH | `/api/notifications/preferences` | per-user notification settings |
@@ -302,6 +325,12 @@ urgent → special → normal, then most recently updated, done in SQL via `cate
 Every control on a card saves immediately — no Save button, no dirty state — through an optimistic
 mutation with rollback. Card state lives in React keyed by task id.
 
+An expanded card edits **everything** a task has: name, description, category, deadline, assignees,
+rooms and recurrence. Rooms and recurrence were the gap that made this worth stating — the endpoints
+and the `useAttachRoom` hook existed while nothing on a card ever called them, so a room could be
+detached and never put back, and a task's cadence was fixed at creation. Recurrence sends `every` and
+`unit` together, because the schema rejects one without the other.
+
 ### Assignees and filtering
 
 Assignment is its own endpoint rather than a generic field update, so it can be notified on and
@@ -330,6 +359,29 @@ One append-only `TaskCompletion` row per completion — task, who, when. Three c
 recurrence ("when was this last done"), the fairness tally ("who did what"), room staleness ("nothing
 here in 12 days") and notification history. Cards show "last done 3 days ago" from it.
 
+### Notes and reactions
+
+A thread of comments on a task, for the thing a description is the wrong home for: the description
+defines the chore, a note records one occasion — "it was properly furred up this time, maybe make this
+monthly". Before this existed the only place for the second kind was the description, where the next
+person to tidy up the wording destroyed it.
+
+- **Oldest first**, unlike every other list in the app, because a thread reads as a conversation and
+  the newest note belongs next to the composer.
+- **Not editable.** The author can delete their own; nobody else can, and the refusal is a 404 so
+  there is one answer for "you cannot have this".
+- **`commentCount` rides on the task, the bodies do not.** The dashboard feeds all of its sections from
+  one `status=todo` query, and putting comment text in that response would bloat the app's hottest
+  request to render a number on a collapsed card. The thread loads when a card opens.
+- **Reactions are a closed set** (`COMMENT_REACTIONS`) on comments only, one emoji per person per
+  comment, toggling. Optimistic on the client, since a reaction is a tap that has to feel instant.
+- Writing a note notifies the people already involved — assignees, the task's creator, anyone who has
+  commented before — minus the author. Deliberately *not* the whole household when a task is
+  unassigned, which is what `due_soon` and `overdue` do: a deadline is worth waking everyone for, and
+  notes arrive far more often. Whoever claims the chore reads the thread then.
+- A note is also the reason edits stay silent. Someone chose to write it, whereas a description edit is
+  usually janitorial, so this is the event worth a notification.
+
 ### Fairness and rotation
 
 `Task.rotateAssignees`: on completion of a recurring task, advance to the next person in the rotation
@@ -344,11 +396,16 @@ live together tends to curdle; an honest tally provides the accountability witho
 `GET /api/events` holds one long-lived response per client. The hub in `events/hub.ts` is a map of
 workspaceId → subscribers, so publishing fans out to that workspace only.
 
-Event types are `task.created|updated|deleted|assigned|unassigned`, `floor.*`, `room.*`,
-`member.added|removed`, and `notification`. Each envelope carries `id`, `type`, `workspaceId`,
-`actorId`, `at` and the changed entity — so `useEventStream` writes it straight into the query cache
-by id, and a client can skip echoing back its own change, which is what keeps optimistic updates from
-flickering. `EventSource` reconnects on its own; on reconnect the current view refetches once to
+Event types are `task.created|updated|deleted|assigned|unassigned`,
+`comment.created|updated|deleted`, `floor.*`, `room.*`, `member.added|removed`, and `notification`.
+Each envelope carries `id`, `type`, `workspaceId`, `actorId`, `at` and the changed entity — so
+`useEventStream` writes it straight into the query cache by id, and a client can skip echoing back its
+own change, which is what keeps optimistic updates from flickering.
+
+The `comment.*` events are the exception, and the reason is worth knowing: they carry `{ id, taskId }`
+instead of the comment, because `Comment` has two per-viewer fields (`canDelete`, `mine`) and one
+serialised payload goes to every subscriber in the workspace. Receivers invalidate the thread, which
+costs nothing because only an open card has one. `comment.updated` is a reaction changing. `EventSource` reconnects on its own; on reconnect the current view refetches once to
 close the gap. A comment line every 25s keeps intermediaries from dropping the connection.
 
 ### Notifications
@@ -363,6 +420,7 @@ the only way a deadline reminder is worth anything.
 | `due_soon` | `dueDate` minus the user's lead time | assignees, or all members if unassigned |
 | `overdue` | `dueDate` passes, task not done | assignees, or all members if unassigned |
 | `completed_by_other` | a task you're assigned to is completed by someone else | the other assignees |
+| `commented` | someone writes a note on a task | assignees, its creator, prior commenters — not the author |
 
 - Permission is requested **contextually**, when the user first enables notifications in settings.
   Never on page load.
@@ -412,6 +470,13 @@ Settled, with the reasoning, so they don't get reopened by accident:
 - **Timezone is per workspace**, so every member of a household agrees on what "today" means. Quiet
   hours stay per-user, since those are about sleep.
 - **Full workspace CRUD with multi-workspace membership**, and belonging to none is a normal state.
+- **Notes are comments, and reactions go on the notes.** A reaction on a *chore* is ambiguous (good
+  job? yes do this? agreed?) and edges into the scorekeeping this app refuses; on a note it is the
+  understood thing — "seen, thanks" — which lets someone acknowledge without adding another line. Left
+  open on purpose: reacting to a *completion* is the obvious next request, and it is the one that would
+  need this decision revisited rather than extended.
+- **No comment editing.** Delete and retype. Editing would add a state to render, an "edited" marker to
+  argue about, and a second event type, for a household thread where retyping costs nothing.
 - **Membership by exact email, no invitations** — the interim behaviour. Emailed invite links with a
   pending state would need an `Invite` table and a token flow; **this one is still open**, and it is
   the obvious next thing if adding a housemate proves annoying in practice.
@@ -461,7 +526,11 @@ SQLite lives at `data/app.db`. Deleting it and re-running `db:migrate && db:seed
 Vitest with Fastify's `.inject()`, so no listening socket and no port to collide with.
 `src/test/api.test.ts` covers the API surface and pins the authorization behaviour shut — the
 cross-workspace IDOR cases, floor-filter semantics, badge counts excluding soft-deleted tasks, enum
-and length validation. `src/test/recurrence.test.ts` covers both anchors, DST and short months.
+and length validation. The comment tests pin the parts most likely to rot: that `canDelete` differs by
+viewer, that every comment route answers 404 across a workspace boundary, that a reaction toggles
+instead of duplicating and an emptied group disappears, that a note notifies the participants and never
+its author, and that the task list carries a count but no comment text.
+`src/test/recurrence.test.ts` covers both anchors, DST and short months.
 Notification idempotency is exercised by running the scheduler tick repeatedly and asserting nothing
 sends twice.
 

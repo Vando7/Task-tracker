@@ -19,6 +19,8 @@ export const keys = {
   tasks: (workspaceId: string, filters: Record<string, unknown>) =>
     ['workspace', workspaceId, 'tasks', filters] as const,
   task: (taskId: string) => ['task', taskId] as const,
+  /** Nested under the task, so removing a task drops its thread with it. */
+  comments: (taskId: string) => ['task', taskId, 'comments'] as const,
   notifications: () => ['notifications'] as const,
   notifyPreferences: () => ['notifications', 'preferences'] as const,
   vapidKey: () => ['notifications', 'vapid'] as const,

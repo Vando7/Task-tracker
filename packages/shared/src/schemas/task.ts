@@ -79,6 +79,15 @@ export const taskSchema = z.object({
   completionCount: z.number().int().nonnegative(),
 
   /**
+   * A count, not the comments themselves.
+   *
+   * The dashboard feeds every one of its sections from a single `status=todo`
+   * query; putting bodies in that response would bloat the app's hottest request
+   * to render a number. The thread is fetched when a card is opened.
+   */
+  commentCount: z.number().int().nonnegative(),
+
+  /**
    * Derived server-side from `dueDate` in the workspace timezone. The legacy
    * client decided this by checking whether a formatted string contained the
    * substring "ago".

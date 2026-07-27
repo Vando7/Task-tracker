@@ -1,3 +1,4 @@
+import { LIMITS } from '@task-tracker/shared'
 import { describe, expect, it } from 'vitest'
 import { prisma } from '../db'
 import {
@@ -471,5 +472,336 @@ describe('assignees', () => {
 
     expect(response.statusCode).toBe(204)
     expect(await prisma.taskAssignee.count({ where: { userId: mate.id } })).toBe(0)
+  })
+})
+
+describe('comments and reactions', () => {
+  it('posts, lists and hard-deletes a note, author only', async () => {
+    const app = await getApp()
+    const owner = await makeUser('c-owner@example.com', { name: 'Owner' })
+    const mate = await makeUser('c-mate@example.com', { name: 'Mate' })
+    const workspace = await makeWorkspace(owner.id)
+    await addMemberTo(workspace.id, mate.id)
+
+    const task = await prisma.task.create({
+      data: { workspaceId: workspace.id, name: 'Descale the kettle', createdById: owner.id },
+      select: { id: true },
+    })
+
+    const created = await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${task.id}/comments`,
+      headers: { cookie: mate.cookie },
+      payload: { body: 'It was properly furred up this time.' },
+    })
+    expect(created.statusCode).toBe(201)
+    const comment = created.json() as { id: string; canDelete: boolean; author: { name: string } }
+    expect(comment.author.name).toBe('Mate')
+    // The author's own view of their note.
+    expect(comment.canDelete).toBe(true)
+
+    // `canDelete` is per viewer, which is why a Comment is never broadcast over
+    // the SSE hub — one shared payload would hand this answer to everyone.
+    const asOwner = await app.inject({
+      method: 'GET',
+      url: `/api/tasks/${task.id}/comments`,
+      headers: { cookie: owner.cookie },
+    })
+    expect(asOwner.statusCode).toBe(200)
+    const listed = asOwner.json() as { total: number; comments: Array<{ canDelete: boolean }> }
+    expect(listed.total).toBe(1)
+    expect(listed.comments[0]?.canDelete).toBe(false)
+
+    // A member who did not write it cannot delete it, and is told 404 rather
+    // than 403 so there is one answer for "you cannot have this".
+    const byOther = await app.inject({
+      method: 'DELETE',
+      url: `/api/comments/${comment.id}`,
+      headers: { cookie: owner.cookie },
+    })
+    expect(byOther.statusCode).toBe(404)
+    expect(await prisma.taskComment.count()).toBe(1)
+
+    const byAuthor = await app.inject({
+      method: 'DELETE',
+      url: `/api/comments/${comment.id}`,
+      headers: { cookie: mate.cookie },
+    })
+    expect(byAuthor.statusCode).toBe(204)
+    expect(await prisma.taskComment.count()).toBe(0)
+  })
+
+  it("answers 404 for a note on another household's task", async () => {
+    const app = await getApp()
+    const attacker = await makeUser('c-attacker@example.com')
+    const victim = await makeUser('c-victim@example.com')
+
+    const victimWorkspace = await makeWorkspace(victim.id)
+    await makeWorkspace(attacker.id)
+
+    const task = await prisma.task.create({
+      data: { workspaceId: victimWorkspace.id, name: 'Private chore', createdById: victim.id },
+      select: { id: true },
+    })
+    const note = await prisma.taskComment.create({
+      data: { taskId: task.id, authorId: victim.id, body: 'Something private' },
+      select: { id: true },
+    })
+
+    for (const attempt of [
+      { method: 'GET' as const, url: `/api/tasks/${task.id}/comments` },
+      { method: 'POST' as const, url: `/api/tasks/${task.id}/comments`, payload: { body: 'hi' } },
+      { method: 'DELETE' as const, url: `/api/comments/${note.id}` },
+      {
+        method: 'POST' as const,
+        url: `/api/comments/${note.id}/reactions`,
+        payload: { emoji: '👍' },
+      },
+    ]) {
+      const response = await app.inject({ ...attempt, headers: { cookie: attacker.cookie } })
+      expect(response.statusCode).toBe(404)
+    }
+
+    // Nothing was written, and nothing was read.
+    expect(await prisma.taskComment.count({ where: { taskId: task.id } })).toBe(1)
+    expect(await prisma.commentReaction.count()).toBe(0)
+  })
+
+  it('toggles a reaction rather than duplicating it', async () => {
+    const app = await getApp()
+    const owner = await makeUser('r-owner@example.com', { name: 'Owner' })
+    const mate = await makeUser('r-mate@example.com', { name: 'Mate' })
+    const workspace = await makeWorkspace(owner.id)
+    await addMemberTo(workspace.id, mate.id)
+
+    const task = await prisma.task.create({
+      data: { workspaceId: workspace.id, name: 'Task', createdById: owner.id },
+      select: { id: true },
+    })
+    const note = await prisma.taskComment.create({
+      data: { taskId: task.id, authorId: owner.id, body: 'A note' },
+      select: { id: true },
+    })
+
+    const react = (cookie: string, emoji: string) =>
+      app.inject({
+        method: 'POST',
+        url: `/api/comments/${note.id}/reactions`,
+        headers: { cookie },
+        payload: { emoji },
+      })
+
+    const first = await react(owner.cookie, '👍')
+    expect(first.statusCode).toBe(200)
+    expect(first.json().reactions).toEqual([
+      { emoji: '👍', count: 1, users: [expect.objectContaining({ name: 'Owner' })], mine: true },
+    ])
+
+    // Two people, one emoji: grouped, not duplicated.
+    const second = await react(mate.cookie, '👍')
+    expect(second.json().reactions[0]).toMatchObject({ emoji: '👍', count: 2, mine: true })
+
+    // The same person and emoji again removes it — the composite primary key is
+    // what makes this a toggle instead of a duplicate-row failure.
+    const third = await react(owner.cookie, '👍')
+    expect(third.json().reactions[0]).toMatchObject({ emoji: '👍', count: 1, mine: false })
+    expect(await prisma.commentReaction.count()).toBe(1)
+
+    // A group that empties disappears rather than lingering at zero.
+    await react(mate.cookie, '👍')
+    const empty = await app.inject({
+      method: 'GET',
+      url: `/api/tasks/${task.id}/comments`,
+      headers: { cookie: owner.cookie },
+    })
+    expect(empty.json().comments[0].reactions).toEqual([])
+  })
+
+  it('rejects an unknown emoji and an empty or oversized note', async () => {
+    const app = await getApp()
+    const user = await makeUser('v-user@example.com')
+    const workspace = await makeWorkspace(user.id)
+
+    const task = await prisma.task.create({
+      data: { workspaceId: workspace.id, name: 'Task', createdById: user.id },
+      select: { id: true },
+    })
+    const note = await prisma.taskComment.create({
+      data: { taskId: task.id, authorId: user.id, body: 'A note' },
+      select: { id: true },
+    })
+
+    for (const body of ['', '   ', 'x'.repeat(LIMITS.commentBody + 1)]) {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/tasks/${task.id}/comments`,
+        headers: { cookie: user.cookie },
+        payload: { body },
+      })
+      expect(response.statusCode).toBe(400)
+    }
+
+    // A free-form emoji is not a reaction: the set is closed, so the row stays a
+    // predictable width on a phone.
+    const bogus = await app.inject({
+      method: 'POST',
+      url: `/api/comments/${note.id}/reactions`,
+      headers: { cookie: user.cookie },
+      payload: { emoji: '💩' },
+    })
+    expect(bogus.statusCode).toBe(400)
+    expect(await prisma.commentReaction.count()).toBe(0)
+  })
+
+  it('counts notes on the task payload without shipping their bodies', async () => {
+    const app = await getApp()
+    const user = await makeUser('count-user@example.com')
+    const workspace = await makeWorkspace(user.id)
+
+    const task = await prisma.task.create({
+      data: { workspaceId: workspace.id, name: 'Task', createdById: user.id },
+      select: { id: true },
+    })
+    await prisma.taskComment.createMany({
+      data: [
+        { taskId: task.id, authorId: user.id, body: 'One' },
+        { taskId: task.id, authorId: user.id, body: 'Two' },
+      ],
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/workspaces/${workspace.id}/tasks`,
+      headers: { cookie: user.cookie },
+    })
+
+    const listed = response.json().tasks[0] as Record<string, unknown>
+    expect(listed.commentCount).toBe(2)
+    // The dashboard's one hot query must not start carrying comment text.
+    expect(JSON.stringify(listed)).not.toContain('One')
+  })
+
+  it('notifies the participants of a note, never its author', async () => {
+    const app = await getApp()
+    const author = await makeUser('n-author@example.com')
+    const assignee = await makeUser('n-assignee@example.com')
+    const creator = await makeUser('n-creator@example.com')
+    const bystander = await makeUser('n-bystander@example.com')
+
+    const workspace = await makeWorkspace(creator.id)
+    for (const user of [author, assignee, bystander]) {
+      await addMemberTo(workspace.id, user.id)
+    }
+
+    const task = await prisma.task.create({
+      data: {
+        workspaceId: workspace.id,
+        name: 'Shared chore',
+        createdById: creator.id,
+        assignees: { create: { userId: assignee.id, assignedById: creator.id } },
+      },
+      select: { id: true },
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${task.id}/comments`,
+      headers: { cookie: author.cookie },
+      payload: { body: 'Worth knowing about this one.' },
+    })
+    expect(response.statusCode).toBe(201)
+
+    const notified = await prisma.notifyLog.findMany({
+      where: { taskId: task.id, kind: 'commented' },
+      select: { userId: true, cycleKey: true },
+    })
+
+    expect(new Set(notified.map((row) => row.userId))).toEqual(new Set([assignee.id, creator.id]))
+    // Not the author, and not every member: a note on an unclaimed chore is for
+    // the people already involved, unlike a deadline.
+    expect(notified.map((row) => row.userId)).not.toContain(author.id)
+    expect(notified.map((row) => row.userId)).not.toContain(bystander.id)
+
+    // The cycle key is the comment's own id, so a second note notifies again
+    // where a (user, task, kind) key alone would silently suppress it.
+    const comment = response.json() as { id: string }
+    expect(notified.every((row) => row.cycleKey === comment.id)).toBe(true)
+
+    const again = await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${task.id}/comments`,
+      headers: { cookie: author.cookie },
+      payload: { body: 'And another thing.' },
+    })
+    expect(again.statusCode).toBe(201)
+    expect(await prisma.notifyLog.count({ where: { taskId: task.id, kind: 'commented' } })).toBe(4)
+  })
+
+  it('respects the per-user commented toggle', async () => {
+    const app = await getApp()
+    const author = await makeUser('t-author@example.com')
+    const optedOut = await makeUser('t-opted-out@example.com')
+    const workspace = await makeWorkspace(optedOut.id)
+    await addMemberTo(workspace.id, author.id)
+
+    await prisma.notifyPreference.update({
+      where: { userId: optedOut.id },
+      data: { onCommented: false },
+    })
+
+    const task = await prisma.task.create({
+      data: { workspaceId: workspace.id, name: 'Chore', createdById: optedOut.id },
+      select: { id: true },
+    })
+
+    await app.inject({
+      method: 'POST',
+      url: `/api/tasks/${task.id}/comments`,
+      headers: { cookie: author.cookie },
+      payload: { body: 'A note they do not want to hear about.' },
+    })
+
+    expect(
+      await prisma.notifyLog.count({ where: { userId: optedOut.id, kind: 'commented' } }),
+    ).toBe(0)
+  })
+
+  it('drops notes and reactions when the task is hard-deleted, but not on soft delete', async () => {
+    const app = await getApp()
+    const user = await makeUser('cascade-user@example.com')
+    const workspace = await makeWorkspace(user.id)
+
+    const task = await prisma.task.create({
+      data: { workspaceId: workspace.id, name: 'Task', createdById: user.id },
+      select: { id: true },
+    })
+    const note = await prisma.taskComment.create({
+      data: { taskId: task.id, authorId: user.id, body: 'A note' },
+      select: { id: true },
+    })
+    await prisma.commentReaction.create({
+      data: { commentId: note.id, userId: user.id, emoji: '👍' },
+    })
+
+    // The task route soft-deletes, so the thread survives with it.
+    const deleted = await app.inject({
+      method: 'DELETE',
+      url: `/api/tasks/${task.id}`,
+      headers: { cookie: user.cookie },
+    })
+    expect(deleted.statusCode).toBe(204)
+    expect(await prisma.taskComment.count({ where: { taskId: task.id } })).toBe(1)
+
+    // ...but it is no longer reachable, because a soft-deleted task is not.
+    const afterDelete = await app.inject({
+      method: 'GET',
+      url: `/api/tasks/${task.id}/comments`,
+      headers: { cookie: user.cookie },
+    })
+    expect(afterDelete.statusCode).toBe(404)
+
+    await prisma.task.delete({ where: { id: task.id } })
+    expect(await prisma.taskComment.count()).toBe(0)
+    expect(await prisma.commentReaction.count()).toBe(0)
   })
 })

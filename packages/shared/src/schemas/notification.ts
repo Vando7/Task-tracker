@@ -12,6 +12,7 @@ export const notifyPreferenceSchema = z.object({
   onDueSoon: z.boolean(),
   onOverdue: z.boolean(),
   onCompletedByOther: z.boolean(),
+  onCommented: z.boolean(),
   dueSoonLeadHours: z.number().int().min(1).max(336),
   /** Quiet hours suppress push, never the in-app feed. */
   quietFrom: clockTimeSchema.nullable(),

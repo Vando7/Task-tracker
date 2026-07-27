@@ -40,12 +40,13 @@ type NotifyTarget = {
 
 const PREFERENCE_FLAG: Record<
   NotifyKind,
-  'onAssigned' | 'onDueSoon' | 'onOverdue' | 'onCompletedByOther'
+  'onAssigned' | 'onDueSoon' | 'onOverdue' | 'onCompletedByOther' | 'onCommented'
 > = {
   assigned: 'onAssigned',
   due_soon: 'onDueSoon',
   overdue: 'onOverdue',
   completed_by_other: 'onCompletedByOther',
+  commented: 'onCommented',
 }
 
 const COPY: Record<NotifyKind, (taskName: string) => { title: string; body: string }> = {
@@ -56,6 +57,7 @@ const COPY: Record<NotifyKind, (taskName: string) => { title: string; body: stri
     title: 'Someone got there first',
     body: `${taskName} is done`,
   }),
+  commented: (taskName) => ({ title: 'New note', body: taskName }),
 }
 
 /**
@@ -80,6 +82,7 @@ async function deliver(target: NotifyTarget): Promise<boolean> {
       onDueSoon: true,
       onOverdue: true,
       onCompletedByOther: true,
+      onCommented: true,
       quietFrom: true,
       quietTo: true,
     },
@@ -161,7 +164,11 @@ async function deliver(target: NotifyTarget): Promise<boolean> {
   await sendPushToUser(target.userId, {
     title: copy.title,
     body: copy.body,
-    url: `${env.APP_ORIGIN}/workspaces/${target.workspaceId}/tasks/${target.taskId}`,
+    // A real client route. This used to read `/workspaces/:id/tasks/:taskId`,
+    // which matches nothing the router serves, so every push tap landed on the
+    // 404 page — a silent failure, because nothing on the server can observe
+    // where a notification click goes. `?task=` opens that card.
+    url: `${env.APP_ORIGIN}/w/${target.workspaceId}/tasks?task=${target.taskId}`,
     tag: `${target.kind}:${target.taskId}`,
   })
 
@@ -204,6 +211,39 @@ export async function notifyCompletedByOther(
         taskName: task.name,
         kind: 'completed_by_other',
         cycleKey: completedAt.toISOString(),
+        actorId,
+      }),
+    ),
+  )
+}
+
+/**
+ * Someone wrote a note on a task.
+ *
+ * `cycleKey` is the comment's own id, which makes this the cleanest fit in the
+ * ledger of any event here: every comment is genuinely its own occurrence, so the
+ * unique constraint stops a retry double-sending without ever suppressing the next
+ * note. Contrast `notifyAssigned`, which has to use the wall clock because an
+ * assignment has no such id.
+ *
+ * Callers decide who counts as a participant; nothing here fans out to the whole
+ * household.
+ */
+export async function notifyCommented(
+  task: { id: string; workspaceId: string; name: string },
+  userIds: readonly string[],
+  actorId: string,
+  commentId: string,
+): Promise<void> {
+  await Promise.all(
+    userIds.map((userId) =>
+      deliver({
+        userId,
+        workspaceId: task.workspaceId,
+        taskId: task.id,
+        taskName: task.name,
+        kind: 'commented',
+        cycleKey: commentId,
         actorId,
       }),
     ),

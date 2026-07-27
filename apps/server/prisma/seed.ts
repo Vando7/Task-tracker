@@ -26,6 +26,8 @@ async function clear(): Promise<void> {
   await prisma.notifyLog.deleteMany()
   await prisma.pushSubscription.deleteMany()
   await prisma.notifyPreference.deleteMany()
+  await prisma.commentReaction.deleteMany()
+  await prisma.taskComment.deleteMany()
   await prisma.taskCompletion.deleteMany()
   await prisma.taskAssignee.deleteMany()
   await prisma.taskRoom.deleteMany()
@@ -184,7 +186,7 @@ async function main(): Promise<void> {
     },
   })
 
-  await prisma.task.create({
+  const kettle = await prisma.task.create({
     data: {
       workspaceId: workspace.id,
       name: 'Descale the kettle',
@@ -193,6 +195,35 @@ async function main(): Promise<void> {
       rooms: { create: [{ roomId: room('Kitchen') }] },
       assignees: { create: [{ userId: ivan.id, assignedById: ivan.id }] },
     },
+  })
+
+  /**
+   * A thread showing what notes are *for*: a standing description could not hold
+   * either of these without one of them being wrong the moment it was written.
+   */
+  const kettleNote = await prisma.taskComment.create({
+    data: {
+      taskId: kettle.id,
+      authorId: mira.id,
+      body: 'It was properly furred up this time — worth doing this monthly rather than when we notice.',
+      createdAt: at(-2 * DAY),
+    },
+  })
+  await prisma.taskComment.create({
+    data: {
+      taskId: kettle.id,
+      authorId: ivan.id,
+      body: 'Agreed. There is citric acid in the cupboard above the sink, works better than vinegar.',
+      createdAt: at(-2 * DAY + HOUR),
+    },
+  })
+  // Acknowledged without adding a third line to the thread, which is the entire
+  // point of reactions being on comments rather than on chores.
+  await prisma.commentReaction.createMany({
+    data: [
+      { commentId: kettleNote.id, userId: ivan.id, emoji: '👍' },
+      { commentId: kettleNote.id, userId: deyan.id, emoji: '🙏' },
+    ],
   })
 
   await prisma.task.create({
@@ -285,17 +316,18 @@ async function main(): Promise<void> {
     },
   })
 
-  const [userCount, taskCount, completionCount] = await Promise.all([
+  const [userCount, taskCount, completionCount, commentCount] = await Promise.all([
     prisma.user.count(),
     prisma.task.count({ where: { deletedAt: null } }),
     prisma.taskCompletion.count(),
+    prisma.taskComment.count(),
   ])
 
   console.log(
     [
       '',
       `  Seeded "${workspace.name}" (${workspace.timezone})`,
-      `    ${userCount} users, 2 floors, 7 rooms, ${taskCount} live tasks, ${completionCount} completions`,
+      `    ${userCount} users, 2 floors, 7 rooms, ${taskCount} live tasks, ${completionCount} completions, ${commentCount} notes`,
       '',
       '  Sign in with any of:',
       '    ivan@example.com  ·  mira@example.com  ·  deyan@example.com',

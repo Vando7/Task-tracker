@@ -8,6 +8,7 @@
 
 export * from './constants'
 export * from './schemas/auth'
+export * from './schemas/comment'
 export * from './schemas/common'
 export * from './schemas/events'
 export * from './schemas/layout'

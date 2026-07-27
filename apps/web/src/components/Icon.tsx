@@ -216,6 +216,20 @@ const ICONS = {
       <path d="M10 21h11M13 8l4 4" />
     </>
   ),
+  comment: (
+    <>
+      <path d="M20 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2Z" />
+    </>
+  ),
+  /** The affordance for "add a reaction"; the reactions themselves are emoji. */
+  reaction: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" />
+      <path d="M9 9.5h.01M15 9.5h.01" />
+    </>
+  ),
+  send: <path d="M4 12l16-8-6 8 6 8-16-8Z" />,
 } as const
 
 export type IconName = keyof typeof ICONS

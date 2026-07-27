@@ -11,8 +11,6 @@ import {
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireMember } from '../auth/middleware'
-import { prisma } from '../db'
-import { notFound } from '../lib/errors'
 import { parseOrThrow } from '../lib/validate'
 import {
   assignUser,
@@ -26,24 +24,11 @@ import {
   reopenTask,
   unassignUser,
   updateTask,
+  workspaceIdForTask,
 } from '../services/tasks'
 
 const taskRoomParamSchema = z.object({ id: z.string(), roomId: z.string() })
 const taskUserParamSchema = z.object({ id: z.string(), userId: z.string() })
-
-/**
- * A task's workspace is one column away, so authorization is a single indexed
- * lookup with nothing to infer. This function is the entire reason the direct
- * `Task.workspaceId` foreign key was worth the redesign.
- */
-async function workspaceIdForTask(taskId: string): Promise<string> {
-  const task = await prisma.task.findFirst({
-    where: { id: taskId, deletedAt: null },
-    select: { workspaceId: true },
-  })
-  if (!task) throw notFound('Task not found')
-  return task.workspaceId
-}
 
 export async function taskRoutes(app: FastifyInstance): Promise<void> {
   app.get('/workspaces/:workspaceId/tasks', async (request) => {

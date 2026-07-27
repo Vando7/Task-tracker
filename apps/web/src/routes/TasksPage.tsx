@@ -26,6 +26,12 @@ export function TasksPage({
   const floorId = params.get('floorId') ?? undefined
   const search = params.get('search') ?? undefined
   const assignee = params.get('assignee') ?? 'anyone'
+  /**
+   * Where a notification lands. It is not a filter — the task stays in its list
+   * alongside everything else, with its card already open so the note or deadline
+   * that prompted the tap is on screen.
+   */
+  const openTaskId = params.get('task') ?? undefined
 
   const { data: layout } = useLayout(workspace.id)
   const { data: members } = useMembers(workspace.id)
@@ -172,6 +178,7 @@ export function TasksPage({
               workspaceId={workspace.id}
               members={members ?? []}
               flashing={flashing.has(task.id)}
+              defaultExpanded={task.id === openTaskId}
             />
           ))}
         </div>
@@ -198,6 +205,7 @@ export function TasksPage({
               workspaceId={workspace.id}
               members={members ?? []}
               flashing={flashing.has(task.id)}
+              defaultExpanded={task.id === openTaskId}
             />
           ))}
         </div>

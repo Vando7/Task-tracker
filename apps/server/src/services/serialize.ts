@@ -1,4 +1,6 @@
 import {
+  type Comment,
+  commentSchema,
   type Floor,
   floorSchema,
   type Member,
@@ -63,8 +65,24 @@ export const taskInclude = {
     take: 1,
     include: { completedBy: { select: publicUserSelect } },
   },
-  _count: { select: { completions: true } },
+  // Counts only. Comment bodies would bloat the list request the whole dashboard
+  // is built on, to render a number on a collapsed card.
+  _count: { select: { completions: true, comments: true } },
 } satisfies Prisma.TaskInclude
+
+/**
+ * A comment with everything needed to render it, reactions included.
+ *
+ * Reaction *users* rather than a bare count: the row exists so you can see who
+ * acknowledged a note, and a count alone would not answer that.
+ */
+export const commentInclude = {
+  author: { select: publicUserSelect },
+  reactions: {
+    orderBy: { createdAt: 'asc' },
+    include: { user: { select: publicUserSelect } },
+  },
+} satisfies Prisma.TaskCommentInclude
 
 type TaskRow = {
   id: string
@@ -100,7 +118,7 @@ type TaskRow = {
     completedAt: Date
     completedBy: { id: string; name: string; email: string; avatarPath: string | null } | null
   }>
-  _count: { completions: number }
+  _count: { completions: number; comments: number }
 }
 
 export function serializeTask(row: TaskRow, now: Date = new Date()): Task {
@@ -145,9 +163,60 @@ export function serializeTask(row: TaskRow, now: Date = new Date()): Task {
     lastCompletedAt: latest?.completedAt ?? null,
     lastCompletedBy: latest?.completedBy ?? null,
     completionCount: row._count.completions,
+    commentCount: row._count.comments,
 
     isOverdue: row.status !== 'done' && isOverdue(row.dueDate, now),
     isRecurring: row.recurrenceEvery != null && row.recurrenceUnit != null,
+  })
+}
+
+type CommentRow = {
+  id: string
+  taskId: string
+  body: string
+  createdAt: Date
+  author: { id: string; name: string; email: string; avatarPath: string | null } | null
+  reactions: Array<{
+    emoji: string
+    userId: string
+    user: { id: string; name: string; email: string; avatarPath: string | null }
+  }>
+}
+
+/**
+ * Takes the viewer, because two of its fields are answers *for one person*.
+ *
+ * `mine` and `canDelete` are why a `Comment` must never be broadcast over the SSE
+ * hub: `publish` serialises one payload for every subscriber in the workspace, so
+ * a shared payload would hand the author's `canDelete: true` to the whole
+ * household. Comment events carry ids and receivers refetch.
+ */
+export function serializeComment(row: CommentRow, viewerId: string): Comment {
+  // Grouped in insertion order of first use, so the row does not reshuffle under
+  // someone's thumb as reactions arrive.
+  const groups = new Map<string, { users: PublicUser[]; mine: boolean }>()
+  for (const reaction of row.reactions) {
+    const group = groups.get(reaction.emoji) ?? { users: [], mine: false }
+    group.users.push(reaction.user)
+    if (reaction.userId === viewerId) group.mine = true
+    groups.set(reaction.emoji, group)
+  }
+
+  return commentSchema.parse({
+    id: row.id,
+    taskId: row.taskId,
+    body: row.body,
+    author: row.author,
+    createdAt: row.createdAt,
+    reactions: [...groups].map(([emoji, group]) => ({
+      emoji,
+      count: group.users.length,
+      users: group.users,
+      mine: group.mine,
+    })),
+    // Author only. An owner-can-moderate rule would need a role lookup per
+    // comment to answer a question a household has other ways to settle.
+    canDelete: row.author?.id === viewerId,
   })
 }
 

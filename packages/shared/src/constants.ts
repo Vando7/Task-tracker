@@ -49,8 +49,27 @@ export type MemberRole = (typeof MEMBER_ROLES)[number]
 export const EMAIL_TOKEN_KINDS = ['verify', 'reset'] as const
 export type EmailTokenKind = (typeof EMAIL_TOKEN_KINDS)[number]
 
-export const NOTIFY_KINDS = ['assigned', 'due_soon', 'overdue', 'completed_by_other'] as const
+export const NOTIFY_KINDS = [
+  'assigned',
+  'due_soon',
+  'overdue',
+  'completed_by_other',
+  'commented',
+] as const
 export type NotifyKind = (typeof NOTIFY_KINDS)[number]
+
+/**
+ * The reactions a comment can carry.
+ *
+ * A fixed set rather than a free emoji picker, unlike floor and room icons. Those
+ * are a considered one-off choice; a reaction is a one-tap acknowledgement, and a
+ * closed set keeps the row a predictable width with 44px targets on a phone.
+ *
+ * Chosen to cover the things housemates actually say about a chore — noted,
+ * thanks, that's funny, ugh — and deliberately *not* to include a downvote.
+ */
+export const COMMENT_REACTIONS = ['👍', '❤️', '🎉', '😅', '🙏'] as const
+export type CommentReactionEmoji = (typeof COMMENT_REACTIONS)[number]
 
 /** Non-id values the assignee filter can take. Anything else is a list of user ids. */
 export const ASSIGNEE_FILTER_KEYWORDS = ['anyone', 'mine', 'unassigned'] as const
@@ -67,6 +86,13 @@ export type FairnessWindow = (typeof FAIRNESS_WINDOWS)[number]
 export const LIMITS = {
   taskName: 128,
   taskDescription: 512,
+  /**
+   * Roomier than a description on purpose. A description is a standing definition
+   * that should stay short; a comment is someone recounting what happened, and
+   * cutting that off mid-sentence is how people end up editing the description
+   * instead.
+   */
+  commentBody: 1000,
   workspaceName: 64,
   floorName: 64,
   roomName: 64,

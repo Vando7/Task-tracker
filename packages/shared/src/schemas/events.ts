@@ -20,6 +20,10 @@ export const SSE_EVENT_TYPES = [
   'task.deleted',
   'task.assigned',
   'task.unassigned',
+  'comment.created',
+  /** A reaction was added or removed. The reaction set is part of the payload. */
+  'comment.updated',
+  'comment.deleted',
   'floor.created',
   'floor.updated',
   'floor.deleted',
@@ -33,6 +37,21 @@ export const SSE_EVENT_TYPES = [
 export type SseEventType = (typeof SSE_EVENT_TYPES)[number]
 
 const deletedSchema = z.object({ id: idSchema })
+
+/**
+ * Comment events carry ids, not the comment.
+ *
+ * Every other event here ships the changed entity so the client can write it
+ * straight into the cache. A `Comment` cannot go on this wire: `canDelete` and
+ * `mine` are answers *for one viewer*, and `publish` serialises a single payload
+ * for every subscriber in the workspace — so the author's `canDelete: true` would
+ * arrive at everyone. Receivers invalidate the thread instead, which is cheap
+ * because a thread is only ever fetched for an open card.
+ *
+ * `taskId` rides along because threads are cached per task; the comment id alone
+ * would force a receiver to invalidate every thread to find the right one.
+ */
+const commentRefSchema = z.object({ id: idSchema, taskId: idSchema })
 
 const envelope = <TType extends SseEventType, TData extends z.ZodType>(type: TType, data: TData) =>
   z.object({
@@ -55,6 +74,9 @@ export const sseEventSchema = z.discriminatedUnion('type', [
   envelope('task.deleted', deletedSchema),
   envelope('task.assigned', taskSchema),
   envelope('task.unassigned', taskSchema),
+  envelope('comment.created', commentRefSchema),
+  envelope('comment.updated', commentRefSchema),
+  envelope('comment.deleted', commentRefSchema),
   envelope('floor.created', floorSchema),
   envelope('floor.updated', floorSchema),
   envelope('floor.deleted', deletedSchema),

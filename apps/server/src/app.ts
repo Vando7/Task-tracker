@@ -9,6 +9,7 @@ import { attachUser } from './auth/middleware'
 import { env, isProduction, isTest, paths } from './env'
 import { HttpError } from './lib/errors'
 import { authRoutes } from './routes/auth'
+import { commentRoutes } from './routes/comments'
 import { eventRoutes } from './routes/events'
 import { layoutRoutes } from './routes/layout'
 import { meRoutes } from './routes/me'
@@ -83,6 +84,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // their own ids as well as nested under a workspace.
   await app.register(layoutRoutes, { prefix: '/api' })
   await app.register(taskRoutes, { prefix: '/api' })
+  await app.register(commentRoutes, { prefix: '/api' })
   await app.register(eventRoutes, { prefix: '/api' })
 
   // Uploaded avatars.
