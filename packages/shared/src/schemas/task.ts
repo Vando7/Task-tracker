@@ -118,7 +118,19 @@ export const createTaskSchema = z
     assigneeIds: z.array(idSchema).max(50).default([]),
   })
   .refine(recurrencePaired, recurrenceError)
+
+/**
+ * Two types per request schema, and the distinction matters.
+ *
+ * `CreateTaskInput` is the *output*: what the server holds after parsing, with
+ * `dueDate` already coerced to a `Date`. `CreateTaskBody` is the *input*: what a
+ * client actually puts on the wire, where a date is still an ISO string.
+ *
+ * Handing the client the output type is a real trap — it typechecks against a
+ * `Date` it can never send through JSON.
+ */
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
+export type CreateTaskBody = z.input<typeof createTaskSchema>
 
 /**
  * `status` is absent on purpose: completion goes through `/complete` and
@@ -148,6 +160,7 @@ export const updateTaskSchema = z
     recurrenceError,
   )
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>
+export type UpdateTaskBody = z.input<typeof updateTaskSchema>
 
 const ASSIGNEE_KEYWORDS: readonly string[] = ASSIGNEE_FILTER_KEYWORDS
 

@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/**
+ * The visual identity is the point (section 5.6): the spatial model plus the
+ * emoji-and-floor-colour language is what makes this app not a flat to-do list.
+ *
+ * The key move versus the legacy app: a floor's colour is set *once* as a CSS
+ * custom property on the floor's subtree, and every tint, glow and border below
+ * derives from it. The legacy templates carried dozens of inline
+ * `style="background: linear-gradient(...)"` attributes with hardcoded colours
+ * (Part 2, problem 24).
+ */
+
+@theme {
+  --color-ink: #0b0f14;
+  --color-ink-raised: #131a23;
+  --color-ink-hover: #1a232e;
+  --color-edge: #243040;
+  --color-text: #e6edf5;
+  --color-text-dim: #93a4b8;
+  --color-urgent: #ff5c5c;
+  --color-special: #ffb340;
+  --color-done: #3fb950;
+}
+
+:root {
+  color-scheme: dark;
+  /* Fallback, overridden per floor subtree. */
+  --floor: #8a2be2;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Respect the notch on a phone held in the kitchen. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+@utility floor-tint {
+  /* One variable, not a bespoke gradient per element. */
+  background-image: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--floor) 22%, transparent),
+    transparent 65%
+  );
+  border-color: color-mix(in oklab, var(--floor) 35%, var(--color-edge));
+}
+
+@utility floor-glow {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--floor) 30%, transparent),
+    0 8px 30px -12px color-mix(in oklab, var(--floor) 45%, transparent);
+}
+
+@utility tap {
+  /* 44px is the smallest reliably thumb-hittable target. */
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+/* The flash-on-change animation from the legacy app was genuinely nice. Kept —
+   but now driven by an SSE event for a known entity rather than by diffing
+   timestamps out of hidden spans. */
+@keyframes flash-change {
+  0% {
+    background-color: color-mix(in oklab, var(--floor) 30%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.flash {
+  animation: flash-change 1.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+  }
+}
