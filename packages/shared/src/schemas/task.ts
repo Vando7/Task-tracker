@@ -8,7 +8,13 @@ import {
   TASK_CATEGORIES,
   TASK_STATUSES,
 } from '../constants'
-import { dateTimeInputSchema, hexColorSchema, iconSchema, idSchema, timestampSchema } from './common'
+import {
+  dateTimeInputSchema,
+  hexColorSchema,
+  iconSchema,
+  idSchema,
+  timestampSchema,
+} from './common'
 import { publicUserSchema } from './user'
 
 export const taskCategorySchema = z.enum(TASK_CATEGORIES)
@@ -86,7 +92,9 @@ export type Task = z.infer<typeof taskSchema>
  * Recurrence is all-or-nothing: an every without a unit is meaningless, and a
  * unit without an every silently never fires.
  */
-const recurrencePaired = <T extends { recurrenceEvery?: number | null; recurrenceUnit?: string | null }>(
+const recurrencePaired = <
+  T extends { recurrenceEvery?: number | null; recurrenceUnit?: string | null },
+>(
   value: T,
 ) => (value.recurrenceEvery == null) === (value.recurrenceUnit == null)
 

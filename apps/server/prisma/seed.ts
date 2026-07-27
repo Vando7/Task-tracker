@@ -54,7 +54,12 @@ async function main(): Promise<void> {
       data: { email: 'mira@example.com', name: 'Mira', passwordHash, emailVerifiedAt: verifiedAt },
     }),
     prisma.user.create({
-      data: { email: 'deyan@example.com', name: 'Deyan', passwordHash, emailVerifiedAt: verifiedAt },
+      data: {
+        email: 'deyan@example.com',
+        name: 'Deyan',
+        passwordHash,
+        emailVerifiedAt: verifiedAt,
+      },
     }),
   ])
 

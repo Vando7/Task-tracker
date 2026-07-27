@@ -13,7 +13,7 @@ import { defineConfig } from 'prisma/config'
 const serverDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(serverDir, '../..')
 
-const fromEnv = process.env['DATABASE_URL']?.replace(/^file:/, '')
+const fromEnv = process.env.DATABASE_URL?.replace(/^file:/, '')
 const dbPath = path.resolve(repoRoot, fromEnv ?? 'data/app.db')
 
 export default defineConfig({

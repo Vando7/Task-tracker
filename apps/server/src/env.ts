@@ -38,31 +38,28 @@ const envSchema = z
     VAPID_PRIVATE_KEY: z.string().min(1).optional(),
     VAPID_SUBJECT: z.string().min(1).default('mailto:admin@example.com'),
 
-    SCHEDULER_INTERVAL_MS: z.coerce
-      .number()
-      .int()
-      .min(10_000)
-      .max(3_600_000)
-      .default(120_000),
+    SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(10_000).max(3_600_000).default(120_000),
 
     MAIL_TRANSPORT: z.enum(['console', 'smtp']).default('console'),
   })
-  .refine((value) => value.NODE_ENV !== 'production' || value.SESSION_SECRET !== DEV_SESSION_SECRET, {
-    error: 'SESSION_SECRET must be set to a real secret in production',
-    path: ['SESSION_SECRET'],
-  })
   .refine(
-    (value) => Boolean(value.VAPID_PUBLIC_KEY) === Boolean(value.VAPID_PRIVATE_KEY),
+    (value) => value.NODE_ENV !== 'production' || value.SESSION_SECRET !== DEV_SESSION_SECRET,
     {
-      error: 'VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be set together, or both left unset',
-      path: ['VAPID_PUBLIC_KEY'],
+      error: 'SESSION_SECRET must be set to a real secret in production',
+      path: ['SESSION_SECRET'],
     },
   )
+  .refine((value) => Boolean(value.VAPID_PUBLIC_KEY) === Boolean(value.VAPID_PRIVATE_KEY), {
+    error: 'VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be set together, or both left unset',
+    path: ['VAPID_PUBLIC_KEY'],
+  })
 
 const parsed = envSchema.safeParse(process.env)
 
 if (!parsed.success) {
-  const lines = parsed.error.issues.map((issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`)
+  const lines = parsed.error.issues.map(
+    (issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`,
+  )
   throw new Error(`Invalid environment configuration:\n${lines.join('\n')}`)
 }
 

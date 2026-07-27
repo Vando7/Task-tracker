@@ -165,6 +165,10 @@ model Task {
   description String @default("")
   /// urgent | special | normal — drives sort order and card styling.
   category    String @default("normal")
+  /// Numeric mirror of `category` (urgent 0, special 1, normal 2), maintained by
+  /// the task service. Sorting has to happen in SQL or pagination silently
+  /// reorders across pages, and SQLite cannot ORDER BY a CASE through Prisma.
+  categoryRank Int   @default(2)
   /// todo | done. A fast path only; TaskCompletion is the truth (section 5.1).
   /// The legacy enum also had `updated` and `overdue`, which nothing ever set.
   status      String @default("todo")
@@ -193,7 +197,7 @@ model Task {
   completions TaskCompletion[]
   notifyLogs  NotifyLog[]
 
-  @@index([workspaceId, deletedAt, status])
+  @@index([workspaceId, deletedAt, status, categoryRank, updatedAt])
   @@index([workspaceId, deletedAt, dueDate])
 }
 

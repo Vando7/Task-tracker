@@ -6,9 +6,7 @@ import { HEX_COLOR_PATTERN, LIMITS } from '../constants'
  * pass) so the id strategy can change without churning the whole contract,
  * but strict about the character set so ids are always URL- and log-safe.
  */
-export const idSchema = z
-  .string()
-  .regex(/^[A-Za-z0-9_-]{8,64}$/, { error: 'not a valid id' })
+export const idSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/, { error: 'not a valid id' })
 
 /**
  * A timestamp on the way *out* to a client.
@@ -20,7 +18,9 @@ export const idSchema = z
  */
 export const timestampSchema = z
   .union([z.date(), z.iso.datetime({ offset: true })])
-  .transform((value) => (value instanceof Date ? value.toISOString() : new Date(value).toISOString()))
+  .transform((value) =>
+    value instanceof Date ? value.toISOString() : new Date(value).toISOString(),
+  )
 
 /** A timestamp arriving *from* a client. Stored as UTC; never a naive local midnight. */
 export const dateTimeInputSchema = z
