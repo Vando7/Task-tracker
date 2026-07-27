@@ -1,41 +1,32 @@
 {
-  "name": "tracker",
-  "version": "0.1.0",
-  "devDependencies": {
-    "@babel/core": "^7.16.5",
-    "@babel/preset-env": "^7.16.5",
-    "@popperjs/core": "^2.10.2",
-    "autoprefixer": "^10.4.0",
-    "babel-loader": "^9.1.2",
-    "bootstrap": "^5.2.3",
-    "css-loader": "^6.5.1",
-    "mini-css-extract-plugin": "^2.4.5",
-    "node-sass-tilde-importer": "^1.0.2",
-    "pixrem": "^5.0.0",
-    "postcss": "^8.3.11",
-    "postcss-loader": "^8.0.0",
-    "postcss-preset-env": "^9.0.0",
-    "sass": "^1.43.4",
-    "sass-loader": "^14.0.0",
-    "webpack": "^5.65.0",
-    "webpack-bundle-tracker": "^3.0.1",
-    "webpack-cli": "^5.0.1",
-    "webpack-dev-server": "^5.0.2",
-    "webpack-merge": "^5.8.0"
-  },
+  "name": "task-tracker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Household chore tracker organised by the physical layout of a home",
+  "packageManager": "pnpm@11.17.0",
   "engines": {
-    "node": "20"
-  },
-  "browserslist": [
-    "last 2 versions"
-  ],
-  "babel": {
-    "presets": [
-      "@babel/preset-env"
-    ]
+    "node": ">=22"
   },
   "scripts": {
-    "dev": "webpack serve --config webpack/dev.config.js",
-    "build": "webpack --config webpack/prod.config.js"
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm typecheck && pnpm --filter @task-tracker/web build",
+    "start": "pnpm --filter @task-tracker/server start",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "db:migrate": "pnpm --filter @task-tracker/server db:migrate",
+    "db:seed": "pnpm --filter @task-tracker/server db:seed",
+    "db:studio": "pnpm --filter @task-tracker/server db:studio",
+    "db:reset": "pnpm --filter @task-tracker/server db:reset",
+    "db:generate": "pnpm --filter @task-tracker/server db:generate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm blocks lifecycle scripts by default. These four need theirs to produce a
+# working binary — native compile (better-sqlite3), or a prebuilt-binary
+# download (Prisma engines, esbuild). Everything else stays blocked.
+allowBuilds:
+  '@prisma/engines': true
+  better-sqlite3: true
+  esbuild: true
+  prisma: true

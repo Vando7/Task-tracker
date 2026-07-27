@@ -1,12 +1,16 @@
-.editorconfig
-.gitattributes
-.github
-.gitignore
-.gitlab-ci.yml
-.idea
-.pre-commit-config.yaml
-.readthedocs.yml
-.travis.yml
-venv
+# Keep the build context small, and never ship host state into the image.
+node_modules
+**/node_modules
+dist
+**/dist
+data
+uploads
 .git
-.envs/
+.gitignore
+.editorconfig
+coverage
+*.log
+.env
+.env.*
+!.env.example
+CLAUDE.md
