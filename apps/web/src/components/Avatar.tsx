@@ -5,7 +5,7 @@ import { avatarHue, initials } from '../lib/format'
  * An avatar always renders something.
  *
  * `avatarPath` being null is the normal case now that the Google profile-picture
- * import is gone with OAuth (section 4.2), so the initials fallback is the
+ * import is gone with OAuth, so the initials fallback is the
  * default path rather than an error state.
  */
 export function Avatar({
@@ -56,7 +56,7 @@ export function Avatar({
 /**
  * The assignee row on a card. An empty list is a real, valid state — "whoever
  * gets to it" — so it renders as words, never as an empty slot demanding to be
- * filled (section 4.1).
+ * filled.
  */
 export function AssigneeStack({ users, size = 24 }: { users: PublicUser[]; size?: number }) {
   if (users.length === 0) {

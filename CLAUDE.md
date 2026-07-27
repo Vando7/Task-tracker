@@ -1,62 +1,91 @@
-# Task Tracker — rewrite brief & legacy spec
+# Task Tracker
 
-**Task Tracker is a household chore tracker.** Tasks are organised by the physical layout of a home —
-workspace (household) → floors → rooms — and shared between the people living there.
+**A household chore tracker.** Tasks are organised by the physical layout of a home —
+workspace (household) → floors → rooms — and shared between the people living there. The spatial
+model is the point: it is what makes this different from a flat to-do list.
 
-There is a working Django implementation in this repo. **It is being replaced, not refactored.** The
-product behaviour is worth keeping; the code is not. Django is being dropped entirely in favour of a
-TypeScript stack on SQLite.
+TypeScript everywhere, strict. Fastify + Prisma + SQLite on the server, React 19 + Vite on the
+client, one `packages/shared` holding the Zod schemas that define every API shape.
 
-This file has two halves:
+> This branch replaced a Django implementation, which still sits on `main` and is deployed.
+> Comments in the source that say "the legacy app" mean that one. Nothing here depends on it: the
+> data model is a redesign rather than a port, no legacy ids are carried, and existing households
+> re-register rather than being migrated.
 
-- **Part 1 — The rewrite.** Target stack, layout, data model, feature specs, decisions. This is the
-  work.
-- **Part 2 — The legacy app.** A behavioural spec of what exists today, and an inventory of its bugs.
-  This is the requirements baseline: it's what the rewrite has to match or deliberately change.
-
----
-
-## HANDOFF — read this first
-
-You are picking this up fresh. Here's the situation and what to do.
-
-The `main` branch holds the legacy Django app, which is deployed and should be left alone. **Create a
-`rewrite` branch off `main` and do all work there.** Do not delete the Django code yet — Part 2 of
-this document is a summary, and the original source is the tiebreaker when a behavioural question
-comes up. It gets removed at cutover, not before.
-
-**Run everything natively.** Node and pnpm on the host, SQLite as a file on disk. No Docker for
-development — do not start containers, do not run compose, do not touch the existing `local.yml` /
-`production.yml` / `compose/` files. Separately, **do write a `Dockerfile`** for the new app so
-deployment is ready when we want it, but treat it as a build artifact to be authored and reviewed, not
-executed. Don't build it, don't run it, don't verify it by running it.
-
-Suggested order of work, each step ending somewhere runnable:
-
-1. Scaffold the workspace (Part 1 §2), get `pnpm dev` serving an empty React page and a Fastify
-   health endpoint.
-2. Prisma schema (§3) + first migration + a seed script with a plausible two-floor house.
-3. Auth: register, verify, login, logout, session middleware, `GET /api/me` (§4.2).
-4. Workspaces, floors, rooms — CRUD and the layout view.
-5. Tasks — CRUD, room assignment, the pending/completed lists, inline editing.
-6. Assignees + filtering (§4.1).
-7. SSE live updates (§4.4).
-8. Recurrence + the completion log (§5.1, §5.2).
-9. Notifications (§4.3) — last, because it's the only part that isn't load-bearing.
-10. The `Dockerfile` (write only).
-
-Read §6 before you start — there are open questions there that change what you build, and the answers
-are the user's to give, not yours to assume. Ask them when you reach the step that depends on one; do
-everything that doesn't depend on an answer first.
+`README.md` is the getting-started guide — install, seeded logins, running detached, exposing to the
+network. This file is the reference: how the app is built and which parts are load-bearing.
 
 ---
 
-# PART 1 — THE REWRITE
+## Rules
 
-## 1. Stack
+These are the invariants. Most of them exist because breaking them is how the previous
+implementation went wrong, and each is cheap to honour and expensive to retrofit.
 
-TypeScript everywhere, strict mode. Chosen for being conventional, well-documented, and easy for both
-a human and an agent to reason about — no clever indirection, no framework magic.
+**Contract**
+
+- `packages/shared` is the **only** place an API shape is defined. The server validates requests
+  *and* responses against those schemas; the client imports the inferred types. If the two ever
+  disagree about a field, the schema is right.
+- Note the two types per request schema: `CreateTaskInput` is the parsed output (`dueDate` is a
+  `Date`), `CreateTaskBody` is what a client can actually send (an ISO string). The client wants
+  `Body`.
+- Route handlers stay thin: parse → authorize → call a service → emit an event → respond. Anything
+  interesting lives in `services/`.
+- No business logic in React components. Data access goes through TanStack Query hooks in
+  `features/*/api.ts`.
+
+**Authorization**
+
+- `Task.workspaceId` is a **direct foreign key**. Authorization is one indexed lookup,
+  `requireMember(request, workspaceId)`, and every scoped query filters by it — so there is no
+  post-hoc ownership check to forget. Inferring a task's workspace through
+  `rooms → floor → workspace` was the root of nearly every authorization bug in the old app.
+- **Out-of-workspace reads answer 404, not 403.** A 403 confirms the thing exists.
+- `TaskRoom` rows must always point at rooms inside the task's own workspace. SQLite cannot express
+  that, so `assertRoomsInWorkspace` enforces it and a test asserts it.
+
+**Data**
+
+- **`TaskCompletion` is append-only and is the truth.** `Task.status` is a fast path. Recurrence, the
+  fairness tally, room staleness and "last done 3 days ago" all read the log.
+- **Zero rooms and zero assignees are both valid.** A task belongs to the workspace directly, and
+  unassigned means "whoever gets to it" — never render either as missing data or as an empty slot
+  demanding to be filled.
+- **Floors and rooms soft-delete**, and deleting one detaches it from tasks rather than cascading the
+  join rows away.
+- **A floor filter is the union of that floor's rooms**, never the intersection.
+- **Overdue is an instant comparison** (`dueDate < now`), computed server-side. The workspace
+  timezone is for the things that genuinely need a calendar: "due today", quiet hours, the fairness
+  window, and stepping a recurrence so a fortnightly 09:00 chore stays at 09:00 across a DST
+  boundary.
+
+**Liveness**
+
+- **Every mutation another member can see publishes an SSE event.** Not optional — it is the thing
+  that makes the app feel alive and the easiest thing to forget.
+- **Notification delivery writes its ledger row first** and treats a unique-constraint violation as
+  "already sent". That ordering is what makes overlapping scheduler ticks safe.
+
+**Interface**
+
+- **Every colour is a token, and both themes are real.** Utilities read `var(--color-*)`; the light
+  theme reassigns those variables under `:root[data-theme='light']` in `apps/web/src/index.css`.
+  Never hardcode a hex or reach for `bg-white` / `bg-black/30` in a component — it will look wrong in
+  one of the two themes.
+- **A floor's colour is one CSS custom property** (`--floor`) set on that floor's subtree; tints and
+  glows derive from it with `color-mix`. Don't reintroduce per-element gradients.
+- **Buttons and inputs are the `btn` / `icon-btn` / `field` / `chip` utilities**, with colour
+  variants paired (`icon-btn icon-btn-ghost`). Mixing a core utility like `bg-transparent` into one
+  of them depends on stylesheet order and will eventually lose; add or use a variant instead.
+- **Icons are the inline SVG set in `components/Icon.tsx`** — `currentColor`, `aria-hidden`, and
+  never the only label on a control. Emoji stay for the things a *user* chose: floor and room icons.
+- Phone is the primary target: 44px minimum tap targets (the `tap` utility), thumb-reachable primary
+  actions, no hover-dependent affordances.
+
+---
+
+## Stack
 
 | Concern | Choice | Why |
 |---|---|---|
@@ -65,180 +94,268 @@ a human and an agent to reason about — no clever indirection, no framework mag
 | API server | Fastify | small, typed, first-class plugins, trivial SSE |
 | Validation | Zod | one schema is both runtime validation and the shared TS type |
 | DB | SQLite (`better-sqlite3`), WAL mode | a household app has a handful of users; a file is the right answer |
-| ORM | Prisma | one declarative schema file, real migrations, excellent generated types |
+| ORM | Prisma 7 | one declarative schema, real migrations, excellent generated types |
 | Frontend | React 19 + Vite | fastest feedback loop, no SSR complexity we don't need |
 | Routing | React Router (declarative) | filters live in the URL, which this app needs |
-| Server state | TanStack Query | caching, optimistic updates, and an SSE-driven cache invalidation story |
-| Styling | Tailwind CSS v4 | the per-floor colour theming becomes CSS custom properties, not 40 inline gradients |
-| Auth | hand-rolled sessions + argon2 | ~150 lines, fully auditable, no library churn |
-| Live updates | Server-Sent Events | one direction is all we need; see §4.4 |
-| Push | Web Push (VAPID) + Service Worker | see §4.3 |
-| Scheduling | one in-process interval | single-process app, so no Celery/Redis/broker at all |
+| Server state | TanStack Query | caching, optimistic updates, SSE-driven cache writes |
+| Styling | Tailwind CSS v4 | per-floor theming becomes CSS custom properties, not inline gradients |
+| Auth | hand-rolled sessions + argon2id | ~150 lines, fully auditable, no library churn |
+| Live updates | Server-Sent Events | one direction is all we need |
+| Push | Web Push (VAPID) + Service Worker | required for anything time-based |
+| Scheduling | one in-process `setInterval` | single-process app, so no broker at all |
 | Tests | Vitest + Fastify `.inject()` | no HTTP server needed for API tests |
 | Lint/format | Biome | one tool, one config, fast |
 
+Prisma 7 has no query engine binary, so the client connects through the `better-sqlite3` driver
+adapter — which is also how we control the pragmas, notably WAL. The connection URL lives in
+`apps/server/prisma.config.ts`.
+
 Deliberate non-choices, so they don't get relitigated:
 
-- **No Next.js.** We need no SSR or SEO, and RSC/server actions would complicate SSE and obscure the
-  API boundary. An explicit client + explicit API is easier to work on.
+- **No Next.js.** No SSR or SEO need, and RSC/server actions would complicate SSE and obscure the API
+  boundary. An explicit client + explicit API is easier to work on.
 - **No Postgres.** Household scale. SQLite in WAL mode handles this with room to spare, and it makes
   local development a single file with zero services running.
-- **No Redis, no message broker, no worker process.** The notification scheduler is a `setInterval` in
-  the API process. This is the one place where dropping Django/Celery makes the design genuinely
-  simpler, not just different.
-- **No auth library** (Better Auth, Auth.js). Email+password with sessions is a small amount of
-  explicit code, and explicit beats configurable here. Revisit only if OAuth ever comes back.
+- **No Redis, no message broker, no worker process.** The notification scheduler is a `setInterval`
+  in the API process, and that is safe precisely because delivery is idempotent.
+- **No auth library.** Email+password with sessions is a small amount of explicit code, and explicit
+  beats configurable here. Revisit only if OAuth ever comes back.
 - **No GraphQL, no tRPC.** A plain REST-ish JSON API with Zod schemas shared through
   `packages/shared` gives end-to-end types without extra machinery.
 
-## 2. Repository layout
+---
+
+## Repository layout
 
 ```
 apps/
   server/
     src/
-      index.ts              # Fastify bootstrap
+      index.ts              # entry: build the app, listen, start the scheduler
+      app.ts                # Fastify bootstrap, plugins, error handler, route registration
       env.ts                # Zod-validated process.env
       db.ts                 # Prisma client singleton
-      auth/                 # password hashing, sessions, middleware
-      routes/               # one file per resource: auth, workspaces, floors,
-                            #   rooms, tasks, assignees, events (SSE), notifications
-      services/             # business logic — recurrence, rotation, notifications
-      events/               # SSE hub: per-workspace subscriber registry
-      jobs/                 # the scheduler tick
+      auth/                 # password hashing, sessions, tokens, middleware
+      routes/               # one file per resource: auth, me, workspaces, layout,
+                            #   tasks, events (SSE), notifications
+      services/             # business logic — tasks, layout, recurrence, notifications,
+                            #   push, mail, time, workspaces, serialize
+      events/hub.ts         # SSE hub: per-workspace subscriber registry
+      jobs/scheduler.ts     # the scheduler tick
+      lib/                  # HttpError, request validation
       test/
-    prisma/
-      schema.prisma
-      migrations/
-      seed.ts
+    prisma/                 # schema.prisma, migrations/, seed.ts
   web/
     src/
-      main.tsx
+      main.tsx, App.tsx     # routing and the workspace shell
       routes/               # one file per page
-      components/
-      features/             # tasks/, layout/, notifications/ — hooks + UI per domain
-      lib/                  # api client, SSE hook, formatting
-      sw.ts                 # service worker (push handling)
+      components/           # Shell, TaskCard, NewTaskDialog, Avatar, Icon, InlineText, ThemeToggle
+      features/             # tasks/, layout/, session/, stats/, notifications/ — hooks per domain
+      lib/                  # api client, useEventStream, useTheme, formatting, query keys
+    public/sw.js            # service worker (push handling)
 packages/
-  shared/
-    src/
-      schemas/              # Zod schemas — the API contract
-      types.ts              # types inferred from the schemas
-      constants.ts          # category/status enums, recurrence units
-data/
-  app.db                    # gitignored
-Dockerfile                  # written, never run during development
+  shared/src/
+    schemas/                # Zod schemas — the API contract
+    constants.ts            # enums, limits, defaults
+data/app.db                 # gitignored
+uploads/                    # avatars, gitignored
+Dockerfile                  # written, never built or run
 ```
 
-Rules that keep this crisp:
+Client routes, all under a workspace (`/w/:workspaceId`):
 
-- `packages/shared` is the **only** place an API shape is defined. The server validates requests and
-  responses against those schemas; the web client imports the inferred types. If the two ever disagree
-  about a field, the schema is right.
-- Route handlers stay thin: parse → authorize → call a service → emit an event → respond. Anything
-  interesting lives in `services/`.
-- No business logic in React components. Data access goes through TanStack Query hooks in
-  `features/*/api.ts`.
-- Every mutation that changes something another member can see emits an SSE event. Not optional — it's
-  the thing that makes the app feel alive, and it's easy to forget.
+| Route | Page |
+|---|---|
+| `/` | **Dashboard** — yours, then up-for-grabs, then the house at a glance |
+| `/house` | the floor plan, and the only place floors and rooms are edited |
+| `/tasks` | one list, filtered by room, floor, search and assignee via the query string |
+| `/settings` | fairness tally, appearance, household, notifications, profile |
 
-## 3. Data model
+---
 
-Prisma/SQLite. This is a deliberate redesign, not a port — the notes explain what changed and why.
+## Data model
+
+Prisma over SQLite. `apps/server/prisma/schema.prisma` carries a comment on each model explaining
+why it looks the way it does; this is the summary.
 
 ```
-User            id, email (unique), passwordHash, name, avatarPath?,
-                emailVerifiedAt?, createdAt
-Session         id, userId, expiresAt                    # opaque cookie value
-EmailToken      id, userId, kind (verify|reset), expiresAt, usedAt?
+User            id, email (unique), passwordHash, name, avatarPath?, emailVerifiedAt?
+Session         id, userId, expiresAt, userAgent?, ip?     # the id is the cookie value
+EmailToken      id, tokenHash (unique), userId, kind (verify|reset), expiresAt, usedAt?
 
-Workspace       id, name, createdById, createdAt
-Member          workspaceId, userId, role (owner|member)  # composite PK
-                # replaces the legacy "created_by == you means you're the admin" hack
+Workspace       id, name, timezone, createdById?
+Member          workspaceId, userId, role (owner|member)   # composite PK
 
 Floor           id, workspaceId, name, icon, color, sortOrder, deletedAt?
 Room            id, floorId, name, icon, sortOrder, deletedAt?
 
-Task            id, workspaceId,                          # <-- direct FK. see note.
-                name, description, category, status,
-                dueDate?, recurrenceEvery?, recurrenceUnit?, rotateAssignees,
-                createdById, createdAt, updatedAt, deletedAt?
-TaskRoom        taskId, roomId                            # composite PK
-TaskAssignee    taskId, userId, assignedAt, assignedById  # composite PK
+Task            id, workspaceId, name, description, category, categoryRank, status,
+                dueDate?, recurrenceEvery?, recurrenceUnit?, recurrenceAnchor,
+                rotateAssignees, createdById?, deletedAt?
+TaskRoom        taskId, roomId                             # composite PK
+TaskAssignee    taskId, userId, assignedAt, assignedById?  # composite PK
+TaskCompletion  id, taskId, completedById?, completedAt    # append-only
 
-TaskCompletion  id, taskId, completedById, completedAt    # append-only. see §5.1.
-
-PushSubscription    id, userId, endpoint (unique), p256dh, auth, createdAt
-NotifyPreference    userId (PK), enabled, onAssigned, onDueSoon, onOverdue,
-                    onCompletedByOther, dueSoonLeadHours, quietFrom?, quietTo?
-NotifyLog           id, userId, taskId, kind, sentAt      # idempotency, see §4.3
+PushSubscription  id, userId, endpoint (unique), p256dh, auth
+NotifyPreference  userId (PK), enabled, onAssigned, onDueSoon, onOverdue,
+                  onCompletedByOther, dueSoonLeadHours, quietFrom?, quietTo?
+NotifyLog         id, userId, workspaceId, taskId?, kind, cycleKey, actorId?, sentAt, readAt?
+                  # unique (userId, taskId, kind, cycleKey)
 ```
 
-Notes on the changes:
+Points worth knowing:
 
-- **`Task.workspaceId` is a direct foreign key.** In the legacy app a task's workspace was inferred
-  through `rooms → floor → workspace`, and nearly every authorization bug in Part 2 is a symptom of
-  that. Every query and every permission check gets simpler. `TaskRoom` rows must always point at
-  rooms inside the task's own workspace — enforce it in the service layer, and assert it in a test.
-- **`Member` with a role** replaces comparing against `created_by`. Fixes the legacy bug where
-  membership management broke entirely for anyone who created two workspaces.
-- **`TaskCompletion` is the keystone.** See §5.1 — it's what makes recurrence, fairness stats, room
-  staleness, and notification idempotency all possible. The legacy app overwrote a single
-  `completed_date` and destroyed its own history.
-- **Floors and Rooms soft-delete.** Hard cascade in the legacy app orphaned tasks into permanent
-  invisibility. Deleting a room detaches it from tasks; a task left with zero rooms is still valid
-  (it belongs to the workspace directly now) and must remain reachable.
-- **`status` is `todo | done` only.** The legacy enum had `updated` and `overdue` too; nothing ever
-  set them. Overdue is derived from `dueDate`, not stored.
-- Timestamps are stored UTC. Each workspace gets a timezone (see §6) — "due today" and quiet hours are
-  meaningless without one.
-- `sortOrder` on Floor and Room so the layout can be arranged. The legacy app had insertion order and
-  no way to change it.
+- **`EmailToken` stores only the SHA-256** of the emailed token. A leaked database must not hand out
+  working reset links. `usedAt` makes them single-use.
+- **`categoryRank`** is a numeric mirror of `category` (urgent 0, special 1, normal 2), maintained by
+  the task service. Sorting has to happen in SQL or pagination silently reorders across pages, and
+  SQLite cannot `ORDER BY` a `CASE` through Prisma.
+- **`status` is `todo | done` only.** Overdue is derived, never stored.
+- **`NotifyLog` is both the delivery ledger and the in-app feed.** `cycleKey` is part of the unique
+  constraint on purpose: keyed on only `(user, task, kind)`, a recurring task's reminder would fire
+  once and then never again — which is the bug you get from fixing re-delivery carelessly.
+- Timestamps are stored UTC.
+- `sortOrder` on Floor and Room, so the layout can be arranged.
 
-## 4. Feature specs
+---
 
-### 4.1 Assignees
+## HTTP surface
 
-Tasks gain assignees: **zero, one, or many** users, drawn from the members of the task's workspace.
+All JSON, all under `/api`, all requiring a session except health, the auth routes and verification.
+Errors are `{ error: { message, code, fields? } }`.
 
-- Unassigned is a valid, first-class state meaning "whoever gets to it" — not missing data. It must
-  never render as an error or an empty slot demanding to be filled.
-- Assignment is its own endpoint (`POST`/`DELETE /api/tasks/:id/assignees`), not a generic field
-  update, so it can be notified on and recorded with who assigned whom.
-- Removing a member from a workspace removes their assignments in that workspace.
-- The task list gains an assignee filter, combinable with the room/floor/search scope:
-  *Anyone* (default) · *Mine* · *Unassigned* · *specific members* (multi-select).
-- Filter state lives in the URL query string so a filtered view is linkable and survives reload.
-- Cards show assignee avatars, with an initials fallback.
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/health` | liveness, plus whether push is configured |
+| POST | `/api/auth/register` · `/login` · `/verify` · `/logout` · `/logout-all` | session lifecycle |
+| POST | `/api/auth/password/reset-request` · `/password/reset` | password reset |
+| GET/PATCH | `/api/me` | the signed-in user and their workspaces |
+| POST | `/api/me/password` · `/api/me/avatar` | credentials, avatar upload |
+| GET/POST | `/api/workspaces` | list, create |
+| PATCH/DELETE | `/api/workspaces/:id` | rename; delete is owner-only |
+| GET/POST | `/api/workspaces/:id/members` | list, add by email |
+| DELETE | `/api/workspaces/:id/members/:userId` | remove |
+| GET | `/api/workspaces/:id/stats/fairness` · `/stats/staleness` | the tally, room staleness |
+| GET | `/api/workspaces/:id/layout` | floors + rooms + badge counts, one call |
+| POST | `/api/workspaces/:id/floors` · `/floors/reorder` | create, reorder |
+| PATCH/DELETE | `/api/floors/:id` | edit, soft-delete |
+| POST | `/api/floors/:id/rooms` · `/rooms/reorder` | create, reorder |
+| PATCH/DELETE | `/api/rooms/:id` | edit, soft-delete |
+| GET/POST | `/api/workspaces/:id/tasks` | filtered list, create |
+| GET/PATCH/DELETE | `/api/tasks/:id` | read, edit, soft-delete |
+| POST | `/api/tasks/:id/complete` · `/reopen` | complete (drives recurrence), manual reset |
+| POST/DELETE | `/api/tasks/:id/rooms[/:roomId]` | attach, detach |
+| POST/DELETE | `/api/tasks/:id/assignees[/:userId]` | assign, unassign |
+| GET | `/api/events?workspaceId=` | the SSE stream |
+| GET | `/api/events/stats` | hub subscriber counts |
+| GET/PATCH | `/api/notifications/preferences` | per-user notification settings |
+| GET | `/api/notifications` · `/vapid-public-key` | the in-app feed, the push key |
+| POST | `/api/notifications/subscribe` · `/unsubscribe` · `/:id/read` · `/read-all` | push and feed state |
 
-### 4.2 Authentication — email + password only
+Floors, rooms and tasks own their full paths rather than nesting under a workspace, because they are
+addressed by their own ids as often as by their parent's.
 
-Google OAuth is gone. No social login, no OAuth plumbing, no provider credentials in shell scripts.
+---
 
-- Register with email + password. Password hashed with argon2id.
-- Email verification is mandatory before login succeeds. **In development, verification and reset
-  links are printed to the server console** — no SMTP server, no Mailpit container. Production uses
-  one transactional email provider behind a single `sendMail()` function.
-- Sessions are opaque random ids in a `Session` row, delivered as an `httpOnly`, `sameSite=lax`,
-  `secure`-in-production cookie. No JWTs. Logout deletes the row; logging out everywhere deletes all
-  rows for the user.
-- Password reset by emailed single-use token.
-- Rate-limit login, register, and reset-request by IP and by email.
-- Avatars are uploaded files (the Google profile-picture import is gone). Ship an initials avatar so
-  a user without one never looks broken.
-- Migration concern if legacy data is carried over: Google-only accounts have no usable password and
-  must be pushed through a reset. See §6.
+## Features
 
-### 4.3 Notifications
+### Authentication
 
-Two delivery paths, because they have different requirements.
+Email + password only. No social login, no OAuth plumbing.
 
-**In-app (tab open).** Events arrive over the SSE channel that already drives the task list and
-surface as a toast plus an unread badge. No extra infrastructure, and it works even if the user
-refuses push permission.
+- Passwords hashed with argon2id. Sessions are opaque random ids in a `Session` row, delivered as an
+  `httpOnly`, `sameSite=lax`, `secure`-in-production cookie. No JWTs — logout is a row delete, and
+  logging out everywhere deletes every row for the user.
+- Email verification is mandatory before login succeeds, except that `AUTO_VERIFY_EMAIL` (on by
+  default in development) skips it and verifies an existing unverified account on next login. The
+  server **refuses to boot** with that enabled in production.
+- In development, verification and reset links are printed to the server console — no SMTP, no
+  Mailpit. Production goes through one `sendMail()` behind `MAIL_TRANSPORT`.
+- Login, register and reset-request are rate-limited; nothing else is, because a household app has no
+  reason to throttle its own members browsing task lists.
+- Avatars are uploaded files served from `/uploads/`. `avatarPath` being null is the normal case, so
+  the initials avatar is the default path rather than an error state.
 
-**Web Push (tab closed).** Service Worker + VAPID. Required for anything time-based — a deadline
-reminder that only fires while the app is open is worthless.
+### Workspaces and membership
+
+Ordinary CRUD resources. Create, rename, delete (owner-only). A user may belong to several, and
+belonging to **none** is a normal state — the UI shows a create prompt. There is no auto-creation on
+login.
+
+`POST /api/workspaces/:id/members` takes an email and requires that the account already exist; an
+unknown address returns a 400 worded so it is not an account-existence oracle. Removing a member also
+removes their assignments in that workspace.
+
+### Floors, rooms, and the house view
+
+`/w/:id/house` is the floor plan and the only place floors and rooms are edited. Each floor carries
+an emoji, a name, a colour and a sort order; each room an emoji, a name and a sort order. Room badges
+show open task counts (excluding soft-deleted tasks) and staleness — "nothing done in 12 days" —
+which is what makes the spatial view answer "what needs attention?".
+
+### Tasks
+
+Name, description, category (`urgent | special | normal`), status (`todo | done`), optional due date,
+optional recurrence, zero or more rooms, zero or more assignees. Pending order is
+urgent → special → normal, then most recently updated, done in SQL via `categoryRank`.
+
+Every control on a card saves immediately — no Save button, no dirty state — through an optimistic
+mutation with rollback. Card state lives in React keyed by task id.
+
+### Assignees and filtering
+
+Assignment is its own endpoint rather than a generic field update, so it can be notified on and
+recorded with who assigned whom. The task list filters by room, floor, search and assignee
+(*Anyone* · *Mine* · *Unassigned* · specific members), all combinable, all in the URL query string so
+a filtered view is linkable and survives reload.
+
+### Recurrence
+
+`recurrenceEvery` + `recurrenceUnit` (`day | week | month`); null means one-off. On completion, a
+recurring task's next due date is computed and it returns to `todo`. `recurrenceAnchor` picks where
+from:
+
+- **`completion`** (the default) — "every 2 weeks from when I actually did it". Late completions push
+  the schedule out; you never owe a backlog of missed cycles.
+- **`dueDate`** — "every other Sunday". The cadence holds regardless of when it was done, so it keeps
+  stepping until the result is in the future; a task completed five weeks late does not come back
+  already overdue.
+
+Both paths, plus the DST and short-month cases, are covered in `src/test/recurrence.test.ts`.
+`POST /tasks/:id/reopen` is the manual escape hatch.
+
+### The completion log
+
+One append-only `TaskCompletion` row per completion — task, who, when. Three columns that unlock
+recurrence ("when was this last done"), the fairness tally ("who did what"), room staleness ("nothing
+here in 12 days") and notification history. Cards show "last done 3 days ago" from it.
+
+### Fairness and rotation
+
+`Task.rotateAssignees`: on completion of a recurring task, advance to the next person in the rotation
+instead of keeping the current assignee. Alongside it, a per-workspace tally of completions per
+person over the last week or month, evaluated in the workspace timezone.
+
+Deliberately a plain count: **no points, no streaks, no badges.** Gamifying chores between people who
+live together tends to curdle; an honest tally provides the accountability without keeping score.
+
+### Live updates
+
+`GET /api/events` holds one long-lived response per client. The hub in `events/hub.ts` is a map of
+workspaceId → subscribers, so publishing fans out to that workspace only.
+
+Event types are `task.created|updated|deleted|assigned|unassigned`, `floor.*`, `room.*`,
+`member.added|removed`, and `notification`. Each envelope carries `id`, `type`, `workspaceId`,
+`actorId`, `at` and the changed entity — so `useEventStream` writes it straight into the query cache
+by id, and a client can skip echoing back its own change, which is what keeps optimistic updates from
+flickering. `EventSource` reconnects on its own; on reconnect the current view refetches once to
+close the gap. A comment line every 25s keeps intermediaries from dropping the connection.
+
+### Notifications
+
+Two paths. **In-app** events arrive over the same SSE channel and surface as a toast plus an unread
+badge, so they work even if the user refuses push. **Web Push** covers the tab being closed, which is
+the only way a deadline reminder is worth anything.
 
 | Event | Trigger | Recipients |
 |---|---|---|
@@ -247,507 +364,113 @@ reminder that only fires while the app is open is worthless.
 | `overdue` | `dueDate` passes, task not done | assignees, or all members if unassigned |
 | `completed_by_other` | a task you're assigned to is completed by someone else | the other assignees |
 
-Requirements:
-
-- Permission is requested **contextually** — when the user first enables notifications in settings.
+- Permission is requested **contextually**, when the user first enables notifications in settings.
   Never on page load.
-- Per-user preferences (`NotifyPreference`): master switch, per-event toggles, `due_soon` lead time,
-  quiet hours. Quiet hours suppress push, not the in-app feed.
-- Time-based events come from a single scheduler tick — a `setInterval` in the server process, every
-  few minutes. No broker, no worker, no cron container.
-- **Delivery must be idempotent.** Write a `NotifyLog` row per (user, task, kind) and check it before
-  sending, or the scheduler re-sends the same reminder on every tick. This is the single most likely
-  bug in the whole feature.
-- Every notification deep-links to the task. The Service Worker click handler focuses an existing tab
-  if one is open rather than opening a new one.
-- Expired/rejected push subscriptions (410/404 from the push service) are deleted on the spot.
-- Notifications are strictly additive. If push is denied, unsupported, or broken, the app behaves
-  exactly as it would without it.
+- `NotifyPreference` per user: master switch, per-event toggles, `due_soon` lead time, quiet hours.
+  Quiet hours suppress push, not the in-app feed.
+- Time-based events come from one scheduler tick (`SCHEDULER_INTERVAL_MS`, default two minutes),
+  which also prunes expired sessions. The scan is bounded by the largest configurable lead time.
+- Expired or rejected push subscriptions (410/404 from the push service) are deleted on the spot.
+- Notifications are strictly additive. If push is denied, unsupported, or the server has no VAPID
+  keys, the app behaves exactly as it would without it, and settings says so.
 
-### 4.4 Live updates — replacing the polling ping
+### The dashboard
 
-You remembered this correctly: the legacy app polls every 10 seconds for `max(modified_date)` across
-the tasks in view, and if that value moved it refetches the full pending list *and* the full completed
-list, then hand-diffs the DOM card by card against timestamps stashed in hidden `display:none` spans.
-About six requests a minute per open tab, plus an extra round trip on every write.
-
-It works, and the flash-on-change animation is genuinely nice — keep that. But it can only detect
-*that* something changed, never *what*, so every change costs two full list fetches; two edits inside
-one interval collapse into one; and it can't see a change that doesn't raise the maximum timestamp.
-
-**Replacement: Server-Sent Events.** `GET /api/events` holds one long-lived response per client.
-The server pushes `task.created` · `task.updated` · `task.deleted` · `task.assigned` ·
-`floor.*` · `room.*`, each carrying the changed entity.
-
-- One SSE hub in `apps/server/src/events/`: a map of workspaceId → set of subscribers. Publishing
-  fans out to that workspace only.
-- Events carry the acting user's id so a client can skip echoing back its own change.
-- On the client, one `useEventStream` hook writes incoming entities straight into the TanStack Query
-  cache. `EventSource` reconnects on its own; on reconnect, refetch the current view once to close
-  any gap.
-- Send a periodic comment line as a keepalive so intermediaries don't drop the connection.
-- SSE is one-directional and rides plain HTTP — all writes stay ordinary `POST`/`PATCH` requests.
-  WebSockets would work but buy nothing here, since nothing needs a client→server stream.
-
-Two things change regardless of transport, and they're the real win:
-
-- **Reconciliation stops being manual.** Tasks live in client state keyed by id. The entire
-  diff-the-DOM-against-hidden-spans machinery — the largest and worst part of the legacy frontend —
-  simply does not exist.
-- **Edits are optimistic with rollback**, instead of writing, waiting 200ms, and hoping the next poll
-  agrees.
-
-## 5. Product additions
-
-These came out of reviewing the legacy app. §5.1 and §5.2 are the ones that matter.
-
-### 5.1 The completion log (do this early)
-
-`TaskCompletion` — one append-only row per completion: task, who, when. It is three columns and it
-unlocks four separate features:
-
-- **Recurrence** needs to know when a task was last done.
-- **Fairness stats** (§5.3) need to know who did what.
-- **Room staleness** (§5.4) needs "nothing here has been done in 12 days".
-- **Notification idempotency** benefits from the same history.
-
-The legacy app had a single `completed_date` that was overwritten on every completion and never
-cleared when a recurring task was reset — so it both destroyed history and reported completions that
-no longer held. Add this table with the first schema, not later; retrofitting history you never
-recorded is impossible.
-
-`Task.status` becomes derived-ish: a task is done if it has a completion newer than its current cycle
-start. Keep the stored `status` column as a fast path, but the log is the truth.
-
-### 5.2 Real recurrence
-
-**This is the biggest functional gap in the legacy app — bigger than notifications.** "Vacuum every
-two weeks" is the central chore use case, and today "recurring" only means a human can press a button
-to reset it.
-
-- `recurrenceEvery` + `recurrenceUnit` (`day | week | month`) on Task. Null means one-off.
-- On completion, a recurring task's next due date is computed from the completion and the task returns
-  to `todo`. Decide (§6) whether the next date anchors to the completion or to the previous due date —
-  "every 2 weeks from when I actually did it" versus "every other Sunday" are both legitimate, and
-  they diverge as soon as someone is late.
-- The card shows "last done 3 days ago" from the completion log — far more useful than the legacy
-  "modified 3 days ago".
-- Keep manual reset-to-todo as an escape hatch.
-
-### 5.3 Fairness and rotation
-
-With assignees plus recurrence plus the completion log, this falls out almost free, and it's the
-feature people would actually tell their flatmates about. Shared houses don't argue about *what* needs
-doing — they argue about *who's been doing it*.
-
-- `Task.rotateAssignees`: on completion of a recurring task, advance the assignee to the next person
-  in the rotation instead of keeping them.
-- A per-workspace tally: completions per person over the last week/month, from the completion log. One
-  screen, no new schema.
-- **Skip points, streaks, and badges.** Gamifying chores between people who live together tends to
-  curdle. The honest tally provides the accountability without keeping score.
-
-### 5.4 Room staleness
-
-Room task-count badges already exist. With the completion log you can also surface *how long a room
-has gone untouched* — "bathroom: nothing done in 12 days". This fits the floor-plan metaphor far
-better than a list does and makes the home view answer the actual question, "what needs attention?"
-
-### 5.5 Mobile-first PWA
-
-In practice this app gets used standing in the kitchen with a phone. The rewrite is the moment to make
-phone the primary target rather than a media query afterthought: large tap targets, thumb-reachable
-primary actions, no hover-dependent affordances. A Service Worker is already going in for push, so
-installability and an app icon are nearly free — and they make the notifications feel native.
-
-### 5.6 Keep the visual identity
-
-The spatial model is what makes this app different from every flat to-do list, and the emoji +
-per-floor-colour language is its identity. The default gravity of any component library is to flatten
-it into a generic board — resist that. In Tailwind the floor colour becomes a CSS custom property set
-once per floor subtree, so the glow/tint effects are one variable instead of the legacy app's dozens
-of inline gradients.
-
-### 5.7 The dashboard landing page
-
-> **ADDED 2026-07-27, at the user's request.** The landing route (`/w/:id`) is now a dashboard, and
-> the floor plan moved to `/w/:id/house` — which is also the only place floors and rooms are edited.
-
-The floor plan is a lovely picture of the *building*, but it never answered "what am I on the hook
-for?" — you had to open rooms one at a time to find out. The dashboard answers that in reading order:
+`/w/:id` is the landing page and answers "what am I on the hook for?" in reading order:
 
 1. **Yours** — pending tasks assigned to you, overdue first, then soonest deadline, then category.
-2. **Up for grabs** — pending tasks with no assignee, each offering a one-tap "I'll do it". Unassigned
-   remains a valid resting state (§4.1); claiming is an offer, never a demand.
+2. **Up for grabs** — pending unassigned tasks, each offering a one-tap "I'll do it". Claiming is an
+   offer, never a demand; unassigned remains a valid resting state.
 3. **The house at a glance** — overdue / due-today / open / done-this-week counts, the rooms that have
-   gone longest untouched (§5.4), who is carrying what, this week's tally (§5.3), and the floor list.
+   gone longest untouched, who is carrying what, this week's tally, and the floor list.
 
 One `status=todo` query feeds all of it, partitioned in the client: separate mine/unassigned/others
 requests would fetch the same rows and still not give the counts. "Due today" is evaluated in the
-workspace timezone (§6, question 3), not the browser's.
+workspace timezone, not the browser's.
 
-### 5.8 Light and dark
+### Theming and PWA
 
-> **ADDED 2026-07-27, at the user's request.** The legacy app was dark-only.
+`light | dark | system`, defaulting to `system`, persisted per device. `data-theme` is stamped on
+`<html>` by an inline script in `index.html` before first paint — otherwise a user who chose light
+gets a dark flash on every load — and owned by `lib/useTheme.ts` from mount onwards through a
+module-level store, so the header toggle and the Settings selector cannot disagree.
 
-Both themes are first-class. Every colour is a token, so components never know which theme is
-active: utilities read `var(--color-*)` and the light theme reassigns those variables under
-`:root[data-theme='light']`. A hardcoded hex or a `bg-black/30` in a component is a bug — it will look
-wrong in one theme.
+A service worker is already present for push, so installability and an app icon come nearly free;
+`public/manifest.webmanifest` and `public/icon.svg` complete it.
 
-The preference is `light | dark | system`, defaults to `system`, and persists per device. `data-theme`
-is stamped on `<html>` by an inline script in `index.html` before first paint (or a user who chose
-light gets a dark flash on every load) and owned by `lib/useTheme.ts` from mount onwards — a
-module-level store, not per-component state, so the header toggle and the Settings selector cannot
-disagree.
+---
 
-Chrome is inline SVG from one icon set (`components/Icon.tsx`): `currentColor`, `aria-hidden`, and
-never the only label on a control. Emoji stay for what a *user* chose — floor and room icons.
+## Decisions
 
-## 6. Open questions
+Settled, with the reasoning, so they don't get reopened by accident:
 
-Ask when you reach the step that depends on one. Do not assume.
+- **Start clean, no data migration.** No legacy id columns anywhere in the schema and no
+  export/import script. Existing households re-register. Revisiting this is a migration, not a
+  no-op — the schema reserves no space for legacy ids.
+- **Recurrence anchors to the completion by default**, with `dueDate` available per task, because
+  both behaviours are legitimate and the column is cheap.
+- **Timezone is per workspace**, so every member of a household agrees on what "today" means. Quiet
+  hours stay per-user, since those are about sleep.
+- **Full workspace CRUD with multi-workspace membership**, and belonging to none is a normal state.
+- **Membership by exact email, no invitations** — the interim behaviour. Emailed invite links with a
+  pending state would need an `Invite` table and a token flow; **this one is still open**, and it is
+  the obvious next thing if adding a housemate proves annoying in practice.
 
-1. **Existing production data.** There is a deployed Postgres with real households in it. Do we
-   migrate it into SQLite (a one-off export/import script, plus forced password resets for Google-only
-   accounts), or start clean? This changes whether the schema needs to accommodate legacy ids.
+---
 
-   > **ANSWERED (2026-07-27): start clean.** No legacy id columns anywhere in the schema, and no
-   > export/import script. Existing households re-register. If this is ever revisited, note that the
-   > schema has no space reserved for legacy ids — adding them later is a migration, not a no-op.
+## Commands
 
-2. **Recurrence anchoring** — next due date from the completion, or from the previous due date? (§5.2)
-
-   > **ANSWERED (2026-07-27): from the completion, by default.** Implemented as a per-task
-   > `recurrenceAnchor` (`completion | dueDate`) defaulting to `completion`, because both behaviours
-   > are legitimate and the column is cheap. `dueDate` mode keeps stepping until the result is in the
-   > future, so a task completed five weeks late does not come back already overdue. Both paths, plus
-   > the DST and short-month cases, are covered in `apps/server/src/test/recurrence.test.ts`.
-
-3. **Workspace timezone** — per workspace, or per user? Affects "due today", overdue, and quiet hours.
-
-   > **ANSWERED (2026-07-27): per workspace.** `Workspace.timezone`, so every member of a household
-   > agrees on what "today" means. Quiet hours stay per-user, since those are about sleep. Note that
-   > *overdue* turned out not to need a timezone at all — it is an instant comparison. The zone is
-   > load-bearing for "due today", quiet hours, the fairness window, and stepping a recurrence across
-   > a DST boundary.
-
-4. **Workspace lifecycle.** The legacy app auto-created a workspace on first login and offered no way
-   to create, rename, or delete one. Confirm the rewrite gets real workspace CRUD, and whether a user
-   can belong to several (the legacy model allowed it and the UI half-supported it).
-
-   > **ASSUMED, NOT CONFIRMED — please review.** Built as full CRUD with multi-workspace membership:
-   > create/rename/delete (delete is owner-only), a user may belong to several, and belonging to *none*
-   > is a normal state the UI handles with a create prompt rather than auto-creating one. There is no
-   > auto-creation on login at all. This seemed strongly implied by §4.1 and by problem 10, but it was
-   > not explicitly confirmed.
-
-5. **Invitations.** Legacy could only add an existing account by exact email. Do we want emailed
-   invite links with a pending state?
-
-   > **STILL OPEN — legacy behaviour shipped as the interim.** `POST /api/workspaces/:id/members`
-   > takes an email and requires that the account already exist; an unknown address is a 400 worded so
-   > it is not an account-existence oracle. The settings UI says as much. Emailed invite links with a
-   > pending state would need an `Invite` table and a token flow — not built.
-
-6. **Scope for v1 of the rewrite** — is it feature parity plus assignees, with recurrence and
-   notifications following? Or is recurrence in from the start? (§5.2 argues it's the highest-value
-   addition, and it's cheap once the completion log exists.)
-
-   > **RESOLVED BY THE HANDOFF ORDER: everything.** Steps 1–10 of the handoff already sequence
-   > recurrence at 8 and notifications at 9, so all of it is in. Recurrence was indeed cheap once
-   > `TaskCompletion` existed.
-
-## 7. Dev commands (rewrite)
-
-Native. No Docker.
+Native. No Docker in the dev loop.
 
 ```bash
 pnpm install
 pnpm db:migrate           # prisma migrate dev
-pnpm db:seed              # a plausible two-floor house with a few users
-pnpm db:studio            # prisma studio, for poking at data
+pnpm db:seed              # a plausible two-floor flat with three housemates
+pnpm db:studio            # prisma studio
+pnpm db:reset             # prisma migrate reset
 
 pnpm dev                  # server (tsx watch, :3001) + web (vite, :5173) together
                           # vite proxies /api -> :3001
 
-pnpm test                 # vitest
-pnpm check                # biome lint + format
-pnpm build                # tsc + vite build; server then serves web/dist in production
+pnpm test                 # vitest, against a separate data/test.db
+pnpm check                # biome lint + format  (check:fix to write)
+pnpm typecheck            # tsc --noEmit across all three packages
+pnpm build                # typecheck, then build the client
 
-./scripts/server.sh start # run api and/or web detached; also stop|restart|status|logs|health
+./scripts/server.sh start # run api and/or web detached; also stop|restart|status|logs
+EXPOSE=1 pnpm dev         # bind 0.0.0.0 and set APP_ORIGIN, to reach it from a phone
 ```
 
-One deviation from the line above, worth knowing: **`pnpm build` typechecks but does not emit server
-JavaScript.** `packages/shared` is consumed as TypeScript source so that it stays the single
-definition of every API shape; compiling the server separately would mean either building `shared`
-twice or emitting an import that cannot resolve at runtime. So the server runs through `tsx` in
-production too (esbuild transpile-on-load), and `tsc --noEmit` is the gate that fails the build.
+`pnpm build` **typechecks but does not emit server JavaScript.** `packages/shared` is consumed as
+TypeScript source so that it stays the single definition of every API shape; compiling the server
+separately would mean either building `shared` twice or emitting an import that cannot resolve at
+runtime. So the server runs through `tsx` in production too, and `tsc --noEmit` is the gate that
+fails the build.
 
-Setup notes:
+Environment is validated by Zod at boot in `apps/server/src/env.ts` — a typo fails immediately with a
+readable message. `.env.example` is committed and stays in sync. No `.env` is needed for development;
+every variable has a working default. Web Push in dev needs one `npx web-push generate-vapid-keys`
+into `.env`, and works on `localhost` without HTTPS.
 
-- Node 22+ and pnpm on the host. Nothing else needs installing — no database service, no mail server,
-  no Redis.
-- SQLite lives at `data/app.db` (gitignored). Deleting it and re-running `db:migrate && db:seed` is
-  the reset button.
-- Env vars validated by Zod at boot in `apps/server/src/env.ts`; `.env.example` is committed and stays
-  in sync.
-- Web Push in dev: generate keys once with `npx web-push generate-vapid-keys` into `.env`. Push works
-  on `localhost` without HTTPS.
-- Verification and password-reset links are printed to the server console in development.
-- The `Dockerfile` is a multi-stage build producing a single image (build web → build server → run
-  Fastify serving both, with `data/` as a volume). **Write it; do not build or run it.**
+SQLite lives at `data/app.db`. Deleting it and re-running `db:migrate && db:seed` is the reset button.
 
 ---
 
-# PART 2 — THE LEGACY DJANGO APP
+## Tests
 
-Reference material. This is the requirements baseline — what the rewrite must match, or deliberately
-change. When a behavioural question is genuinely ambiguous, the Django source on `main` is the
-tiebreaker.
+Vitest with Fastify's `.inject()`, so no listening socket and no port to collide with.
+`src/test/api.test.ts` covers the API surface and pins the authorization behaviour shut — the
+cross-workspace IDOR cases, floor-filter semantics, badge counts excluding soft-deleted tasks, enum
+and length validation. `src/test/recurrence.test.ts` covers both anchors, DST and short months.
+Notification idempotency is exercised by running the scheduler tick repeatedly and asserting nothing
+sends twice.
 
-## Legacy stack
+---
 
-Django 4.2 / Python 3.12, cookiecutter-django layout. PostgreSQL. django-allauth (email + Google
-OAuth). Server-rendered Django templates + Bootstrap 5.3 from CDN, dark theme only. Frontend is plain
-non-module JavaScript: `project.js` (webpack-bundled) and `tasks_partial.js` (a raw `<script src>`
-defining globals). emoji-mart from CDN. Live updates by polling. Redis provisioned in production and
-effectively unused. Docker Compose deploy behind Traefik + nginx, whitenoise for static.
+## Deployment
 
-Key files: `tracker/task/{models,views,urls}.py`, `tracker/users/adapters.py` (workspace
-auto-creation), `tracker/templates/partials/_tasks.html` (the task card template),
-`tracker/static/js/tasks_partial.js` (the 1300-line polling/DOM-diff engine),
-`config/settings/base.py`.
+`Dockerfile` is a multi-stage build producing a single image: build the client, install production
+dependencies, run one Fastify process serving both, with `data/` and `uploads/` as volumes.
 
-`manage.py` and `config/wsgi.py` append `tracker/` to `sys.path`, which is why `config/urls.py` can
-`include("task.urls")` and why models declare `app_label = "task"` explicitly.
-
-## Legacy domain model
-
-```
-User (email login, no username, optional avatar, default_workspace FK)
-  └── M2M workspaces
-Workspace (name, users M2M, created_by FK)
-  └── Floor (name, icon: emoji, color: hex, default #8A2BE2)
-        └── Room (name, icon: emoji)
-              └── M2M tasks
-Task (task_name, task_description, status, type, category,
-      due_date, creation_date, modified_date, completed_date, deleted_date,
-      rooms M2M)
-```
-
-- `status`: `to_do | updated | overdue | done` — only `to_do` and `done` are ever used.
-- `type`: `single | recurring` — "recurring" only means *resettable to to-do by hand*. No schedule.
-- `category`: `urgent | normal | special` — drives sort order and card styling only.
-- **No owner, no assignee, no attribution.** **No direct Task→Workspace link** (inferred via
-  `rooms → floor → workspace`). Tasks soft-delete; floors and rooms hard-delete with cascade.
-
-## Legacy functional spec
-
-### Accounts & onboarding
-
-- Sign up with email+password (mandatory verification) or Google OAuth. Email is the login field;
-  `name` is a free-text display name; avatar optional, imported from Google on first social login.
-- **On every login**, if the user has no `default_workspace`, one is created named
-  `"<email>'s Workspace"` with them as sole member. Login also writes `selected_workspace_id` and a
-  denormalised `sidebar_floors` snapshot into the session.
-- Profile page edits avatar, display name, and default workspace (limited to their workspaces).
-
-### Workspaces
-
-- A workspace is a household: name, creator, member users.
-- **Cannot be created, renamed, or deleted from the UI** — auto-creation on login is the only path.
-- `/task/workspaces/` lets a user pick the **current** workspace (session-scoped), pick the
-  **default** (persisted on the user), see who has access, and — if they're the creator — add a member
-  by email or remove one. The invitee must already have an account; there are no invitations.
-- Everything else is scoped to `request.session["selected_workspace_id"]`.
-
-### Floors & rooms (index page, `/`)
-
-- Floors as cards, three per row, each tinted with its colour (gradient header, glow accents).
-- Per floor: emoji, name (links to floor view), inline edit form (name, colour picker, emoji picker),
-  delete with `confirm()`.
-- Per room: emoji, name (links to room view), badge with count of not-done tasks, inline edit form
-  (name, emoji), delete.
-- "+ Floor" / "+ Room" reveal inline forms; emoji fields use emoji-mart in a centred modal. All
-  mutations are form POSTs that redirect back to the index.
-- Empty workspace shows a prompt and a pulsing "+ Floor" button; if the user has several workspaces it
-  also lists them and links to the switcher.
-
-### Task list views
-
-Three views share one partial and one script:
-
-| View | URL | Which tasks |
-|---|---|---|
-| Room | `/task/room/<id>` | tasks assigned to that room |
-| Floor | `/task/floor/<id>` | tasks assigned to **every** room on that floor |
-| Search | `/task/search_tasks/<term>` | name or description contains the term, current workspace |
-
-Each renders **Pending** (top) and **Completed** (bottom), with skeleton cards during the first fetch.
-No pending tasks → a "Congratulations!" banner. Nothing completed → "No tasks completed yet".
-
-Pending order: `urgent` → `special` → `normal`, then most-recently-modified first.
-Completed set: all done *recurring* tasks, plus the 20 most recently modified done *one-time* tasks.
-
-### Task cards
-
-Rendered client-side from a `<template>`. Collapsed: name (click-to-edit `contenteditable`),
-description (click-to-edit), green ✓ mark-done (pending only; confirms unless recurring), blue ↻
-mark-to-do (done + recurring only), relative due chip ("3 days", "2 hours ago") with "late" styling
-when overdue, ↻ badge if recurring, ✓ badge if done, and category styling (urgent/special get a
-coloured glow and printed label).
-
-Expanded: last-modified relative time, type dropdown, category dropdown, deadline picker + eraser to
-clear, assigned rooms each with a remove ✕, a "+" opening a room-attach modal, and Delete.
-
-**Every control saves immediately** — no Save button, no dirty state. Each edit is one
-`POST /task/update_task/` with `{task_id, field_name, value}`. Marking done sets `completed_date` and
-moves the card to Completed; resetting a recurring task moves it back but does **not** clear
-`completed_date`.
-
-### Creating a task
-
-Sidebar "New task" opens a modal: name (required, ≤128), description (**required in the form** though
-the model allows blank, ≤512), optional deadline, regularity, category, and a room picker. The picker
-is an accordion of floors; ticking a floor ticks all its rooms and vice versa, with an indeterminate
-state when partial. Opened from a room or floor view, the relevant boxes are pre-checked. No rooms
-selected → inline error, no submit. Submit is AJAX; the modal closes and the task appears on the next
-poll.
-
-### Sidebar
-
-Avatar + display name with a dropdown (Home, Workspaces, Profile, Sign out); "New task" button; the
-floor/room tree with each floor glowing in its own colour, per-floor collapse state in a cookie, and
-the active floor/room highlighted. Collapsible; below 630px it becomes a full-screen overlay and locks
-body scroll. **The tree reads from `session["sidebar_floors"]`** — a snapshot written at login and
-refreshed by the index view and workspace switch, not queried live.
-
-### Live updates
-
-No push. Two loops in `tasks_partial.js`: every 10s `GET /task/fetch_latest_task_timestamp` returns
-`max(modified_date)` in scope; if it changed, the client refetches pending and completed as two
-separate requests. Reconciliation is manual DOM diffing — each card stores the server's
-`modified_date` in a hidden `.debug` span; if it differs the fields are rewritten in place and the card
-flashes. New tasks are appended; tasks absent from the response are removed. Every local edit also
-triggers an immediate poll. Baseline ~6 requests/minute per tab.
-
-### Other
-
-`/about/`. Contextual help buttons opening Bootstrap accordions with screenshots from
-`tracker/static/images/`. Django admin at `/admin/` with all four task models registered.
-
-## Legacy HTTP surface
-
-All require login; all under `/task/` except the index.
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/` | workspace overview (index) |
-| GET | `/task/floor/<id>`, `/task/room/<id>`, `/task/search_tasks/<term>` | task views (HTML) |
-| GET | `/task/workspaces/` | workspace management |
-| GET | `/task/fetch_tasks/?floor_id=\|room_id=\|search=&completed=` | task list JSON |
-| GET | `/task/fetch_latest_task_timestamp/?…` | change detection |
-| POST | `/task/tasks/create/` | create task (form-encoded) |
-| POST | `/task/update_task/` | single-field update (JSON) |
-| POST | `/task/delete_task/` | soft delete (JSON) |
-| POST | `/task/add_floor/`, `/task/edit_floor/<id>`, `/task/remove_floor/<id>/` | floor CRUD |
-| POST | `/task/add_room/`, `/task/edit_room/<id>`, `/task/remove_room/<id>` | room CRUD |
-| POST | `/task/set_workspace/`, `/task/set_default_workspace/` | workspace selection |
-| POST | `/task/add_user_to_workspace/`, `/task/remove_user_from_workspace/` | membership |
-
-`update_task` accepts `field_name` ∈ {`task_name`, `task_description`, `status`, `type`, `category`,
-`due_date`, `description`, `room_remove`, `room_add`}. `description` isn't a model field and silently
-does nothing.
-
-## Legacy known problems
-
-Kept because each one is a trap the rewrite must not reproduce. Ordered roughly by severity.
-
-### Security / authorization
-
-1. **IDOR on task creation** — `Room.objects.get(id=room_id)` with no ownership check, so a crafted
-   `roomIDs` list creates tasks in anyone's rooms (`views.py:464`).
-2. **IDOR on `room_add`** — same in `update_task`; a task can be attached to rooms in another
-   workspace (`views.py:531`).
-3. **`room()` / `floor()` views don't check ownership** — any logged-in user can load any room or
-   floor page and see its name and emoji. Task data itself is scoped, so this leaks metadata only.
-4. **`task_belongs_to_workspace` only inspects the first room** and raises `IndexError` on a task with
-   zero rooms (`views.py:704`), which is reachable by removing rooms one at a time.
-5. **Membership endpoints ignore which workspace** — `Workspace.objects.get(created_by=request.user)`
-   raises `MultipleObjectsReturned` for anyone who created two, and 500s on an unknown email.
-6. **No enum validation** in `update_task`; `status`/`type`/`category` are `setattr`'d from the request
-   body, and length limits aren't enforced (Django doesn't validate on `save()`).
-7. `write_to_log()` appends to `ivan_log.txt` in the process CWD on every update and every search —
-   debug logging left in deployed code (`views.py:713`).
-
-### Correctness / data integrity
-
-8. **Floor view means "in *all* rooms on this floor"**, via a `.filter()` per room in a loop
-   (`views.py:222`). Add a room later and existing floor-wide tasks silently vanish. The rewrite
-   should use union-of-rooms, which is what users expect.
-9. **Deleting a floor or room hard-cascades**, dropping M2M rows; tasks only in that room become
-   invisible forever and crash the workspace check.
-10. **`index` assumes a valid workspace in the session** — raises on a fresh session, a cleared
-    session, or a workspace the user was removed from (`views.py:40`). Same in `wokspaces_view`
-    (whose name is also misspelled).
-11. **Search hardcodes `http://`** and always appends `:` + port (`project.js:27`), so on the HTTPS
-    production site search downgrades the scheme and builds a malformed host.
-12. **Room badge counts soft-deleted tasks** — `count_not_done` excludes `status="done"` but not
-    `deleted_date`.
-13. **Search doesn't exclude soft-deleted tasks server-side**; the client hides them on first render
-    but the reconciliation path doesn't, so they linger.
-14. `completed_date` is never cleared when a recurring task is reset — it reports a completion that no
-    longer holds.
-15. Recurring tasks carry no history; resetting one destroys the previous completion.
-16. Due dates are naive midnight coerced to UTC, and "overdue" is decided in the browser by checking
-    whether a formatted string contains `"ago"` (`tasks_partial.js:279`).
-17. `sidebar_floors` in the session is a stale denormalised copy, and the login adapter's version omits
-    room icons — so the sidebar renders differently right after login than after a workspace switch.
-    The query is duplicated in `adapters.py` and `views.set_sidebar_floors`.
-18. Marking done moves the card optimistically with a `setTimeout(200)` racing the server round-trip.
-
-### Architecture
-
-19. **State lives in the DOM** — hidden `.debug` spans hold server timestamps, diffed as strings to
-    decide what to re-render (`tasks_partial.js:99`). The single biggest reason the frontend resists
-    change.
-20. `tasks_partial.js` is 1300 lines of globals, with `has-event-listener="true"` attributes as a
-    hand-rolled guard against double-binding.
-21. `updateTasksOnPage` repeats a near-identical ~25-line block three times, once per category.
-22. No API layer — hand-built dicts, no serializers, no schema. `rooms` is an object keyed by id, and
-    two call sites render its value as if it were a string rather than `{name, icon}`.
-23. CSRF tokens stamped into dozens of individual DOM attributes.
-24. Presentation scattered across four CSS files, in-template `<style>` blocks, and hundreds of inline
-    `style=` attributes with hardcoded colours.
-25. Bootstrap and emoji-mart from CDN while everything else is webpacked — two build stories.
-26. **Zero tests for the app.** `tracker/task/tests.py` is the empty stub; only cookiecutter's `users`
-    tests exist, so CI passes while covering nothing.
-27. `task_modal.js` is 0 bytes; `vendors.js` is 2 lines.
-28. Redis provisioned in production, unused.
-29. Typo'd setting: `CIALACCOUNT_AUTO_SIGNUP = False` never takes effect
-    (`config/settings/base.py:286`).
-30. `sys.path` manipulation plus manual `app_label` is a non-standard layout that confuses tooling not
-    run through `manage.py`.
-
-### Product gaps (all addressed in Part 1)
-
-31. No workspace create/rename/delete. 32. No invitations. 33. No assignment or attribution.
-34. No true recurrence. 35. No notifications despite due dates existing. 36. No filtering or sorting
-controls. 37. Completed list capped at 20 with no history view. 38. No bulk operations, no undo.
-39. Accessibility not considered — `contenteditable` as form fields, `confirm()` dialogs, colour-only
-status signalling, emoji as meaningful content without labels.
-
-## Legacy dev commands
-
-For reference only; the rewrite runs natively per §7.
-
-```bash
-./run_dev.sh                                                   # docker compose -f local.yml up
-docker compose -f local.yml run --rm django python manage.py migrate
-docker compose -f local.yml run django pytest
-./deploy_prod.sh [--rebuild]                                   # production.yml
-```
-
-`run_dev.sh` / `deploy_prod.sh` read Google OAuth credentials from `./api_credentials/` (not in the
-repo). Environment config in `.envs/.local/` and `.envs/.production/`.
+**It has never been built or run.** It was authored as a reviewable artifact rather than part of the
+dev loop, so treat its versions and paths as unverified until someone actually builds it.

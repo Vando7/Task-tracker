@@ -3,8 +3,8 @@
  *
  * Deliberately plain JavaScript in `public/` rather than a TypeScript entry that
  * needs its own build config. The legacy app had two build stories running side
- * by side — webpack for some assets, CDN script tags for others (Part 2, problem
- * 25) — and adding a second bundler target here would recreate that for no gain.
+ * by side — webpack for some assets, CDN script tags for others — and adding a
+ * second bundler target here would recreate that for no gain.
  *
  * There is no offline caching. This app is useless without the server, so a
  * stale-cache story would only ever show wrong chore data.
@@ -52,7 +52,7 @@ self.addEventListener('notificationclick', (event) => {
         includeUncontrolled: true,
       })
 
-      // Focus an existing tab rather than opening a duplicate (section 4.3).
+      // Focus an existing tab rather than opening a duplicate.
       for (const client of clientList) {
         if ('focus' in client) {
           await client.focus()

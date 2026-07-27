@@ -10,7 +10,7 @@ export const fairnessWindowSchema = z.enum(FAIRNESS_WINDOWS)
  *
  * Deliberately a plain tally: no points, no streaks, no badges. Gamifying
  * chores between people who live together tends to curdle; an honest count
- * provides the accountability without keeping score (section 5.3).
+ * provides the accountability without keeping score.
  */
 export const fairnessRowSchema = z.object({
   user: publicUserSchema,
@@ -33,7 +33,7 @@ export const fairnessQuerySchema = z.object({
 export type FairnessQuery = z.infer<typeof fairnessQuerySchema>
 
 /**
- * "Bathroom: nothing done in 12 days" (section 5.4). Fits the floor-plan
+ * "Bathroom: nothing done in 12 days". Fits the floor-plan
  * metaphor far better than a list, and answers the actual question the home
  * view is asked: what needs attention?
  */

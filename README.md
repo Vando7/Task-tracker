@@ -3,8 +3,9 @@
 Household chores, organised by the physical layout of a home: **workspace (household) → floors →
 rooms**, shared between the people living there.
 
-This branch is the TypeScript rewrite. The Django implementation it replaces lives on `main`, and
-`CLAUDE.md` holds the full rewrite brief plus a behavioural spec of the legacy app.
+This branch is the TypeScript rewrite; the Django implementation it replaces lives on `main`.
+`CLAUDE.md` is the reference — architecture, data model, API surface, and the invariants worth
+knowing before changing anything.
 
 ---
 
@@ -132,7 +133,7 @@ better-sqlite3 driver adapter, React 19 + Vite, TanStack Query, Tailwind v4, han
 with argon2id, Server-Sent Events, Web Push, Vitest, Biome.
 
 Deliberately absent: Next.js, Postgres, Redis, any message broker or worker process, an auth library,
-GraphQL and tRPC. `CLAUDE.md` §1 explains each.
+GraphQL and tRPC. `CLAUDE.md` explains each.
 
 The notification scheduler is a single `setInterval` in the API process. That is safe because delivery
 is idempotent — see below.
@@ -141,8 +142,7 @@ is idempotent — see below.
 
 ## Things worth knowing before you change something
 
-Each of these is load-bearing, and most exist because the legacy app got it wrong (`CLAUDE.md` Part 2
-catalogues the originals).
+Each of these is load-bearing, and most exist because the legacy app got it wrong.
 
 - **`Task.workspaceId` is a direct foreign key.** Authorization is one indexed lookup,
   `requireMember(request, workspaceId)`, and every scoped query filters by it — so there is no
@@ -200,5 +200,5 @@ notification idempotency across repeated ticks.
 `Dockerfile` builds a single image: build the client, install production dependencies, run one
 Fastify process serving both, with `data/` and `uploads/` as volumes.
 
-**It has never been built or run** — per the handoff in `CLAUDE.md` it was authored as a reviewable
-artifact, not part of the dev loop. Treat its versions and paths as unverified.
+**It has never been built or run** — it was authored as a reviewable artifact, not part of the dev
+loop. Treat its versions and paths as unverified.

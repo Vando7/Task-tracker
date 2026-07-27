@@ -6,8 +6,7 @@
  * - Icons are `currentColor` and `aria-hidden`. They inherit the colour of the
  *   control they sit in, so they theme themselves, and they are never the only
  *   label — every icon-only button carries an `aria-label`. The legacy app used
- *   bare emoji as meaningful content with nothing for a screen reader to read
- *   (Part 2, gap 39).
+ *   bare emoji as meaningful content with nothing for a screen reader to read.
  * - Emoji are still used for the things the *user* chose — floor and room icons.
  *   Those are content. These are chrome.
  */

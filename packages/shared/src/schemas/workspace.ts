@@ -10,9 +10,9 @@ export const workspaceNameSchema = z.string().trim().min(1).max(LIMITS.workspace
 /**
  * A workspace is a household.
  *
- * `timezone` lives here rather than on the user (CLAUDE.md section 6, question
- * 3): one household, one notion of "today", so every member sees the same
- * overdue state. Quiet hours stay per-user, since those are about sleep.
+ * `timezone` lives here rather than on the user: one household, one notion of
+ * "today", so every member sees the same overdue state. Quiet hours stay
+ * per-user, since those are about sleep.
  */
 export const workspaceSchema = z.object({
   id: idSchema,
@@ -50,8 +50,8 @@ export type UpdateWorkspaceInput = z.infer<typeof updateWorkspaceSchema>
 
 /**
  * Add a member by email. The invitee must already have an account — emailed
- * invite links with a pending state are still an open question (section 6,
- * question 5), and this is the legacy behaviour in the meantime.
+ * invite links with a pending state are still an open question, and this is the
+ * legacy behaviour in the meantime.
  */
 export const addMemberSchema = z.object({
   email: emailSchema,

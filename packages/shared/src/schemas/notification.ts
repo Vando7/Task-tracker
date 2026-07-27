@@ -13,7 +13,7 @@ export const notifyPreferenceSchema = z.object({
   onOverdue: z.boolean(),
   onCompletedByOther: z.boolean(),
   dueSoonLeadHours: z.number().int().min(1).max(336),
-  /** Quiet hours suppress push, never the in-app feed (section 4.3). */
+  /** Quiet hours suppress push, never the in-app feed. */
   quietFrom: clockTimeSchema.nullable(),
   quietTo: clockTimeSchema.nullable(),
 })
@@ -49,8 +49,7 @@ export type PushSubscriptionInput = z.infer<typeof pushSubscriptionInputSchema>
 
 /**
  * Null when the server has no VAPID keys configured. The client must treat that
- * as "push unavailable" and carry on — notifications are strictly additive
- * (section 4.3).
+ * as "push unavailable" and carry on — notifications are strictly additive.
  */
 export const vapidPublicKeySchema = z.object({ publicKey: z.string().nullable() })
 export type VapidPublicKey = z.infer<typeof vapidPublicKeySchema>

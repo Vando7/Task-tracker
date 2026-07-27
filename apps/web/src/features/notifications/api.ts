@@ -76,7 +76,7 @@ export const pushSupported = (): boolean =>
  * Subscribe this browser to push.
  *
  * Permission is requested here — the moment the user turns notifications on in
- * settings — and never on page load (section 4.3). A refusal is a normal
+ * settings — and never on page load. A refusal is a normal
  * outcome: the in-app feed keeps working and nothing else changes.
  */
 export function useEnablePush() {

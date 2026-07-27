@@ -25,10 +25,9 @@ import { InlineText } from './InlineText'
  *
  * Every control saves immediately, as in the legacy app — no Save button, no
  * dirty state. What is different is that state lives in React keyed by task id,
- * not in hidden `display:none` spans that get diffed as strings
- * (Part 2, problem 19). And the edit affordances are real form controls rather
- * than `contenteditable`, which was never keyboard- or screen-reader-workable
- * (gap 39).
+ * not in hidden `display:none` spans that get diffed as strings. And the edit
+ * affordances are real form controls rather than `contenteditable`, which was
+ * never keyboard- or screen-reader-workable.
  *
  * The controls are icon buttons with `aria-label`s, so a card stays legible at
  * phone width without truncating the thing that actually matters — the name.
@@ -73,7 +72,7 @@ export function TaskCard({
   /**
    * When set, an unassigned task offers a one-tap "I'll do it" for this user.
    * Used by the dashboard's up-for-grabs list. Unassigned is still a valid
-   * resting state (section 4.1) — this is an offer, not a demand.
+   * resting state — this is an offer, not a demand.
    */
   claimUserId?: string
 }) {
@@ -362,7 +361,7 @@ export function TaskCard({
               {task.completionCount} completion{task.completionCount === 1 ? '' : 's'} logged
             </span>
 
-            {/* A real two-step control, not a native confirm() dialog (gap 39). */}
+            {/* A real two-step control, not a native confirm() dialog. */}
             {confirmingDelete ? (
               <span className="flex items-center gap-1.5 text-xs">
                 <span className="text-text-dim">Delete this task?</span>

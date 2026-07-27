@@ -15,9 +15,9 @@ import { WorkspacesPage } from './routes/WorkspacesPage'
 
 /**
  * Routing note: filters live in the URL query string, so a filtered view is
- * linkable and survives a reload (section 4.1). The legacy app kept the current
- * workspace in the *session*, which is why a cleared cookie or a revoked
- * membership crashed the index view (Part 2, problem 10).
+ * linkable and survives a reload. The legacy app kept the current workspace in
+ * the *session*, which is why a cleared cookie or a revoked membership crashed
+ * the index view.
  */
 export function App() {
   const { data: me, isPending, isError } = useMe()

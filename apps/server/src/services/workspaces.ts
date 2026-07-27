@@ -22,7 +22,7 @@ import { startOfWindow } from './time'
  *
  * The legacy app auto-created a workspace on *every* login and offered no way to
  * create, rename or delete one — so a user could not name their own household,
- * and a cleared session crashed the index view (Part 2, problem 10 and gap 31).
+ * and a cleared session crashed the index view.
  * Here workspaces are ordinary resources, a user may belong to several, and
  * belonging to none is a normal state the UI handles.
  */
@@ -116,7 +116,7 @@ export async function listMembers(ctx: MemberContext): Promise<Member[]> {
  * Scoped to the workspace in the URL. The legacy endpoints ignored which
  * workspace entirely and did `Workspace.objects.get(created_by=request.user)`,
  * which raised MultipleObjectsReturned for anyone who had created two, and 500'd
- * on an unknown email (Part 2, problem 5).
+ * on an unknown email.
  */
 export async function addMember(ctx: MemberContext, input: AddMemberInput): Promise<Member> {
   const user = await prisma.user.findUnique({
@@ -154,9 +154,8 @@ export async function addMember(ctx: MemberContext, input: AddMemberInput): Prom
 }
 
 /**
- * Removing a member also removes their assignments in that workspace
- * (section 4.1) — otherwise the task list would render an assignee who no longer
- * has access.
+ * Removing a member also removes their assignments in that workspace —
+ * otherwise the task list would render an assignee who no longer has access.
  */
 export async function removeMember(ctx: MemberContext, userId: string): Promise<void> {
   const membership = await prisma.member.findUnique({
@@ -194,8 +193,7 @@ export async function removeMember(ctx: MemberContext, userId: string): Promise<
  * completion log.
  *
  * Shared houses don't argue about *what* needs doing — they argue about who's
- * been doing it. Deliberately a plain tally: no points, no streaks, no badges
- * (section 5.3).
+ * been doing it. Deliberately a plain tally: no points, no streaks, no badges.
  */
 export async function getFairness(ctx: MemberContext, window: FairnessWindow): Promise<Fairness> {
   const workspace = await prisma.workspace.findUniqueOrThrow({

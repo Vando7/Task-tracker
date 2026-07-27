@@ -6,7 +6,7 @@
  * in time and no zone can change their order. The legacy app got this wrong in
  * two directions at once: it stored naive local midnight coerced to UTC, and
  * then decided overdue in the browser by testing whether a formatted string
- * contained the substring "ago" (Part 2, problem 16).
+ * contained the substring "ago".
  *
  * The timezone is load-bearing for the things that genuinely depend on a
  * calendar: "due today", quiet hours, the fairness window, and stepping a

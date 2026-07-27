@@ -3,9 +3,8 @@
  *
  * Note the deliberate choice to prefer 404 over 403 for anything belonging to
  * another workspace. The legacy `room()` and `floor()` views returned the real
- * page for any id, leaking names and emoji to any logged-in user (Part 2,
- * problem 3). Answering "not found" for something that exists but isn't yours
- * leaks nothing.
+ * page for any id, leaking names and emoji to any logged-in user. Answering
+ * "not found" for something that exists but isn't yours leaks nothing.
  */
 export class HttpError extends Error {
   readonly statusCode: number

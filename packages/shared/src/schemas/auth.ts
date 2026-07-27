@@ -4,8 +4,8 @@ import { emailSchema, passwordSchema } from './common'
 import { displayNameSchema } from './user'
 
 /**
- * Email + password only. No OAuth, no social login (section 4.2) — so no
- * provider credentials in shell scripts, which is how the legacy app did it.
+ * Email + password only. No OAuth, no social login — so no provider
+ * credentials in shell scripts, which is how the legacy app did it.
  */
 export const registerSchema = z.object({
   email: emailSchema,

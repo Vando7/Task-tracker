@@ -6,7 +6,7 @@ import { badRequest } from './errors'
  * field-level detail.
  *
  * Every request body, query string and path param goes through here. That is the
- * whole answer to Part 2 problem 6, where `update_task` `setattr`'d
+ * whole answer to the legacy `update_task`, which `setattr`'d
  * `status`/`type`/`category` straight from the request body with no enum check
  * and no length check, because Django does not validate on `save()`.
  */

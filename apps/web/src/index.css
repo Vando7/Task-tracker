@@ -8,12 +8,12 @@
  * 1. **Every colour is a token.** Utilities reference `var(--color-*)`, and the
  *    light theme simply reassigns those variables on `:root[data-theme='light']`.
  *    Nothing in the components knows which theme is active — the legacy app had
- *    hundreds of inline `style="background: #..."` attributes and four CSS files
- *    (Part 2, problem 24), which is exactly what makes a second theme impossible.
+ *    hundreds of inline `style="background: #..."` attributes and four CSS
+ *    files, which is exactly what makes a second theme impossible.
  *
  * 2. **A floor's colour is set once** as `--floor` on the floor's subtree, and
  *    every tint, glow and border below derives from it. That per-floor colour
- *    language is the app's visual identity (section 5.6).
+ *    language is the app's visual identity.
  */
 
 @theme {
@@ -146,7 +146,7 @@ input[type="color"] {
 }
 
 @utility tap {
-  /* 44px is the smallest reliably thumb-hittable target (section 5.5). */
+  /* 44px is the smallest reliably thumb-hittable target. */
   min-height: 2.75rem;
   min-width: 2.75rem;
 }

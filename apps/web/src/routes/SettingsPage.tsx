@@ -55,7 +55,7 @@ function Panel({
 }
 
 /**
- * The fairness tally (section 5.3).
+ * The fairness tally.
  *
  * Deliberately a plain count per person: no points, no streaks, no badges.
  * Gamifying chores between people who live together tends to curdle; an honest
@@ -206,7 +206,7 @@ function MembersPanel({ workspace, me }: { workspace: Workspace; me: Me }) {
 
 /**
  * Push permission is requested here, when the user turns it on — never on page
- * load (section 4.3). If the browser can't do push, or the server has no VAPID
+ * load. If the browser can't do push, or the server has no VAPID
  * keys, this degrades to the in-app feed and says so.
  */
 function NotificationsPanel() {

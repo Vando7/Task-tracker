@@ -13,7 +13,7 @@ import { isWithinQuietHours } from './time'
  * The one thing that has to be right here is idempotency. The scheduler runs
  * every couple of minutes and re-evaluates the same tasks each time, so without
  * a ledger every due-soon reminder would be re-sent on every tick — the single
- * most likely bug in the whole feature (section 4.3).
+ * most likely bug in the whole feature.
  *
  * The ledger is `NotifyLog`, unique on (user, task, kind, cycleKey). The cycle
  * key is what keeps the fix from introducing a second bug: keyed on only

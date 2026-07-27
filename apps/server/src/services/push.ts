@@ -6,7 +6,7 @@ import { env, pushEnabled } from '../env'
  * Web Push delivery.
  *
  * Required for anything time-based: a deadline reminder that only fires while
- * the tab is open is worthless (section 4.3). Entirely optional infrastructure
+ * the tab is open is worthless. Entirely optional infrastructure
  * though — with no VAPID keys configured, every function here becomes a no-op
  * and the app behaves exactly as it would without push.
  */

@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from 'react'
  *
  * A real `input`/`textarea` rather than `contenteditable`. The legacy app used
  * `contenteditable` as a form field, which gives you no label, no validation, no
- * maxlength, and an editing surface screen readers announce as a document region
- * (Part 2, gap 39). This keeps the same click-to-edit feel with an actual control
+ * maxlength, and an editing surface screen readers announce as a document
+ * region. This keeps the same click-to-edit feel with an actual control
  * underneath.
  */
 export function InlineText({

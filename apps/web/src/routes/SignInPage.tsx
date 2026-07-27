@@ -6,7 +6,7 @@ import { useLogin, useRegister } from '../features/session/api'
 import { ApiRequestError } from '../lib/api'
 
 /**
- * Email and password only. No Google button, no OAuth plumbing (section 4.2).
+ * Email and password only. No Google button, no OAuth plumbing.
  */
 export function SignInPage() {
   const [mode, setMode] = useState<'signin' | 'register'>('signin')

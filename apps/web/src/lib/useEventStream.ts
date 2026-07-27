@@ -9,7 +9,7 @@ import { keys } from './keys'
  * The legacy client polled `max(modified_date)` every 10 seconds, refetched both
  * full lists when it moved, then hand-diffed the DOM card by card against
  * timestamps stashed in hidden `display:none` spans — about 1300 lines, and the
- * single biggest reason that frontend resisted change (Part 2, problems 19-21).
+ * single biggest reason that frontend resisted change.
  *
  * Here each event carries the changed entity, so it is written straight into the
  * query cache by id. There is nothing to diff.

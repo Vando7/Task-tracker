@@ -7,7 +7,7 @@ import { z } from 'zod'
  *
  * A typo fails immediately with a readable message instead of surfacing as a
  * mystery at 3am. The legacy app had the opposite: a misspelled setting
- * (`CIALACCOUNT_AUTO_SIGNUP`) that silently never took effect (Part 2, 29).
+ * (`CIALACCOUNT_AUTO_SIGNUP`) that silently never took effect.
  */
 
 const srcDir = path.dirname(fileURLToPath(import.meta.url))

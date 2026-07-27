@@ -22,7 +22,7 @@ import { startOfDayInZone } from './time'
  * Both soft-delete. In the legacy app they hard-cascaded, which dropped the
  * task/room join rows: a task that lived only in the deleted room became
  * invisible forever, and then crashed the workspace check that inspected its
- * first room (Part 2, problems 4 and 9).
+ * first room.
  */
 
 const floorOrder = [{ sortOrder: 'asc' }, { createdAt: 'asc' }] as const
@@ -32,7 +32,7 @@ const roomOrder = [{ sortOrder: 'asc' }, { createdAt: 'asc' }] as const
  * Per-room open task counts and last-completion times, in two queries.
  *
  * `openTaskCount` excludes soft-deleted tasks. The legacy badge counted them, so
- * deleting a task inflated its room's badge permanently (Part 2, problem 12).
+ * deleting a task inflated its room's badge permanently.
  */
 async function roomStats(workspaceId: string): Promise<{
   open: Map<string, number>
@@ -108,7 +108,7 @@ export async function getLayout(ctx: MemberContext): Promise<Layout> {
   }
 }
 
-/** Section 5.4 — "bathroom: nothing done in 12 days". */
+/** Room staleness: "bathroom: nothing done in 12 days". */
 export async function getStaleness(ctx: MemberContext): Promise<Staleness> {
   const workspace = await prisma.workspace.findUniqueOrThrow({
     where: { id: ctx.workspaceId },

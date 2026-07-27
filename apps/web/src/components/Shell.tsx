@@ -17,9 +17,9 @@ import { ThemeToggle } from './ThemeToggle'
  * The tree is queried live. The legacy sidebar read a denormalised
  * `session["sidebar_floors"]` snapshot written at login, so it rendered
  * differently right after login than after a workspace switch, and the query was
- * duplicated in two places (Part 2, problem 17).
+ * duplicated in two places.
  *
- * Phone is the primary target (section 5.5): the nav is a full-screen overlay
+ * Phone is the primary target: the nav is a full-screen overlay
  * below `lg`, and the primary action also sits in a thumb-reachable floating
  * button rather than only at the top of a sidebar.
  */

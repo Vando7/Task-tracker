@@ -10,9 +10,9 @@ import {
 } from './helpers'
 
 /**
- * These tests are organised around CLAUDE.md Part 2 — each one pins a specific
- * catalogued bug shut. `tracker/task/tests.py` was an empty stub, so CI passed
- * while covering nothing (Part 2, problem 26).
+ * Each test here pins one specific behaviour shut — mostly the authorization and
+ * data-integrity mistakes made by the implementation this replaced, which shipped
+ * an empty test stub and so had CI passing while covering nothing.
  */
 
 describe('health and auth', () => {
@@ -117,7 +117,7 @@ describe('health and auth', () => {
 })
 
 describe('authorization: the legacy IDOR bugs', () => {
-  it("refuses to create a task in another workspace's room (Part 2, problem 1)", async () => {
+  it("refuses to create a task in another workspace's room", async () => {
     const app = await getApp()
     const attacker = await makeUser('attacker@example.com')
     const victim = await makeUser('victim@example.com')
@@ -137,7 +137,7 @@ describe('authorization: the legacy IDOR bugs', () => {
     expect(await prisma.task.count()).toBe(0)
   })
 
-  it("refuses to attach another workspace's room to a task (Part 2, problem 2)", async () => {
+  it("refuses to attach another workspace's room to a task", async () => {
     const app = await getApp()
     const attacker = await makeUser('attacker2@example.com')
     const victim = await makeUser('victim2@example.com')
@@ -162,7 +162,7 @@ describe('authorization: the legacy IDOR bugs', () => {
     expect(await prisma.taskRoom.count()).toBe(0)
   })
 
-  it("does not leak another workspace's floors or rooms (Part 2, problem 3)", async () => {
+  it("does not leak another workspace's floors or rooms", async () => {
     const app = await getApp()
     const outsider = await makeUser('outsider@example.com')
     const owner = await makeUser('owner@example.com')
@@ -189,7 +189,7 @@ describe('authorization: the legacy IDOR bugs', () => {
     expect(layout.statusCode).toBe(404)
   })
 
-  it('keeps a task with zero rooms reachable (Part 2, problem 4)', async () => {
+  it('keeps a task with zero rooms reachable', async () => {
     const app = await getApp()
     const user = await makeUser('zero@example.com')
     const workspace = await makeWorkspace(user.id)
@@ -221,7 +221,7 @@ describe('authorization: the legacy IDOR bugs', () => {
     expect(refetched.statusCode).toBe(200)
   })
 
-  it('validates enums and lengths instead of setattr-ing them (Part 2, problem 6)', async () => {
+  it('validates enums and lengths instead of setattr-ing them', async () => {
     const app = await getApp()
     const user = await makeUser('enum@example.com')
     const workspace = await makeWorkspace(user.id)
@@ -259,7 +259,7 @@ describe('authorization: the legacy IDOR bugs', () => {
 })
 
 describe('task listing', () => {
-  it('treats a floor filter as the union of its rooms (Part 2, problem 8)', async () => {
+  it('treats a floor filter as the union of its rooms', async () => {
     const app = await getApp()
     const user = await makeUser('floors@example.com')
     const workspace = await makeWorkspace(user.id)
@@ -297,7 +297,7 @@ describe('task listing', () => {
     expect(response.json().tasks).toHaveLength(1)
   })
 
-  it('excludes soft-deleted tasks from room badge counts (Part 2, problem 12)', async () => {
+  it('excludes soft-deleted tasks from room badge counts', async () => {
     const app = await getApp()
     const user = await makeUser('badge@example.com')
     const workspace = await makeWorkspace(user.id)
@@ -331,7 +331,7 @@ describe('task listing', () => {
     expect(room.openTaskCount).toBe(1)
   })
 
-  it('excludes soft-deleted tasks from search server-side (Part 2, problem 13)', async () => {
+  it('excludes soft-deleted tasks from search server-side', async () => {
     const app = await getApp()
     const user = await makeUser('search@example.com')
     const workspace = await makeWorkspace(user.id)

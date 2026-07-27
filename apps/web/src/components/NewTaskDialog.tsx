@@ -16,7 +16,7 @@ import { Icon, type IconName } from './Icon'
  * is allowed — a whole-flat chore like "book a plumber" belongs to the household,
  * not to a room.
  *
- * On a phone it is a bottom sheet, because that is where a thumb is (section 5.5).
+ * On a phone it is a bottom sheet, because that is where a thumb is.
  */
 export function NewTaskDialog({
   workspace,

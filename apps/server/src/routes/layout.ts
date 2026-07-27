@@ -30,8 +30,7 @@ import {
  * Floors and rooms are addressed by their own id rather than nested under the
  * workspace, so the workspace has to be looked up from the entity before
  * authorization. That lookup is the gate: the legacy `room()` and `floor()`
- * views skipped it entirely and rendered any id for any signed-in user
- * (Part 2, problem 3).
+ * views skipped it entirely and rendered any id for any signed-in user.
  */
 async function workspaceIdForFloor(floorId: string): Promise<string> {
   const floor = await prisma.floor.findFirst({

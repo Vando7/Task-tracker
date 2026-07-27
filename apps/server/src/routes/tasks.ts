@@ -87,7 +87,7 @@ export async function taskRoutes(app: FastifyInstance): Promise<void> {
     return completeTask(ctx, id, input.completedAt ?? new Date())
   })
 
-  /** The manual escape hatch from section 5.2. */
+  /** The manual escape hatch: put a task back to todo by hand. */
   app.post('/tasks/:id/reopen', async (request) => {
     const { id } = parseOrThrow(idParamSchema, request.params)
     const ctx = await requireMember(request, await workspaceIdForTask(id))
@@ -109,7 +109,7 @@ export async function taskRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * Assignment is its own endpoint, not a generic field update, so it can be
-   * notified on and recorded with who assigned whom (section 4.1).
+   * notified on and recorded with who assigned whom.
    */
   app.post('/tasks/:id/assignees', async (request) => {
     const { id } = parseOrThrow(idParamSchema, request.params)

@@ -15,12 +15,11 @@ export const roomSchema = z.object({
   sortOrder: z.number().int(),
   /**
    * Tasks here that are not done. Excludes soft-deleted tasks — the legacy
-   * badge counted them, so a deleted task inflated the count forever
-   * (Part 2, problem 12).
+   * badge counted them, so a deleted task inflated the count forever.
    */
   openTaskCount: z.number().int().nonnegative(),
   /**
-   * Room staleness (section 5.4): "bathroom: nothing done in 12 days". Null
+   * Room staleness: "bathroom: nothing done in 12 days". Null
    * means nothing has ever been completed in this room, which is a real state
    * and not an error.
    */
@@ -33,7 +32,7 @@ export const floorSchema = z.object({
   workspaceId: idSchema,
   name: floorNameSchema,
   icon: iconSchema,
-  /** Becomes a CSS custom property on the floor subtree, not 40 inline gradients (section 5.6). */
+  /** Becomes a CSS custom property on the floor subtree, not 40 inline gradients. */
   color: hexColorSchema,
   sortOrder: z.number().int(),
   rooms: z.array(roomSchema),
@@ -86,7 +85,7 @@ export type UpdateRoomInput = z.infer<typeof updateRoomSchema>
 
 /**
  * Bulk reorder: the ids in their new order. The legacy app had insertion order
- * and no way to change it (section 3).
+ * and no way to change it.
  */
 export const reorderSchema = z.object({ ids: z.array(idSchema).min(1).max(200) })
 export type ReorderInput = z.infer<typeof reorderSchema>

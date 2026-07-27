@@ -9,7 +9,7 @@ import { passwordResetEmail, sendMail, verificationEmail } from './mail'
 import { ensurePreference } from './notifications'
 
 /**
- * Email + password authentication. No OAuth, no social login (section 4.2).
+ * Email + password authentication. No OAuth, no social login.
  *
  * A recurring theme below: endpoints that take an email address must not become
  * account-existence oracles. Register and reset-request therefore behave
@@ -124,7 +124,7 @@ export async function login(email: string, password: string): Promise<{ userId: 
       return { userId: user.id }
     }
 
-    // Verification is mandatory before login succeeds (section 4.2). A distinct
+    // Verification is mandatory before login succeeds. A distinct
     // message here is a deliberate trade: it tells an attacker the address exists,
     // but a user who cannot work out why their correct password is rejected will
     // simply leave.

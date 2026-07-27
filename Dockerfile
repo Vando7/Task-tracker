@@ -3,8 +3,8 @@
 # Build the client, install production dependencies, run one Fastify process that
 # serves both the API and the built client. `data/` is a volume.
 #
-# NOTE: this file is written but never built or run during development, per the
-# CLAUDE.md handoff. It is a reviewable build artifact, not part of the dev loop.
+# NOTE: this file is written but never built or run during development. It is a
+# reviewable build artifact, not part of the dev loop.
 # Treat every version and path here as unverified until someone actually builds it.
 
 # Node 22 LTS to match `engines` in package.json. Debian slim rather than Alpine

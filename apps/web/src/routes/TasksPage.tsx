@@ -9,9 +9,9 @@ import { useTasks } from '../features/tasks/api'
  * Pending on top, Completed below — the legacy shape, kept.
  *
  * Every filter lives in the query string, so a filtered view is linkable and
- * survives a reload (section 4.1). A floor filter means *any* room on that floor;
- * the legacy floor view meant *every* room, so adding a room silently hid
- * existing floor-wide tasks (Part 2, problem 8).
+ * survives a reload. A floor filter means *any* room on that floor; the legacy
+ * floor view meant *every* room, so adding a room silently hid existing
+ * floor-wide tasks.
  */
 export function TasksPage({
   workspace,
@@ -203,7 +203,7 @@ export function TasksPage({
         </div>
 
         {/* The legacy completed list was capped at 20 with no way to look further
-            back (Part 2, gap 37). */}
+            back. */}
         {completed.data?.hasMore && (
           <p className="mt-2 text-xs text-text-dim">
             Showing the {completed.data.tasks.length} most recent of {completed.data.total}.

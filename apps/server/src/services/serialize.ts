@@ -23,7 +23,7 @@ import { isOverdue } from './time'
  * Prisma row -> API shape.
  *
  * Everything goes through the shared schema's `parse`, which is what the "the
- * server validates responses too" rule in CLAUDE.md section 2 buys: a field
+ * server validates responses too" rule buys: a field
  * renamed in the database cannot quietly reach the client as `undefined`, and
  * every timestamp is normalised to one ISO format in exactly one place.
  */

@@ -55,7 +55,7 @@ export function useCreateTask(workspaceId: string) {
  * Optimistic, with rollback.
  *
  * The legacy client wrote, waited 200ms on a `setTimeout`, and hoped the next
- * poll agreed (Part 2, problem 18). Here the cache updates immediately and is
+ * poll agreed. Here the cache updates immediately and is
  * restored on failure.
  */
 export function useUpdateTask(workspaceId: string) {

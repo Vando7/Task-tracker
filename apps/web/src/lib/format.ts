@@ -3,9 +3,8 @@
  *
  * `overdue` arrives from the server as a boolean, computed against the workspace
  * timezone. It is never re-derived here — the legacy client decided it by
- * checking whether a formatted string contained the substring "ago"
- * (Part 2, problem 16), which is how a task due in "2 hours ago minutes" ends up
- * mislabelled.
+ * checking whether a formatted string contained the substring "ago", which is
+ * how a task due in "2 hours ago minutes" ends up mislabelled.
  */
 
 const MINUTE = 60_000
@@ -62,8 +61,8 @@ export function stalenessShort(days: number | null): string {
  * Calendar day in the workspace timezone, as `YYYY-MM-DD`.
  *
  * "Due today" is a household-wide question, so it is answered in the household's
- * zone rather than the browser's — one home, one notion of today (section 6,
- * question 3). Mirrors `calendarDayInZone` on the server.
+ * zone rather than the browser's — one home, one notion of today. Mirrors
+ * `calendarDayInZone` on the server.
  */
 export function calendarDayIn(value: string | Date, timeZone: string): string {
   const date = typeof value === 'string' ? new Date(value) : value

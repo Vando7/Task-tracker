@@ -4,7 +4,7 @@ import { env, isProduction } from '../env'
  * The single seam through which all outbound email passes.
  *
  * In development, links are printed to the server console — there is no SMTP
- * server and no Mailpit container to run (section 4.2). Production points this
+ * server and no Mailpit container to run. Production points this
  * at one transactional provider, and because every caller goes through
  * `sendMail`, that is a one-function change.
  */

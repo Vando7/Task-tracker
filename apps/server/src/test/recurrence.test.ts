@@ -216,7 +216,7 @@ describe('completion log and recurrence over HTTP', () => {
 })
 
 describe('notification idempotency', () => {
-  it('sends a reminder once no matter how many ticks run (section 4.3)', async () => {
+  it('sends a reminder once no matter how many ticks run', async () => {
     const user = await makeUser('sched@example.com')
     const workspace = await makeWorkspace(user.id)
 

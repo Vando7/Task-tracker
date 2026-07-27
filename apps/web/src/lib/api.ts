@@ -5,7 +5,7 @@ import type { ApiError } from '@task-tracker/shared'
  *
  * Types come from `@task-tracker/shared`, so a route's response type is the same
  * object the server validated on the way out. There is no hand-built dict and no
- * second definition of any shape (Part 2, problem 22).
+ * second definition of any shape.
  */
 
 export class ApiRequestError extends Error {

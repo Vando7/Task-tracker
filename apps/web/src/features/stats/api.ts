@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { keys } from '../../lib/keys'
 
 /**
- * Everything derived from the completion log (section 5.1): who has been doing
+ * Everything derived from the completion log: who has been doing
  * what, and which rooms have gone untouched.
  *
  * Both the dashboard and the settings page read these, so the queries live here

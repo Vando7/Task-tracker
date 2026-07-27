@@ -64,7 +64,7 @@ async function main(): Promise<void> {
   ])
 
   // Everyone gets notification preferences, but `enabled` stays false: push
-  // permission is requested contextually, never on page load (section 4.3).
+  // permission is requested contextually, never on page load.
   await prisma.notifyPreference.createMany({
     data: [ivan, mira, deyan].map((user) => ({ userId: user.id, enabled: false })),
   })
@@ -108,7 +108,7 @@ async function main(): Promise<void> {
       workspaceId: workspace.id,
       name: 'Upstairs',
       icon: '🛏️',
-      // The legacy default purple, kept for continuity (section 5.6).
+      // The legacy default purple, kept for continuity.
       color: '#8A2BE2',
       sortOrder: 1,
       rooms: {

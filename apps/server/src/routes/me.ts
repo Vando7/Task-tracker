@@ -26,7 +26,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
    * `workspaces` may be empty, and that is a normal state. The legacy app
    * auto-created a workspace on every login specifically to avoid facing it,
    * which is why a cleared session or a revoked membership raised on the index
-   * view (Part 2, problem 10).
+   * view.
    */
   app.get('/', async (request) => {
     const user = requireUser(request)
@@ -64,9 +64,9 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
   })
 
   /**
-   * Avatar upload. The Google profile-picture import is gone with OAuth
-   * (section 4.2); a user without an upload gets an initials avatar on the
-   * client, so nobody ever looks broken.
+   * Avatar upload. The Google profile-picture import is gone with OAuth; a user
+   * without an upload gets an initials avatar on the client, so nobody ever
+   * looks broken.
    */
   app.post('/avatar', async (request) => {
     const user = requireVerifiedUser(request)

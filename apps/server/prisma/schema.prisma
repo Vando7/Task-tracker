@@ -2,7 +2,7 @@
 //
 // This is a deliberate redesign, not a port of the legacy Django models. The
 // comments record *why* each difference exists, because most of them are a fix
-// for a specific bug catalogued in CLAUDE.md Part 2.
+// for a specific bug in the implementation it replaced.
 
 generator client {
   provider = "prisma-client"
@@ -97,7 +97,7 @@ model Workspace {
 ///
 /// Replaces the legacy `created_by == you means you're the admin` hack, under
 /// which membership management broke entirely for anyone who created two
-/// workspaces (Part 2, problem 5).
+/// workspaces.
 model Member {
   workspaceId String
   userId      String
@@ -112,7 +112,7 @@ model Member {
 
 /// Soft-deleted. The legacy hard cascade dropped the task/room join rows, so a
 /// task that lived only in the deleted room became invisible forever and then
-/// crashed the workspace check (Part 2, problems 4 and 9).
+/// crashed the workspace check.
 model Floor {
   id          String    @id @default(uuid(7))
   workspaceId String
@@ -156,8 +156,8 @@ model Task {
   id String @id @default(uuid(7))
 
   /// A direct foreign key. The legacy app inferred a task's workspace through
-  /// `rooms -> floor -> workspace`, and nearly every authorization bug in
-  /// Part 2 is a symptom of that. Every permission check gets simpler here.
+  /// `rooms -> floor -> workspace`, and nearly every authorization bug it had
+  /// came from that. Every permission check gets simpler here.
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -169,7 +169,7 @@ model Task {
   /// the task service. Sorting has to happen in SQL or pagination silently
   /// reorders across pages, and SQLite cannot ORDER BY a CASE through Prisma.
   categoryRank Int   @default(2)
-  /// todo | done. A fast path only; TaskCompletion is the truth (section 5.1).
+  /// todo | done. A fast path only; TaskCompletion is the truth.
   /// The legacy enum also had `updated` and `overdue`, which nothing ever set.
   status      String @default("todo")
 
@@ -183,7 +183,7 @@ model Task {
   /// completion | dueDate — where the next due date is measured from.
   recurrenceAnchor String  @default("completion")
   /// On completion of a recurring task, hand it to the next member instead of
-  /// keeping the current assignee (section 5.3).
+  /// keeping the current assignee.
   rotateAssignees  Boolean @default(false)
 
   createdById String?
@@ -229,8 +229,8 @@ model TaskAssignee {
   @@index([userId])
 }
 
-/// The keystone (section 5.1). Append-only: one row per completion, never
-/// updated, never deleted.
+/// The keystone. Append-only: one row per completion, never updated, never
+/// deleted.
 ///
 /// The legacy app had a single `completed_date` that was overwritten on every
 /// completion and never cleared when a recurring task was reset — so it both

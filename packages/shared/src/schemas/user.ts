@@ -9,7 +9,7 @@ export const displayNameSchema = z.string().trim().min(1).max(LIMITS.userName)
  *
  * `avatarPath` is nullable and that is a normal state, not missing data — the
  * client renders an initials avatar so a user without an upload never looks
- * broken (section 4.2).
+ * broken.
  */
 export const publicUserSchema = z.object({
   id: idSchema,

@@ -16,7 +16,7 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
   /**
    * Null public key means push is not configured. The client must treat that as
    * "unavailable" and carry on: notifications are strictly additive, so a server
-   * without VAPID keys is a fully working app minus push (section 4.3).
+   * without VAPID keys is a fully working app minus push.
    */
   app.get('/vapid-public-key', async () => ({
     publicKey: pushEnabled ? (env.VAPID_PUBLIC_KEY ?? null) : null,

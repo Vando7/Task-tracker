@@ -19,7 +19,7 @@ import { serializeTask, taskInclude } from './serialize'
 /**
  * Task business logic. Route handlers stay thin: parse, authorize, call one of
  * these, respond. Every mutation that another member can see publishes an SSE
- * event before returning — not optional, per CLAUDE.md section 2.
+ * event before returning — not optional.
  */
 
 const rankFor = (category: TaskCategory): number => TASK_CATEGORY_RANK[category]
@@ -60,8 +60,8 @@ async function loadOwnedTask(taskId: string, workspaceId: string) {
  *
  * The legacy app did `Room.objects.get(id=room_id)` with no ownership check in
  * both task creation and `room_add`, so a crafted request created or attached
- * tasks in anyone's rooms (Part 2, problems 1 and 2). SQLite cannot express this
- * constraint, so it is enforced here and asserted in a test.
+ * tasks in anyone's rooms. SQLite cannot express this constraint, so it is
+ * enforced here and asserted in a test.
  */
 async function assertRoomsInWorkspace(
   roomIds: readonly string[],
@@ -83,7 +83,7 @@ async function assertRoomsInWorkspace(
   }
 }
 
-/** Assignees must be members of the task's workspace (section 4.1). */
+/** Assignees must be members of the task's workspace. */
 async function assertMembers(userIds: readonly string[], workspaceId: string): Promise<void> {
   if (userIds.length === 0) return
 
@@ -112,12 +112,12 @@ export async function listTasks(ctx: MemberContext, query: TaskListQuery): Promi
     ...(query.roomId ? { rooms: { some: { roomId: query.roomId } } } : {}),
     // Tasks in *any* room on the floor. The legacy floor view filtered once per
     // room in a loop, which meant "in every room on this floor" — so adding a
-    // room silently hid every existing floor-wide task (Part 2, problem 8).
+    // room silently hid every existing floor-wide task.
     ...(query.floorId
       ? { rooms: { some: { room: { floorId: query.floorId, deletedAt: null } } } }
       : {}),
     // Excluded server-side. The legacy search relied on the client to hide
-    // soft-deleted tasks, and the reconciliation path didn't (problem 13).
+    // soft-deleted tasks, and the reconciliation path didn't.
     ...(query.search
       ? {
           OR: [{ name: { contains: query.search } }, { description: { contains: query.search } }],
@@ -247,7 +247,7 @@ export async function deleteTask(ctx: MemberContext, taskId: string): Promise<vo
  * next due date and returns it to `todo` — optionally handing it to the next
  * person in the rotation. The legacy app overwrote a single `completed_date`
  * and never cleared it on reset, so it destroyed its own history *and* reported
- * completions that no longer held (Part 2, problems 14 and 15).
+ * completions that no longer held.
  */
 export async function completeTask(
   ctx: MemberContext,
@@ -392,7 +392,7 @@ export async function detachRoom(
 
 /**
  * Assignment is its own endpoint rather than a generic field update, so it can
- * be notified on and recorded with who assigned whom (section 4.1).
+ * be notified on and recorded with who assigned whom.
  */
 export async function assignUser(
   ctx: MemberContext,

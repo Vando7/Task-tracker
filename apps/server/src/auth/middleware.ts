@@ -35,7 +35,7 @@ export function requireUser(request: FastifyRequest): SessionUser {
 }
 
 /**
- * Email verification is mandatory before a session is useful (section 4.2).
+ * Email verification is mandatory before a session is useful.
  * Enforced here as well as at login, so an account verified-then-unverified
  * cannot keep riding an old cookie.
  */
@@ -58,8 +58,7 @@ export type MemberContext = {
  *
  * Because `Task.workspaceId` is a direct foreign key, membership is one indexed
  * lookup. The legacy equivalent walked `rooms -> floor -> workspace`, inspected
- * only the *first* room, and raised IndexError on a task with none
- * (Part 2, problem 4).
+ * only the *first* room, and raised IndexError on a task with none.
  */
 export async function requireMember(
   request: FastifyRequest,

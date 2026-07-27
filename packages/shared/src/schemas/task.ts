@@ -52,7 +52,7 @@ export const taskSchema = z.object({
   id: idSchema,
   /**
    * A direct foreign key, not inferred through `rooms -> floor -> workspace`.
-   * Nearly every authorization bug in Part 2 was a symptom of that inference.
+   * Nearly every authorization bug the old app had came from that inference.
    */
   workspaceId: idSchema,
   name: taskNameSchema,
@@ -68,12 +68,12 @@ export const taskSchema = z.object({
   createdAt: timestampSchema,
   updatedAt: timestampSchema,
 
-  /** May be empty: a task with no rooms is still valid and must stay reachable (section 3). */
+  /** May be empty: a task with no rooms is still valid and must stay reachable. */
   rooms: z.array(taskRoomRefSchema),
-  /** May be empty: "whoever gets to it" is a first-class state, not missing data (section 4.1). */
+  /** May be empty: "whoever gets to it" is a first-class state, not missing data. */
   assignees: z.array(taskAssigneeSchema),
 
-  /** From the completion log. Powers "last done 3 days ago" (section 5.2). */
+  /** From the completion log. Powers "last done 3 days ago". */
   lastCompletedAt: timestampSchema.nullable(),
   lastCompletedBy: publicUserSchema.nullable(),
   completionCount: z.number().int().nonnegative(),
@@ -81,7 +81,7 @@ export const taskSchema = z.object({
   /**
    * Derived server-side from `dueDate` in the workspace timezone. The legacy
    * client decided this by checking whether a formatted string contained the
-   * substring "ago" (Part 2, problem 16).
+   * substring "ago".
    */
   isOverdue: z.boolean(),
   isRecurring: z.boolean(),
@@ -167,8 +167,7 @@ const ASSIGNEE_KEYWORDS: readonly string[] = ASSIGNEE_FILTER_KEYWORDS
 /**
  * `anyone` | `mine` | `unassigned` | a comma-separated list of user ids.
  *
- * Lives in the query string so a filtered view is linkable and survives reload
- * (section 4.1).
+ * Lives in the query string so a filtered view is linkable and survives reload.
  */
 export const assigneeFilterSchema = z
   .preprocess(
@@ -192,13 +191,13 @@ export const taskListQuerySchema = z.object({
   /**
    * Tasks in *any* room on this floor. The legacy floor view meant "in *every*
    * room on this floor", so adding a room silently hid existing floor-wide
-   * tasks (Part 2, problem 8).
+   * tasks.
    */
   floorId: idSchema.optional(),
   search: z.string().trim().min(1).max(LIMITS.search).optional(),
   assignee: assigneeFilterSchema,
   limit: z.coerce.number().int().min(1).max(200).default(50),
-  /** The legacy completed list was capped at 20 with no way to see further back (gap 37). */
+  /** The legacy completed list was capped at 20 with no way to see further back. */
   offset: z.coerce.number().int().min(0).max(100_000).default(0),
 })
 export type TaskListQuery = z.infer<typeof taskListQuerySchema>

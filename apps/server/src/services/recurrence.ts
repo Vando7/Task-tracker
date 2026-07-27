@@ -24,7 +24,7 @@ export function isRecurring(task: {
  *
  * `completion` — "every 2 weeks from when I actually did it". Late completions
  * push the schedule out, and you never owe a backlog of missed cycles. This is
- * the default (CLAUDE.md section 6, question 2).
+ * the default.
  *
  * `dueDate` — "every other Sunday". The cadence holds no matter when it was
  * actually done. The wrinkle is that a long gap leaves the next date in the

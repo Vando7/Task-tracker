@@ -19,7 +19,7 @@ import { stalenessLabel, stalenessShort } from '../lib/format'
  *
  * The spatial model is what makes this app different from a flat to-do list, so
  * this page answers "what needs attention?" spatially — badge counts plus room
- * staleness ("bathroom: nothing done in 12 days", section 5.4) rather than
+ * staleness ("bathroom: nothing done in 12 days") rather than
  * another list. The landing page is `DashboardPage`; this one is reached from it.
  */
 export function HousePage({ workspace }: { workspace: Workspace }) {

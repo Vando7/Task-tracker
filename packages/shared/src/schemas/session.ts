@@ -7,9 +7,8 @@ import { workspaceSchema } from './workspace'
  *
  * `workspaces` may legitimately be empty. The legacy app auto-created a
  * workspace on every login to avoid ever facing that case, which is why a
- * cleared session or a revoked membership crashed the index view
- * (Part 2, problem 10). Here an empty list is a normal state that the UI
- * handles with a create prompt.
+ * cleared session or a revoked membership crashed the index view. Here an empty
+ * list is a normal state that the UI handles with a create prompt.
  */
 export const meSchema = z.object({
   user: selfUserSchema,

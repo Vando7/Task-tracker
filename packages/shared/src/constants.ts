@@ -10,8 +10,8 @@ export type TaskCategory = (typeof TASK_CATEGORIES)[number]
 
 /**
  * Pending-list ordering. The legacy app hardcoded urgent -> special -> normal
- * as three near-identical 25-line blocks (Part 2, problem 21); this is the same
- * order expressed once as data.
+ * as three near-identical 25-line blocks; this is the same order expressed once
+ * as data.
  */
 export const TASK_CATEGORY_RANK: Record<TaskCategory, number> = {
   urgent: 0,
@@ -37,7 +37,7 @@ export type RecurrenceUnit = (typeof RECURRENCE_UNITS)[number]
  * - `dueDate` — "every other Sunday". The cadence holds regardless of when it
  *   was done, so a long gap can leave the next date already in the past.
  *
- * Decided: default `completion` (CLAUDE.md section 6, question 2).
+ * Decided: default `completion`.
  */
 export const RECURRENCE_ANCHORS = ['completion', 'dueDate'] as const
 export type RecurrenceAnchor = (typeof RECURRENCE_ANCHORS)[number]
@@ -61,7 +61,7 @@ export type FairnessWindow = (typeof FAIRNESS_WINDOWS)[number]
 
 /**
  * Length limits. The legacy app declared these on the model but never enforced
- * them, because Django does not validate on `save()` (Part 2, problem 6).
+ * them, because Django does not validate on `save()`.
  * Here they are enforced by the request schema, which is the only way in.
  */
 export const LIMITS = {
@@ -80,7 +80,7 @@ export const LIMITS = {
   timezone: 64,
 } as const
 
-/** Legacy default floor colour, kept for visual continuity (section 5.6). */
+/** Legacy default floor colour, kept for visual continuity. */
 export const DEFAULT_FLOOR_COLOR = '#8A2BE2'
 export const DEFAULT_FLOOR_ICON = '🏠'
 export const DEFAULT_ROOM_ICON = '🚪'

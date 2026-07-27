@@ -22,7 +22,7 @@ import { login, register, requestPasswordReset, resetPassword, verifyEmail } fro
  * Login, register and reset-request are rate limited by IP. The keying is
  * deliberate: `@fastify/rate-limit`'s default is per-IP, and for these three we
  * additionally fold the submitted email into the key, so one attacker cannot
- * exhaust a victim's budget and lock them out (section 4.2).
+ * exhaust a victim's budget and lock them out.
  */
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   const sensitive = {

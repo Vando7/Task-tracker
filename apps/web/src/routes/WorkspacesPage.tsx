@@ -10,10 +10,10 @@ import { ApiRequestError } from '../lib/api'
 /**
  * Real workspace CRUD, which the legacy app never had: a workspace could only
  * come into being by being auto-created on login, and could never be renamed or
- * deleted (Part 2, gap 31).
+ * deleted.
  *
  * An empty list is also handled properly here rather than crashing, which is
- * what the legacy index view did on a fresh or cleared session (problem 10).
+ * what the legacy index view did on a fresh or cleared session.
  */
 export function WorkspacesPage({ me }: { me: Me }) {
   const [name, setName] = useState('')

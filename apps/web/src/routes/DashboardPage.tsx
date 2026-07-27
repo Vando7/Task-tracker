@@ -55,7 +55,7 @@ export function DashboardPage({
 
   const floors = layout?.floors ?? []
   const rooms = staleness?.rooms ?? []
-  /** Rooms with work waiting, stalest first — "what needs attention?" (section 5.4). */
+  /** Rooms with work waiting, stalest first — "what needs attention?" */
   const needsAttention = [...rooms]
     .filter((room) => room.openTaskCount > 0)
     .sort((a, b) => (b.daysSinceLastCompletion ?? 999) - (a.daysSinceLastCompletion ?? 999))
