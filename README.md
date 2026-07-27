@@ -58,6 +58,10 @@ Please check [cookiecutter-django Docker documentation](http://cookiecutter-djan
 
 With Mailpit running, to view messages that are sent by your application, open your browser and go to `http://127.0.0.1:8025`
 
+> **Note:** this app is being rewritten from scratch (TypeScript, React, SQLite — Django is being
+> dropped). Everything below describes the current/legacy Django version. The rewrite spec, the
+> full behavioural spec, and the handoff notes live in `CLAUDE.md`.
+
 ## Deployment
 
 
