@@ -5,6 +5,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Prisma's generated client
+generated/
+
 # the SQLite database and its WAL sidecars — `db:migrate && db:seed` rebuilds it
 data/
 

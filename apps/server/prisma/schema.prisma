@@ -1,0 +1,305 @@
+// Task Tracker — a household chore tracker organised by the layout of a home.
+//
+// This is a deliberate redesign, not a port of the legacy Django models. The
+// comments record *why* each difference exists, because most of them are a fix
+// for a specific bug catalogued in CLAUDE.md Part 2.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// The connection URL lives in prisma.config.ts, and at runtime we connect
+// through the better-sqlite3 driver adapter (Prisma 7 has no query engine
+// binary) so we control the pragmas — notably WAL.
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------- identity
+
+model User {
+  id              String    @id @default(uuid(7))
+  email           String    @unique
+  passwordHash    String
+  name            String
+  avatarPath      String?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions          Session[]
+  emailTokens       EmailToken[]
+  memberships       Member[]
+  createdWorkspaces Workspace[]        @relation("WorkspaceCreatedBy")
+  createdTasks      Task[]             @relation("TaskCreatedBy")
+  assignments       TaskAssignee[]     @relation("AssigneeUser")
+  assignmentsMade   TaskAssignee[]     @relation("AssignedByUser")
+  completions       TaskCompletion[]
+  pushSubscriptions PushSubscription[]
+  notifyPreference  NotifyPreference?
+  notifyLogs        NotifyLog[]        @relation("NotifyRecipient")
+  notifyActions     NotifyLog[]        @relation("NotifyActor")
+}
+
+/// An opaque random id delivered as an httpOnly cookie. The id *is* the
+/// credential — there is no JWT, so revocation is a row delete.
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+  ip        String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Email verification and password reset.
+///
+/// Only the SHA-256 of the emailed token is stored: a leaked database must not
+/// hand out working reset links. `usedAt` makes tokens single-use.
+model EmailToken {
+  id        String    @id @default(uuid(7))
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, kind])
+}
+
+// --------------------------------------------------------------- household
+
+model Workspace {
+  id          String   @id @default(uuid(7))
+  name        String
+  /// IANA name. "Due today", overdue and quiet hours are meaningless without
+  /// one. Per workspace, so every member of a household agrees on "today".
+  timezone    String   @default("UTC")
+  createdById String?
+  createdBy   User?    @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members    Member[]
+  floors     Floor[]
+  tasks      Task[]
+  notifyLogs NotifyLog[]
+}
+
+/// Membership with an explicit role.
+///
+/// Replaces the legacy `created_by == you means you're the admin` hack, under
+/// which membership management broke entirely for anyone who created two
+/// workspaces (Part 2, problem 5).
+model Member {
+  workspaceId String
+  userId      String
+  role        String    @default("member")
+  joinedAt    DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+  @@index([userId])
+}
+
+/// Soft-deleted. The legacy hard cascade dropped the task/room join rows, so a
+/// task that lived only in the deleted room became invisible forever and then
+/// crashed the workspace check (Part 2, problems 4 and 9).
+model Floor {
+  id          String    @id @default(uuid(7))
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  icon        String    @default("🏠")
+  /// Hex. Becomes one CSS custom property per floor subtree on the client.
+  color       String    @default("#8A2BE2")
+  sortOrder   Int       @default(0)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  rooms Room[]
+
+  @@index([workspaceId, deletedAt, sortOrder])
+}
+
+/// Soft-deleted, for the same reason as Floor. Deleting a room detaches it from
+/// its tasks; a task left with zero rooms is still valid and stays reachable,
+/// because it belongs to the workspace directly now.
+model Room {
+  id        String    @id @default(uuid(7))
+  floorId   String
+  floor     Floor     @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  name      String
+  icon      String    @default("🚪")
+  sortOrder Int       @default(0)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  taskRooms TaskRoom[]
+
+  @@index([floorId, deletedAt, sortOrder])
+}
+
+// ------------------------------------------------------------------- tasks
+
+model Task {
+  id String @id @default(uuid(7))
+
+  /// A direct foreign key. The legacy app inferred a task's workspace through
+  /// `rooms -> floor -> workspace`, and nearly every authorization bug in
+  /// Part 2 is a symptom of that. Every permission check gets simpler here.
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String @default("")
+  /// urgent | special | normal — drives sort order and card styling.
+  category    String @default("normal")
+  /// todo | done. A fast path only; TaskCompletion is the truth (section 5.1).
+  /// The legacy enum also had `updated` and `overdue`, which nothing ever set.
+  status      String @default("todo")
+
+  /// Stored UTC. Overdue is derived from this in the workspace timezone, never
+  /// stored, and never decided by string-matching "ago" in the browser.
+  dueDate DateTime?
+
+  recurrenceEvery Int?
+  /// day | week | month. Null (with recurrenceEvery null) means one-off.
+  recurrenceUnit  String?
+  /// completion | dueDate — where the next due date is measured from.
+  recurrenceAnchor String  @default("completion")
+  /// On completion of a recurring task, hand it to the next member instead of
+  /// keeping the current assignee (section 5.3).
+  rotateAssignees  Boolean @default(false)
+
+  createdById String?
+  createdBy   User?     @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  rooms       TaskRoom[]
+  assignees   TaskAssignee[]
+  completions TaskCompletion[]
+  notifyLogs  NotifyLog[]
+
+  @@index([workspaceId, deletedAt, status])
+  @@index([workspaceId, deletedAt, dueDate])
+}
+
+/// Join rows must always point at rooms inside the task's own workspace. SQLite
+/// cannot express that constraint, so the service layer enforces it and a test
+/// asserts it.
+model TaskRoom {
+  taskId String
+  roomId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, roomId])
+  @@index([roomId])
+}
+
+/// Zero, one, or many. Zero means "whoever gets to it" — a first-class state,
+/// not missing data.
+model TaskAssignee {
+  taskId       String
+  userId       String
+  assignedAt   DateTime @default(now())
+  assignedById String?
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user         User     @relation("AssigneeUser", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy   User?    @relation("AssignedByUser", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@id([taskId, userId])
+  @@index([userId])
+}
+
+/// The keystone (section 5.1). Append-only: one row per completion, never
+/// updated, never deleted.
+///
+/// The legacy app had a single `completed_date` that was overwritten on every
+/// completion and never cleared when a recurring task was reset — so it both
+/// destroyed history and reported completions that no longer held. This one
+/// table is what makes recurrence, the fairness tally, room staleness and
+/// notification idempotency all possible.
+model TaskCompletion {
+  id            String   @id @default(uuid(7))
+  taskId        String
+  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  completedById String?
+  completedBy   User?    @relation(fields: [completedById], references: [id], onDelete: SetNull)
+  completedAt   DateTime @default(now())
+
+  @@index([taskId, completedAt])
+  @@index([completedById, completedAt])
+}
+
+// ----------------------------------------------------------- notifications
+
+model PushSubscription {
+  id        String   @id @default(uuid(7))
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Unique so re-subscribing the same browser updates rather than duplicates.
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model NotifyPreference {
+  userId             String   @id
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled            Boolean  @default(false)
+  onAssigned         Boolean  @default(true)
+  onDueSoon          Boolean  @default(true)
+  onOverdue          Boolean  @default(true)
+  onCompletedByOther Boolean  @default(true)
+  dueSoonLeadHours   Int      @default(24)
+  /// "HH:MM" local to the workspace timezone. Suppresses push, not the in-app feed.
+  quietFrom          String?
+  quietTo            String?
+  updatedAt          DateTime @updatedAt
+}
+
+/// Delivery ledger *and* the in-app feed.
+///
+/// The unique constraint is what stops the scheduler re-sending the same
+/// reminder on every tick — the single most likely bug in the feature. Note
+/// that `cycleKey` is part of it: keying only on (user, task, kind) would make
+/// a recurring task's reminder fire once and then never again, which is the
+/// bug you get from fixing the first one carelessly.
+model NotifyLog {
+  id          String    @id @default(uuid(7))
+  userId      String
+  user        User      @relation("NotifyRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kind        String
+  /// Identifies which occurrence this was — the due date of the cycle that
+  /// triggered it, or the completion time for one-off events.
+  cycleKey    String
+  actorId     String?
+  actor       User?     @relation("NotifyActor", fields: [actorId], references: [id], onDelete: SetNull)
+  sentAt      DateTime  @default(now())
+  readAt      DateTime?
+
+  @@unique([userId, taskId, kind, cycleKey])
+  @@index([userId, readAt])
+  @@index([workspaceId, sentAt])
+}
