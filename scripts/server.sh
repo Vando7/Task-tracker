@@ -23,6 +23,21 @@ mkdir -p "$RUN_DIR"
 API_PORT="${PORT:-3001}"
 WEB_PORT="${WEB_PORT:-5173}"
 
+# EXPOSE=1 binds to every interface so the app is reachable from other machines
+# (a Hyper-V or VirtualBox host, a phone on the same network). Off by default:
+# putting a dev server on a network is a decision, not a default.
+#
+# Strictly, only the client needs exposing — it proxies /api onward over loopback
+# — but the API is bound too, because someone who asked for this will reasonably
+# expect to be able to curl it directly.
+EXPOSE="${EXPOSE:-0}"
+
+# The address another machine would use. Taken from the default-route interface,
+# which is the one that can actually be reached from off-box.
+lan_ip() {
+  ip -4 route get 1.1.1.1 2>/dev/null | grep -oE 'src [0-9.]+' | awk '{print $2}' | head -1
+}
+
 # Colour only when attached to a terminal, so piped output stays clean.
 if [ -t 1 ]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GREEN=$'\033[32m'
@@ -137,6 +152,21 @@ start_one() {
 
   [ -d "$cwd/node_modules" ] || die "dependencies missing — run 'pnpm install' first"
 
+  if [ "$EXPOSE" = "1" ]; then
+    # Read by apps/server/src/env.ts and apps/web/vite.config.ts respectively.
+    export HOST="${HOST:-0.0.0.0}"
+    export EXPOSE=1
+
+    # Verification and password-reset links, and push deep links, are built from
+    # APP_ORIGIN. Left at localhost they arrive unusable on the machine that has
+    # to click them, so point it at the address that host actually reaches.
+    local ip
+    ip="$(lan_ip)"
+    if [ -z "${APP_ORIGIN:-}" ] && [ -n "$ip" ]; then
+      export APP_ORIGIN="http://$ip:$WEB_PORT"
+    fi
+  fi
+
   # Detach into a new session so the process survives this shell, and record the
   # pid from *inside* that session.
   #
@@ -162,9 +192,15 @@ start_one() {
   done
 
   if wait_for_port "$port"; then
+    local where ip
+    where="http://127.0.0.1:$port"
+    if [ "$EXPOSE" = "1" ]; then
+      ip="$(lan_ip)"
+      [ -n "$ip" ] && where="http://$ip:$port ${DIM}(also 127.0.0.1)${RESET}"
+    fi
     printf '%s started on %s (pid %s)\n' \
       "${GREEN}$(target_label "$target")${RESET}" \
-      "http://127.0.0.1:$port" \
+      "$where" \
       "$(cat "$(pid_file "$target")")"
   else
     printf '%s failed to come up — last lines of %s:\n' "${RED}$(target_label "$target")${RESET}" "$log"
@@ -225,6 +261,17 @@ cmd_stop()    { local t; for t in $(resolve_targets "${1:-all}"); do stop_one  "
 cmd_status()  {
   printf '%sTask Tracker%s\n' "$BOLD" "$RESET"
   local t; for t in $(resolve_targets "${1:-all}"); do status_one "$t"; done
+
+  # Report what is actually bound, rather than what this invocation was told,
+  # since the processes may have been started with a different EXPOSE setting.
+  local bound ip
+  bound="$(ss -ltn 2>/dev/null | grep -cE "0\.0\.0\.0:($API_PORT|$WEB_PORT)|\*:($API_PORT|$WEB_PORT)" || true)"
+  ip="$(lan_ip)"
+  if [ "${bound:-0}" -gt 0 ] && [ -n "$ip" ]; then
+    printf '  %sreachable from other machines at http://%s:%s%s\n' "$DIM" "$ip" "$WEB_PORT" "$RESET"
+  else
+    printf '  %sloopback only — use EXPOSE=1 to bind all interfaces%s\n' "$DIM" "$RESET"
+  fi
 }
 cmd_restart() { cmd_stop "${1:-all}"; cmd_start "${1:-all}"; }
 
@@ -265,6 +312,14 @@ ${BOLD}Targets${RESET}
   api                the Fastify API      (port ${API_PORT})
   web                the Vite client      (port ${WEB_PORT})
   all                both (default)
+
+${BOLD}Environment${RESET}
+  EXPOSE=1           bind 0.0.0.0 so other machines can reach it, and point
+                     APP_ORIGIN at this host's address so emailed links work
+  PORT / WEB_PORT    override ports (default ${API_PORT} / ${WEB_PORT})
+  ALLOWED_HOSTS      comma-separated hostnames Vite should accept
+
+  EXPOSE=1 ./scripts/server.sh start
 
 Logs and pidfiles live in .run/ and are gitignored.
 For interactive work, 'pnpm dev' runs both in the foreground instead.

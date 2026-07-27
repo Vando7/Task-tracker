@@ -48,6 +48,36 @@ Targets are `api`, `web`, or `all`. Logs and pidfiles go in `.run/` (gitignored)
 to start on a port something else already owns rather than fighting over it, and `stop` signals the
 whole process group so watchers don't leak.
 
+### Reaching it from another machine
+
+Both servers bind loopback by default. To reach the app from a VM host, a phone, or anything else on
+the network:
+
+```bash
+EXPOSE=1 ./scripts/server.sh start
+# client started on http://192.168.99.101:5173 (also 127.0.0.1)
+
+EXPOSE=1 pnpm dev            # same thing, foreground
+```
+
+`EXPOSE=1` does three things: binds `0.0.0.0`, opts Vite out of the Host-header check it uses to
+resist DNS rebinding, and sets `APP_ORIGIN` to this host's address — without that last one the
+verification and password-reset links point at `localhost` and are useless on the machine that has to
+click them.
+
+Strictly, only the client needs exposing: the browser only ever talks to Vite, which proxies `/api`
+onward over loopback. The API is bound too, because anyone asking for this will reasonably want to
+`curl` it directly.
+
+Set `ALLOWED_HOSTS` to a comma-separated list if you'd rather keep Vite's host check meaningful
+instead of allowing anything, and `WEB_PORT` / `PORT` to move the ports.
+
+> **This is a development server.** In development the session cookie is not `secure`,
+> `SESSION_SECRET` falls back to a known default, and the seeded accounts have a password published
+> in this README. That is fine on a private network you control and not fine on an untrusted one.
+> Reaching it from the public internet should go through a reverse proxy with TLS and a real
+> `SESSION_SECRET`, not by exposing this port.
+
 ### Resetting
 
 `data/app.db` is the whole database. Delete it and re-run `pnpm db:migrate && pnpm db:seed`.

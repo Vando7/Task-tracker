@@ -11,10 +11,18 @@ async function main(): Promise<void> {
 
   await app.listen({ port: env.PORT, host: env.HOST })
 
+  // 0.0.0.0 is a bind target, not somewhere you can point a browser, so say what
+  // it means instead of echoing it back.
+  const boundEverywhere = env.HOST === '0.0.0.0' || env.HOST === '::'
+  const where = boundEverywhere
+    ? `port ${env.PORT} on all interfaces`
+    : `http://${env.HOST}:${env.PORT}`
+
   console.log(
     [
       '',
-      `  Task Tracker API  ·  http://${env.HOST}:${env.PORT}`,
+      `  Task Tracker API  ·  ${where}`,
+      ...(boundEverywhere ? [`  reachable from other machines · links use ${env.APP_ORIGIN}`] : []),
       `  env: ${env.NODE_ENV}   push: ${pushEnabled ? 'configured' : 'off (in-app only)'}`,
       `  mail: ${env.MAIL_TRANSPORT}${env.MAIL_TRANSPORT === 'console' ? ' — verification links print here' : ''}`,
       '',
