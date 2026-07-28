@@ -217,21 +217,8 @@ export function TaskCard({
               </span>
             )}
 
-            {/* Rendered from the count on the task itself, so a collapsed card
-                costs no request. Opens the card rather than being decoration. */}
-            {task.commentCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setExpanded(true)}
-                className="chip hover:text-text"
-                aria-label={`${task.commentCount} note${
-                  task.commentCount === 1 ? '' : 's'
-                } on "${task.name}"`}
-              >
-                <Icon name="comment" size={13} />
-                <span className="tabular-nums">{task.commentCount}</span>
-              </button>
-            )}
+            {/* No comment-count chip: the notes are on the card now, so a number
+                standing in for them is a worse copy of what is just below. */}
 
             {task.rooms.map((room) => (
               <span
@@ -535,10 +522,6 @@ export function TaskCard({
             )}
           </fieldset>
 
-          <div className="border-t border-edge pt-3">
-            <CommentThread taskId={task.id} workspaceId={workspaceId} />
-          </div>
-
           <div className="flex items-center justify-between gap-2">
             <span className="chip bg-transparent">
               <Icon name="chart" size={13} />
@@ -579,6 +562,23 @@ export function TaskCard({
           </div>
         </div>
       )}
+
+      {/*
+        Outside the expanded block on purpose. A note is the one part of a task
+        that another person wrote *to be read*, and behind an expand nobody read
+        it — the description edits itself into a changelog instead, which is the
+        exact failure the thread exists to prevent. It costs no request on a task
+        with no notes, because the fetch is gated on the count that already rode
+        along on the task.
+      */}
+      <div className="mt-3 border-t border-edge pt-2.5">
+        <CommentThread
+          taskId={task.id}
+          taskName={task.name}
+          workspaceId={workspaceId}
+          commentCount={task.commentCount}
+        />
+      </div>
     </article>
   )
 }

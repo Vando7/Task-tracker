@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import type { SseEvent, Task } from '@task-tracker/shared'
 import { useEffect, useRef } from 'react'
+import { dropFromThread } from '../features/comments/api'
 import { keys } from './keys'
 
 /**
@@ -77,11 +78,20 @@ export function useEventStream({ workspaceId, currentUserId, onFlash }: Options)
 
         // Comment events carry ids, not the comment: `canDelete` and `mine` are
         // per-viewer answers and this payload is shared by the whole workspace.
-        // So refetch the thread instead of writing it — cheap, because only an
-        // open card has one. The task list goes too, for the count on the card.
+        // So refetch the thread instead of writing it. The task list goes too, for
+        // the count on the card — which is also what gates the thread's fetch.
         case 'comment.created':
         case 'comment.updated':
+          void queryClient.invalidateQueries({ queryKey: keys.comments(event.data.taskId) })
+          void queryClient.invalidateQueries({ queryKey: keys.taskList(workspaceId) })
+          break
+
         case 'comment.deleted':
+          // Pruning by id rather than only invalidating, because a task whose last
+          // note was just deleted stops being fetched at all — the thread query is
+          // gated on the task's comment count — and a stale cache would go on
+          // showing the deleted note. The id is per-viewer-safe; the comment is not.
+          dropFromThread(queryClient, event.data.taskId, event.data.id)
           void queryClient.invalidateQueries({ queryKey: keys.comments(event.data.taskId) })
           void queryClient.invalidateQueries({ queryKey: keys.taskList(workspaceId) })
           break

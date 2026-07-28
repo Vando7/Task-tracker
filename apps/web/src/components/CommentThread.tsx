@@ -26,36 +26,71 @@ import { Icon } from './Icon'
  *
  * Oldest first, newest by the composer — a thread reads as a conversation, unlike
  * every other list in the app.
+ *
+ * Visible on every card, open or collapsed: a note is the part of a task other
+ * people wrote for you, and hiding it behind an expand meant nobody saw it. Two
+ * things keep that from costing anything. The fetch is gated on `commentCount`,
+ * which the card already has, so a task with no notes makes no request. And the
+ * composer stays a single button until tapped, so a list of cards is not a column
+ * of empty text boxes.
  */
-export function CommentThread({ taskId, workspaceId }: { taskId: string; workspaceId: string }) {
+export function CommentThread({
+  taskId,
+  taskName,
+  workspaceId,
+  commentCount,
+}: {
+  taskId: string
+  /**
+   * For the labels only. Now that every card carries a thread, "Notes" and "Add a
+   * note" repeat down the whole list, so the accessible names have to say *which*
+   * chore — the same reason every other control on the card names its task.
+   */
+  taskName: string
+  workspaceId: string
+  commentCount: number
+}) {
   // Read here rather than threaded down from the page: `me` is already in the
   // query cache, so this costs nothing and keeps `TaskCard` uninvolved.
   const { data: me } = useMe()
-  // Mounted only by an open card, so this is the fetch trigger.
-  const { data, isPending } = useComments(taskId, true)
+  const { data, isPending } = useComments(taskId, commentCount > 0)
   const add = useAddComment(workspaceId, taskId)
 
+  const [composing, setComposing] = useState(false)
   const [draft, setDraft] = useState('')
 
   const submit = (): void => {
     const body = draft.trim()
     if (body.length === 0 || add.isPending) return
-    add.mutate(body, { onSuccess: () => setDraft('') })
+    add.mutate(body, {
+      onSuccess: () => {
+        setDraft('')
+        setComposing(false)
+      },
+    })
   }
 
-  return (
-    <section aria-label="Notes">
-      <h3 className="flex items-center gap-1.5 text-xs text-text-dim">
-        <Icon name="comment" size={13} />
-        Notes
-        {data && data.total > 0 && <span>· {data.total}</span>}
-      </h3>
+  const comments = data?.comments ?? []
+  const hasNotes = comments.length > 0
+  // Nothing to fetch and nothing written yet: the whole section collapses to the
+  // one control that starts a note.
+  const loading = commentCount > 0 && isPending
 
-      {isPending ? (
-        <p className="mt-1.5 text-xs text-text-dim">Loading…</p>
-      ) : data && data.comments.length > 0 ? (
+  return (
+    <section aria-label={`Notes on "${taskName}"`}>
+      {(hasNotes || loading) && (
+        <h3 className="flex items-center gap-1.5 text-xs text-text-dim">
+          <Icon name="comment" size={13} />
+          Notes
+          {data && data.total > 0 && <span>· {data.total}</span>}
+        </h3>
+      )}
+
+      {loading && <p className="mt-1.5 text-xs text-text-dim">Loading…</p>}
+
+      {hasNotes && (
         <ol className="mt-2 space-y-2.5">
-          {data.comments.map((comment) => (
+          {comments.map((comment) => (
             <CommentRow
               key={comment.id}
               comment={comment}
@@ -65,42 +100,64 @@ export function CommentThread({ taskId, workspaceId }: { taskId: string; workspa
             />
           ))}
         </ol>
-      ) : (
-        <p className="mt-1.5 text-xs text-text-dim">
-          Nothing yet. Notes are for what happened this time — the description is for what the chore
-          is.
-        </p>
       )}
 
-      <div className="mt-2.5 flex items-end gap-1.5">
-        <textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          // Enter inserts a newline, as it must on a phone keyboard; the shortcut
-          // is for whoever is typing on a laptop.
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault()
-              submit()
-            }
-          }}
-          rows={1}
-          maxLength={LIMITS.commentBody}
-          placeholder="Add a note…"
-          aria-label="Add a note"
-          className="field min-h-11 flex-1 py-2.5 text-sm"
-        />
+      {composing ? (
+        <>
+          {/* The description/note distinction, shown at the one moment it is
+              actionable: while someone is deciding what to type. */}
+          {!hasNotes && (
+            <p className="mt-2 text-xs text-text-dim">
+              Notes are for what happened this time — the description is for what the chore is.
+            </p>
+          )}
+
+          <div className="mt-2 flex items-end gap-1.5">
+            <textarea
+              // biome-ignore lint/a11y/noAutofocus: the rule is about focus stolen on load; this box did not exist until the tap that asked for it, and without this the composer costs two taps on a phone.
+              autoFocus
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              // Enter inserts a newline, as it must on a phone keyboard; the shortcut
+              // is for whoever is typing on a laptop.
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                  event.preventDefault()
+                  submit()
+                }
+                // Escape abandons an empty draft. A typed one stays put — losing
+                // it to a stray keypress is far worse than one extra tap.
+                if (event.key === 'Escape' && draft.trim().length === 0) setComposing(false)
+              }}
+              rows={1}
+              maxLength={LIMITS.commentBody}
+              placeholder="What happened this time?"
+              aria-label={`Add a note to "${taskName}"`}
+              className="field min-h-11 flex-1 py-2.5 text-sm"
+            />
+            <button
+              type="button"
+              onClick={submit}
+              disabled={draft.trim().length === 0 || add.isPending}
+              aria-label="Post note"
+              title="Post note (⌘/Ctrl + Enter)"
+              className="icon-btn icon-btn-primary tap"
+            >
+              <Icon name="send" size={17} />
+            </button>
+          </div>
+        </>
+      ) : (
         <button
           type="button"
-          onClick={submit}
-          disabled={draft.trim().length === 0 || add.isPending}
-          aria-label="Post note"
-          title="Post note (⌘/Ctrl + Enter)"
-          className="icon-btn icon-btn-primary tap"
+          onClick={() => setComposing(true)}
+          aria-label={`Add a note to "${taskName}"`}
+          className={`btn btn-sm btn-ghost ${hasNotes ? 'mt-2' : ''}`}
         >
-          <Icon name="send" size={17} />
+          <Icon name="comment" size={14} />
+          Add a note
         </button>
-      </div>
+      )}
 
       {add.error && (
         <p role="alert" className="mt-1.5 text-xs text-urgent">

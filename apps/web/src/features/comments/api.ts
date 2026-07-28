@@ -6,10 +6,15 @@ import { keys } from '../../lib/keys'
 /**
  * The comment thread for one task.
  *
- * Fetched only when a card is open — `enabled` is the whole reason `commentCount`
- * rides along on the task instead of the comments themselves. A collapsed card
- * renders its count from data it already has, and a list of thirty tasks makes
- * zero comment requests.
+ * `enabled` is the whole reason `commentCount` rides along on the task instead of
+ * the comments themselves. The thread is visible on every card now, open or not,
+ * so the gate is no longer "is this card expanded" but "does this task have any
+ * notes at all" — which the card already knows without asking. A list of thirty
+ * tasks where four have notes makes four comment requests, not thirty.
+ *
+ * Because that gate lags a beat behind a write (the count lives on the task, which
+ * refetches separately), the mutations below keep this cache correct themselves
+ * rather than only invalidating it.
  */
 export function useComments(taskId: string, enabled: boolean) {
   return useQuery({
@@ -34,21 +39,58 @@ function useThreadInvalidation(workspaceId: string, taskId: string) {
 }
 
 export function useAddComment(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient()
   const invalidate = useThreadInvalidation(workspaceId, taskId)
+
   return useMutation({
     mutationFn: (body: string) =>
       api<Comment>(`/api/tasks/${taskId}/comments`, { method: 'POST', body: { body } }),
-    onSuccess: invalidate,
+    onSuccess: (comment) => {
+      // Append, rather than only invalidating. On the *first* note of a task the
+      // task's `commentCount` is still 0 until the list refetches, so the thread
+      // query is still disabled — an invalidate alone marks it stale and refetches
+      // nothing, leaving the note you just wrote invisible for a beat.
+      queryClient.setQueryData<CommentList>(keys.comments(taskId), (current) =>
+        current
+          ? { comments: [...current.comments, comment], total: current.total + 1 }
+          : { comments: [comment], total: 1 },
+      )
+      invalidate()
+    },
   })
 }
 
 export function useDeleteComment(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient()
   const invalidate = useThreadInvalidation(workspaceId, taskId)
+
   return useMutation({
     mutationFn: (commentId: string) =>
       api<void>(`/api/comments/${commentId}`, { method: 'DELETE' }),
-    onSuccess: invalidate,
+    onSuccess: (_result, commentId) => {
+      // The mirror of the append, and needed for the same reason from the other
+      // side: deleting the only note takes `commentCount` to 0, which disables the
+      // thread query, so a stale cache would keep rendering the note that is gone.
+      dropFromThread(queryClient, taskId, commentId)
+      invalidate()
+    },
   })
+}
+
+/** Shared with the SSE handler, which prunes by id for the same reason. */
+export function dropFromThread(
+  queryClient: ReturnType<typeof useQueryClient>,
+  taskId: string,
+  commentId: string,
+): void {
+  queryClient.setQueryData<CommentList>(keys.comments(taskId), (current) =>
+    current
+      ? {
+          comments: current.comments.filter((comment) => comment.id !== commentId),
+          total: Math.max(0, current.total - 1),
+        }
+      : current,
+  )
 }
 
 /**

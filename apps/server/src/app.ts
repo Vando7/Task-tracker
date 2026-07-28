@@ -16,6 +16,7 @@ import { meRoutes } from './routes/me'
 import { notificationRoutes } from './routes/notifications'
 import { taskRoutes } from './routes/tasks'
 import { workspaceRoutes } from './routes/workspaces'
+import { registerWebClient } from './spa'
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -96,21 +97,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // In production the server also serves the built client, so deployment is one
-  // process and one image.
+  // process and one image. See `spa.ts` — it lives there so that a test can
+  // register it without faking NODE_ENV.
   if (isProduction && fs.existsSync(paths.webDist)) {
-    await app.register(fastifyStatic, {
-      root: paths.webDist,
-      prefix: '/',
-      decorateReply: false,
-    })
-
-    // SPA fallback: any non-API path that isn't a real file is client routing.
-    app.setNotFoundHandler((request, reply) => {
-      if (request.url.startsWith('/api/') || request.url.startsWith('/uploads/')) {
-        return reply.code(404).send({ error: { message: 'Not found', code: 'not_found' } })
-      }
-      return reply.sendFile('index.html', paths.webDist)
-    })
+    await registerWebClient(app, paths.webDist)
   } else {
     app.setNotFoundHandler((_request, reply) =>
       reply.code(404).send({ error: { message: 'Not found', code: 'not_found' } }),

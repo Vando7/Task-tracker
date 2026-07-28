@@ -73,7 +73,9 @@ implementation went wrong, and each is cheap to honour and expensive to retrofit
 - **Nothing per-viewer goes in an event payload.** `hub.publish` serialises one object for every
   subscriber in the workspace, so a field that answers "for *you*" would be broadcast with one
   person's answer. That is why `comment.*` events carry `{ id, taskId }` rather than the comment,
-  which has `canDelete` and `mine`: receivers refetch the thread instead.
+  which has `canDelete` and `mine`: receivers refetch the thread instead. Acting on an *id* from the
+  payload is still fine — `comment.deleted` prunes the cached thread by id, and has to; see Live
+  updates for why an invalidate alone is not enough there.
 - **Notification delivery writes its ledger row first** and treats a unique-constraint violation as
   "already sent". That ordering is what makes overlapping scheduler ticks safe.
 
@@ -143,6 +145,7 @@ apps/
     src/
       index.ts              # entry: build the app, listen, start the scheduler
       app.ts                # Fastify bootstrap, plugins, error handler, route registration
+      spa.ts                # serving the built client + the SPA fallback (production)
       env.ts                # Zod-validated process.env
       db.ts                 # Prisma client singleton
       auth/                 # password hashing, sessions, tokens, middleware
@@ -163,7 +166,8 @@ apps/
                             #   InlineText, ThemeToggle
       features/             # tasks/, comments/, layout/, session/, stats/, notifications/
                             #   — hooks per domain
-      lib/                  # api client, useEventStream, useTheme, formatting, query keys
+      lib/                  # api client, useEventStream, useTheme, lastWorkspace,
+                            #   formatting, query keys
     public/sw.js            # service worker (push handling)
 packages/
   shared/src/
@@ -171,7 +175,7 @@ packages/
     constants.ts            # enums, limits, defaults
 data/app.db                 # gitignored
 uploads/                    # avatars, gitignored
-Dockerfile                  # written, never built or run
+Dockerfile                  # written, image never built
 ```
 
 Client routes, all under a workspace (`/w/:workspaceId`):
@@ -309,6 +313,15 @@ login.
 unknown address returns a 400 worded so it is not an account-existence oracle. Removing a member also
 removes their assignments in that workspace.
 
+**`/` lands on the household you were last in**, remembered per device in `lib/lastWorkspace.ts` — the
+same kind of setting as the theme, and for the same reason it is not on the server. It is only ever a
+*hint*: `landingWorkspace` resolves it against `me.workspaces` and falls back to the first, so a
+household you were removed from degrades to landing somewhere sensible. That distinction is the whole
+point. The legacy app kept the current workspace in the session and treated it as the answer, which is
+why a cleared cookie or a revoked membership crashed its index view. It is written from "you are
+looking at this one" rather than from the switcher, so a shared link or a notification that lands you
+somewhere is also what you come back to.
+
 ### Floors, rooms, and the house view
 
 `/w/:id/house` is the floor plan and the only place floors and rooms are edited. Each floor carries
@@ -370,9 +383,19 @@ person to tidy up the wording destroyed it.
   the newest note belongs next to the composer.
 - **Not editable.** The author can delete their own; nobody else can, and the refusal is a 404 so
   there is one answer for "you cannot have this".
+- **Always on the card, expanded or not.** A note is the one part of a task another person wrote *to
+  be read*, and behind an expand nobody read it — which pushes the second kind of note back into the
+  description, the exact failure the thread exists to prevent. There is no comment-count chip any
+  more: a number standing in for the notes is a worse copy of what is now a few lines below it.
 - **`commentCount` rides on the task, the bodies do not.** The dashboard feeds all of its sections from
   one `status=todo` query, and putting comment text in that response would bloat the app's hottest
-  request to render a number on a collapsed card. The thread loads when a card opens.
+  request. That count is now also what *gates the fetch*: a task with no notes asks for no thread, so
+  nine cards where one has notes make one request, not nine. Because the count lives on the task and
+  refetches separately, it lags a beat behind a write — so the add and delete mutations patch the
+  thread cache themselves, and `comment.deleted` prunes by id over SSE, rather than relying on an
+  invalidate that a disabled query would ignore.
+- **The composer stays one button until tapped**, so a list of cards is not a column of empty text
+  boxes. That is what makes "always visible" affordable in layout as well as in requests.
 - **Reactions are a closed set** (`COMMENT_REACTIONS`) on comments only, one emoji per person per
   comment, toggling. Optimistic on the client, since a reaction is a tap that has to feel instant.
 - Writing a note notifies the people already involved — assignees, the task's creator, anyone who has
@@ -404,9 +427,17 @@ own change, which is what keeps optimistic updates from flickering.
 
 The `comment.*` events are the exception, and the reason is worth knowing: they carry `{ id, taskId }`
 instead of the comment, because `Comment` has two per-viewer fields (`canDelete`, `mine`) and one
-serialised payload goes to every subscriber in the workspace. Receivers invalidate the thread, which
-costs nothing because only an open card has one. `comment.updated` is a reaction changing. `EventSource` reconnects on its own; on reconnect the current view refetches once to
-close the gap. A comment line every 25s keeps intermediaries from dropping the connection.
+serialised payload goes to every subscriber in the workspace. Receivers invalidate the thread rather
+than writing the payload into it. `comment.updated` is a reaction changing.
+
+`comment.deleted` additionally *prunes the cached thread by id*, and that is not belt-and-braces. The
+thread's fetch is gated on the task's `commentCount`, so deleting the only note on a task takes that
+count to 0 and stops the query being fetched at all — an invalidate alone would mark it stale, refetch
+nothing, and leave the deleted note on screen. Pruning by id stays within the rule: an id is not a
+per-viewer answer.
+
+`EventSource` reconnects on its own; on reconnect the current view refetches once to close the gap. A
+comment line every 25s keeps intermediaries from dropping the connection.
 
 ### Notifications
 
@@ -534,6 +565,18 @@ its author, and that the task list carries a count but no comment text.
 Notification idempotency is exercised by running the scheduler tick repeatedly and asserting nothing
 sends twice.
 
+`src/test/spa.test.ts` covers serving the built client, and exists because that branch shipped
+answering **500 for every client route**: both `@fastify/static` registrations passed
+`decorateReply: false`, so the fallback called a `reply.sendFile` that had never been added. Nothing
+caught it, for two compounding reasons — the branch is gated on `isProduction`, so the API tests never
+registered it, and in development the browser talks to Vite, whose own SPA fallback answers a reload
+before Fastify sees it. The one URL a person checks by hand is `/`, which the static plugin serves
+itself without reaching the fallback. **So a bug here is invisible both in the test suite and in
+`pnpm dev`, and only appears in production.** That is why the logic lives in `src/spa.ts` — registered
+onto a bare Fastify against a fixture directory, with no `NODE_ENV` to fake. The tests pin that a deep
+route with a query string returns the shell with a 200, that a missing `/assets/*.js` returns a JSON
+404 rather than HTML for the browser to parse as JavaScript, and that a non-GET is still a real 404.
+
 ---
 
 ## Deployment
@@ -541,5 +584,20 @@ sends twice.
 `Dockerfile` is a multi-stage build producing a single image: build the client, install production
 dependencies, run one Fastify process serving both, with `data/` and `uploads/` as volumes.
 
-**It has never been built or run.** It was authored as a reviewable artifact rather than part of the
+**The image has never been built.** It was authored as a reviewable artifact rather than part of the
 dev loop, so treat its versions and paths as unverified until someone actually builds it.
+
+The *serving* half of it is no longer unverified, and the way it was verified is worth keeping: build
+the client, then boot the server natively with `NODE_ENV=production` against a scratch database and
+reload a deep route.
+
+```bash
+pnpm --filter @task-tracker/web build
+NODE_ENV=production PORT=3999 SESSION_SECRET=$(openssl rand -hex 32) \
+  DATABASE_URL=file:data/scratch.db pnpm --filter @task-tracker/server exec tsx src/index.ts
+curl -s -o /dev/null -w '%{http_code}\n' "http://127.0.0.1:3999/w/any-id/tasks?roomId=x"   # want 200
+```
+
+`pnpm dev` cannot tell you anything about this — see the note under Tests on why the SPA fallback is
+invisible outside production. Note also that the server boots happily against a database with no
+schema; migrations are the container's `CMD`, not something the app does for itself.

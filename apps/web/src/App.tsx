@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { Icon } from './components/Icon'
 import { Shell } from './components/Shell'
 import { useMe } from './features/session/api'
+import { landingWorkspace, rememberWorkspace } from './lib/lastWorkspace'
 import { useEventStream } from './lib/useEventStream'
 import { DashboardPage } from './routes/DashboardPage'
 import { HousePage } from './routes/HousePage'
@@ -76,7 +77,13 @@ export function App() {
     <Routes>
       <Route path="/verify" element={<VerifyPage />} />
       <Route path="/workspaces" element={<WorkspacesPage me={me} />} />
-      <Route path="/" element={<Navigate to={`/w/${me.workspaces[0]?.id}`} replace />} />
+      {/* Where you were last, not just the first in the list — see `lastWorkspace`
+          for why that is a hint resolved against `me.workspaces` and never trusted
+          on its own. */}
+      <Route
+        path="/"
+        element={<Navigate to={`/w/${landingWorkspace(me.workspaces)?.id}`} replace />}
+      />
       <Route path="/w/:workspaceId/*" element={<WorkspaceRoutes me={me} />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
@@ -110,6 +117,15 @@ function WorkspaceRoutes({ me }: { me: Me }) {
     const timer = setTimeout(() => setFlashing(new Set()), 1400)
     return () => clearTimeout(timer)
   }, [flashing])
+
+  // One write site for the remembered household, and the trigger is "you are
+  // looking at this one" rather than "you clicked it in the switcher" — so a shared
+  // link or a notification that lands you somewhere is also what you come back to.
+  // Guarded on `workspace`, so an id that resolved to no membership is never the
+  // thing we remember.
+  useEffect(() => {
+    if (workspace) rememberWorkspace(workspace.id)
+  }, [workspace])
 
   if (!workspace) return <Navigate to="/workspaces" replace />
 
