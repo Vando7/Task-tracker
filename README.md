@@ -1,26 +1,76 @@
-# Task Tracker
+<div align="center">
 
-Household chores, organised by the physical layout of a home: **workspace (household) → floors →
-rooms**, shared between the people living there.
+# 🏡 Task Tracker
 
-This branch is the TypeScript rewrite; the Django implementation it replaces lives on `main`.
-`CLAUDE.md` is the reference — architecture, data model, API surface, and the invariants worth
-knowing before changing anything.
+**Household chores, organised by the rooms they actually happen in.**
+
+Not another flat to-do list. Tasks live in a *place* — so "what needs attention?"<br>
+has an answer you can walk to.
+
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Node](https://img.shields.io/badge/Node-22_LTS-5FA04E?logo=nodedotjs&logoColor=white)
+![Fastify](https://img.shields.io/badge/Fastify-000000?logo=fastify&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Prisma](https://img.shields.io/badge/Prisma-SQLite-2D3748?logo=prisma&logoColor=white)
+[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+
+</div>
 
 ---
 
-## Getting started
+## The idea
 
-Node 22+ and pnpm. Nothing else — no database service, no mail server, no Redis, no Docker.
+A household is a **workspace**, and everything inside it hangs off the layout of the home:
+
+```
+Flat 4B — 3 housemates
+│
+├── 🏡 Ground floor
+│   ├── 🍳 Kitchen — Deep clean the oven · nobody assigned, up for grabs
+│   ├── 🛋️ Living room — Vacuum · Mira · every 2 weeks
+│   ├── 🛁 Bathroom — Clean the bathroom · overdue
+│   └── 🚪 Hallway — Take the bins out · shared with the Kitchen
+│
+└── 🛏️ Upstairs
+    ├── 🛏️ Bedroom — Change the sheets · Mira · every 2 weeks
+    ├── 📚 Study — Fix the wobbly shelf · done
+    └── 🌿 Balcony — Water the plants · every 3 days
+```
+
+<sub>That's the seeded flat, verbatim — `pnpm db:seed` and you're looking at it.</sub>
+
+Each room shows what's open and how long since anything there was done — *"nothing in 12 days"* — so
+neglect is visible instead of buried in a list. A chore can span rooms, or belong to no room at all
+(whole-flat jobs are normal), and it can belong to nobody, which means *whoever gets to it*.
+
+## Highlights
+
+- 🗓️ **Recurrence that isn't naive** — repeat from when it was *actually done*, or hold a fixed
+  cadence regardless. DST and short months handled.
+- ⚖️ **Fairness, not gamification** — an honest tally of who did what. No points, no streaks, no
+  badges; keeping score between people who live together tends to curdle.
+- 📝 **Notes, per occasion** — *"properly furred up this time, maybe make this monthly."* The
+  description says what a chore **is**; a note says what **happened**.
+- ⚡ **Live** — every change another housemate can see arrives over SSE. No polling, no refresh.
+- 🔔 **Push that works with the tab closed** — deadlines and assignments, with quiet hours and
+  per-event toggles. Denied permission degrades to in-app only; nothing breaks.
+- 🌗 **Both themes are real** — light and dark, per device, stamped before first paint so there's no
+  flash on load.
+- 📱 **Phone first** — 44px tap targets, thumb-reachable actions, no hover-only affordances.
+  Installable as a PWA.
+
+## Quick start
+
+Node 22+ and pnpm. **Nothing else** — no database service, no mail server, no Redis, no Docker.
 
 ```bash
 pnpm install
-pnpm db:migrate          # create data/app.db and apply migrations
-pnpm db:seed             # a plausible two-floor flat with three housemates
-pnpm dev                 # API on :3001, client on :5173
+pnpm db:migrate     # creates data/app.db
+pnpm db:seed        # a two-floor flat, three housemates, plausible mess
+pnpm dev            # API :3001 · client :5173
 ```
 
-Then open <http://localhost:5173> and sign in as any of the seeded users:
+Open **<http://localhost:5173>** and sign in:
 
 | Email | Password |
 |---|---|
@@ -28,177 +78,103 @@ Then open <http://localhost:5173> and sign in as any of the seeded users:
 | `mira@example.com` | `chores-are-fair` |
 | `deyan@example.com` | `chores-are-fair` |
 
-No `.env` is needed for development; every variable has a working default and `.env.example`
-documents the rest. Verification and password-reset links are printed to the server console, so
-there is no mail server to run.
+No `.env` needed — every variable has a working default, and `.env.example` documents the rest.
+Verification and password-reset links print to the server console, so there's no mail server to run.
 
-### Running the processes in the background
-
-`pnpm dev` runs both in the foreground, which is what you want interactively. When you'd rather have
-them detached:
-
-```bash
-./scripts/server.sh start          # both, detached, waits until each answers
-./scripts/server.sh status         # what's up, on which port
-./scripts/server.sh logs api       # follow the log
-./scripts/server.sh restart web
-./scripts/server.sh stop
-```
-
-Targets are `api`, `web`, or `all`. Logs and pidfiles go in `.run/` (gitignored). The script refuses
-to start on a port something else already owns rather than fighting over it, and `stop` signals the
-whole process group so watchers don't leak.
-
-### Reaching it from another machine
-
-Both servers bind loopback by default. To reach the app from a VM host, a phone, or anything else on
-the network:
-
-```bash
-EXPOSE=1 ./scripts/server.sh start
-# client started on http://192.168.99.101:5173 (also 127.0.0.1)
-
-EXPOSE=1 pnpm dev            # same thing, foreground
-```
-
-`EXPOSE=1` does three things: binds `0.0.0.0`, opts Vite out of the Host-header check it uses to
-resist DNS rebinding, and sets `APP_ORIGIN` to this host's address — without that last one the
-verification and password-reset links point at `localhost` and are useless on the machine that has to
-click them.
-
-Strictly, only the client needs exposing: the browser only ever talks to Vite, which proxies `/api`
-onward over loopback. The API is bound too, because anyone asking for this will reasonably want to
-`curl` it directly.
-
-Set `ALLOWED_HOSTS` to a comma-separated list if you'd rather keep Vite's host check meaningful
-instead of allowing anything, and `WEB_PORT` / `PORT` to move the ports.
-
-> **This is a development server.** In development the session cookie is not `secure`,
-> `SESSION_SECRET` falls back to a known default, and the seeded accounts have a password published
-> in this README. That is fine on a private network you control and not fine on an untrusted one.
-> Reaching it from the public internet should go through a reverse proxy with TLS and a real
-> `SESSION_SECRET`, not by exposing this port.
-
-### Resetting
-
-`data/app.db` is the whole database. Delete it and re-run `pnpm db:migrate && pnpm db:seed`.
-
----
+> [!TIP]
+> `data/app.db` is the entire database. Delete it and re-run `db:migrate && db:seed` to start over.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `pnpm dev` | API (`tsx watch`, :3001) + client (Vite, :5173); Vite proxies `/api` |
-| `pnpm test` | Vitest, against a separate `data/test.db` |
-| `pnpm check` | Biome lint + format |
+| `pnpm dev` | Both servers, watched. Vite proxies `/api` → :3001 |
+| `pnpm test` | Vitest via Fastify `.inject()` — no socket, no port to collide with |
+| `pnpm check` | Biome lint + format (`check:fix` writes) |
 | `pnpm typecheck` | `tsc --noEmit` across all three packages |
-| `pnpm build` | typecheck, then build the client |
-| `pnpm db:migrate` · `db:seed` · `db:studio` · `db:reset` | Prisma |
+| `pnpm build` | Typecheck, then build the client |
+| `pnpm db:studio` · `db:reset` | Prisma tooling |
 
----
+<details>
+<summary><b>Running detached</b> — <code>start</code> · <code>stop</code> · <code>status</code> · <code>logs</code></summary>
 
-## Layout
+<br>
+
+`pnpm dev` runs in the foreground, which is what you want interactively. When you'd rather not hold a
+terminal:
+
+```bash
+pnpm start:bg              # both, detached, waits until each answers
+pnpm status                # what's up, on which port
+pnpm logs api              # follow
+pnpm restart web
+pnpm stop
+```
+
+Targets are `api`, `web`, or `all`. Logs and pidfiles land in `.run/` (gitignored). The script refuses
+to start on a port something else owns rather than fighting over it, and `stop` signals the whole
+process group so watchers don't leak.
+
+</details>
+
+<details>
+<summary><b>Reaching it from your phone or another machine</b></summary>
+
+<br>
+
+Both servers bind loopback by default.
+
+```bash
+EXPOSE=1 pnpm start:bg
+# client started on http://192.168.99.101:5173 (also 127.0.0.1)
+
+EXPOSE=1 pnpm dev          # same, foreground
+```
+
+`EXPOSE=1` binds `0.0.0.0`, opts Vite out of the Host-header check it uses to resist DNS rebinding,
+and sets `APP_ORIGIN` to this host's address — without that last one, verification links point at
+`localhost` and are useless on the device that has to tap them.
+
+Set `ALLOWED_HOSTS` to a comma-separated list to keep Vite's host check meaningful, and `WEB_PORT` /
+`PORT` to move the ports.
+
+> [!WARNING]
+> **This is a development server.** The session cookie isn't `secure`, `SESSION_SECRET` falls back to
+> a known default, and the seeded accounts have a password published in this file. Fine on a private
+> network you control; not fine on an untrusted one. Public internet means a reverse proxy with TLS
+> and a real secret — not this port.
+
+</details>
+
+## Where things live
 
 ```
-apps/server     Fastify API: routes/ stay thin, services/ hold the logic,
-                events/ is the SSE hub, jobs/ is the scheduler tick
-apps/web        React 19 + Vite client
-packages/shared Zod schemas — the single definition of every API shape
-data/           SQLite (gitignored)
+apps/server        Fastify API — routes/ stay thin, services/ hold the logic,
+                   events/ is the SSE hub, jobs/ is the scheduler tick
+apps/web           React 19 + Vite client
+packages/shared    Zod schemas — the single definition of every API shape
 ```
-
-Client routes, all under a workspace (`/w/:workspaceId`):
-
-| Route | Page |
-|---|---|
-| `/` | **Dashboard** — yours, then up-for-grabs, then the house at a glance |
-| `/house` | the floor plan, and the only place floors and rooms are edited |
-| `/tasks` | one list, filtered by room, floor, search and assignee via the query string |
-| `/settings` | fairness tally, appearance, household, notifications, profile |
 
 `packages/shared` is the **only** place an API shape is defined. The server validates requests *and*
 responses against those schemas; the client imports the inferred types. If the two ever disagree
 about a field, the schema is right.
 
-Note the two types per request schema: `CreateTaskInput` is the parsed output (`dueDate` is a `Date`),
-`CreateTaskBody` is what a client can actually send (an ISO string). The client wants the `Body` one.
-
----
-
-## Stack
-
-TypeScript throughout, strict. Node 22, Fastify, Zod, Prisma 7 over SQLite in WAL mode via the
-better-sqlite3 driver adapter, React 19 + Vite, TanStack Query, Tailwind v4, hand-rolled sessions
-with argon2id, Server-Sent Events, Web Push, Vitest, Biome.
-
-Deliberately absent: Next.js, Postgres, Redis, any message broker or worker process, an auth library,
-GraphQL and tRPC. `CLAUDE.md` explains each.
-
-The notification scheduler is a single `setInterval` in the API process. That is safe because delivery
-is idempotent — see below.
-
----
-
-## Things worth knowing before you change something
-
-Each of these is load-bearing, and most exist because the legacy app got it wrong.
-
-- **`Task.workspaceId` is a direct foreign key.** Authorization is one indexed lookup,
-  `requireMember(request, workspaceId)`, and every scoped query filters by it — so there is no
-  post-hoc ownership check to forget. Inferring the workspace through `rooms → floor → workspace` was
-  the root of nearly every authorization bug in the old app.
-- **Out-of-workspace reads answer 404, not 403.** A 403 confirms the thing exists.
-- **`TaskCompletion` is append-only and is the truth.** `Task.status` is a fast path. Recurrence,
-  the fairness tally, room staleness and "last done 3 days ago" all read the log.
-- **Notification delivery writes its ledger row first** and treats a unique-constraint violation as
-  "already sent". That ordering is what makes overlapping scheduler ticks safe. The uniqueness key
-  includes a `cycleKey`; keyed on only `(user, task, kind)`, a recurring task's reminder would fire
-  once and then never again.
-- **Overdue is an instant comparison** (`dueDate < now`), computed server-side. The workspace
-  timezone is used for the things that genuinely need a calendar: "due today", quiet hours, the
-  fairness window, and stepping a recurrence so a fortnightly 09:00 chore stays at 09:00 across a DST
-  boundary.
-- **A floor filter is the union of that floor's rooms.** The legacy one meant the intersection, so
-  adding a room silently hid every existing floor-wide task.
-- **Zero rooms and zero assignees are both valid.** A task belongs to the workspace directly, and
-  unassigned means "whoever gets to it" — never render it as missing data.
-- **Floors and rooms soft-delete**, and deleting one detaches it from tasks rather than cascading the
-  join rows away.
-- **Every mutation another member can see must publish an SSE event.** It is the thing that makes the
-  app feel alive and the easiest thing to forget.
-- **A floor's colour is one CSS custom property** set on that floor's subtree; tints and glows derive
-  from it with `color-mix`. Don't reintroduce per-element gradients.
-- **Every colour is a token, and both themes are real.** Utilities read `var(--color-*)`; the light
-  theme reassigns those variables under `:root[data-theme='light']` in `apps/web/src/index.css`. So
-  never hardcode a hex or reach for `bg-white`/`bg-black/30` in a component — it will look wrong in one
-  of the two themes. `data-theme` is stamped by an inline script in `index.html` before first paint and
-  owned by `lib/useTheme.ts` afterwards; the default follows the OS.
-- **Buttons and inputs are the `btn` / `icon-btn` / `field` / `chip` utilities**, with colour variants
-  paired (`icon-btn icon-btn-ghost`). Mixing a core utility like `bg-transparent` into one of them
-  depends on stylesheet order and will eventually lose; add or use a variant instead.
-- **Icons are the inline SVG set in `components/Icon.tsx`** — `currentColor`, `aria-hidden`, and never
-  the only label on a control. Emoji stay for the things a *user* chose: floor and room icons.
-
----
-
-## Tests
-
-```bash
-pnpm test
-```
-
-Vitest with Fastify's `.inject()`, so no listening socket. The suite is organised around the legacy
-bug list — the IDOR cases, floor-filter semantics, badge counts excluding soft-deleted tasks, enum
-and length validation, recurrence anchoring (including the DST and short-month cases), rotation, and
-notification idempotency across repeated ticks.
-
----
+> [!IMPORTANT]
+> **[`CLAUDE.md`](CLAUDE.md) is the reference** — architecture, data model, the full HTTP surface, and
+> the invariants that are load-bearing. Most of them exist because the previous implementation broke
+> them. Read it before changing anything non-obvious.
 
 ## Deployment
 
-`Dockerfile` builds a single image: build the client, install production dependencies, run one
-Fastify process serving both, with `data/` and `uploads/` as volumes.
+`Dockerfile` builds a single image: build the client, install production deps, run one Fastify process
+serving both, with `data/` and `uploads/` as volumes.
 
-**It has never been built or run** — it was authored as a reviewable artifact, not part of the dev
-loop. Treat its versions and paths as unverified.
+**The image has never been built** — it was authored as a reviewable artifact, not part of the dev
+loop, so treat its versions and paths as unverified. The *serving* half is verified natively;
+`CLAUDE.md` has the recipe, and the reason `pnpm dev` can tell you nothing about it.
+
+---
+
+<div align="center">
+<sub><a href="LICENSE">MIT</a> · This branch is the TypeScript rewrite; the Django implementation it replaces lives on <code>main</code>.</sub>
+</div>
