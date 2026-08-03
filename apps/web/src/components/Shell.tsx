@@ -1,11 +1,12 @@
 import type { Me, Workspace } from '@task-tracker/shared'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useLayout } from '../features/layout/api'
-import { useMarkAllRead, useNotifications } from '../features/notifications/api'
+import { useMarkAllRead, useMarkRead, useNotifications } from '../features/notifications/api'
 import { useLogout } from '../features/session/api'
 import { relativeTime } from '../lib/format'
+import { taskPath } from '../lib/share'
 import { Avatar } from './Avatar'
 import { Icon, type IconName } from './Icon'
 import { NewTaskDialog } from './NewTaskDialog'
@@ -37,8 +38,13 @@ export function Shell({
   const location = useLocation()
   const { data: layout } = useLayout(workspace.id)
   const { data: notifications } = useNotifications(workspace.id)
+  const markRead = useMarkRead()
   const markAllRead = useMarkAllRead()
   const logout = useLogout()
+  // A `<details>` does not close because something inside it navigated, and this
+  // one is a menu: leaving it hanging open over the page you just moved to is the
+  // clearest sign the tap did nothing.
+  const bellRef = useRef<HTMLDetailsElement>(null)
 
   const base = `/w/${workspace.id}`
   const unread = notifications?.unreadCount ?? 0
@@ -75,7 +81,7 @@ export function Shell({
         <span className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
 
-          <details className="relative">
+          <details ref={bellRef} className="relative">
             <summary className="icon-btn cursor-pointer list-none [&::-webkit-details-marker]:hidden">
               <span className="relative">
                 <Icon name="bell" size={19} />
@@ -118,13 +124,19 @@ export function Shell({
                 {notifications?.notifications.map((item) => (
                   <li key={item.id}>
                     {/*
-                      Opens the task with its card expanded — the same URL push
-                      notifications use. A feed entry that could not be acted on
-                      made the reader go and find the task by hand.
+                      Lands on the task, pinned and open — the same URL push uses,
+                      built by the same helper, so there is one shape to get right.
+                      Tapping it also reads it and closes the menu: the whole
+                      complaint about this feed was that a tap appeared to do
+                      nothing, and the badge not moving was half of that.
                     */}
                     <Link
-                      to={item.taskId ? `${base}/tasks?task=${item.taskId}` : base}
-                      onClick={closeNav}
+                      to={item.taskId ? taskPath(workspace.id, item.taskId) : base}
+                      onClick={() => {
+                        if (!item.readAt) markRead.mutate(item.id)
+                        if (bellRef.current) bellRef.current.open = false
+                        closeNav()
+                      }}
                       className={`flex items-start gap-2 rounded-xl px-2 py-2 text-sm hover:bg-ink-hover ${
                         item.readAt ? 'text-text-dim' : 'bg-ink-hover'
                       }`}

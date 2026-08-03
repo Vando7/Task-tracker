@@ -1,7 +1,8 @@
-import type { Workspace } from '@task-tracker/shared'
+import type { Task, Workspace } from '@task-tracker/shared'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { TaskCard } from '../components/TaskCard'
+import { TaskSpotlight } from '../components/TaskSpotlight'
 import { useLayout, useMembers } from '../features/layout/api'
 import { useTasks } from '../features/tasks/api'
 
@@ -27,11 +28,14 @@ export function TasksPage({
   const search = params.get('search') ?? undefined
   const assignee = params.get('assignee') ?? 'anyone'
   /**
-   * Where a notification lands. It is not a filter — the task stays in its list
-   * alongside everything else, with its card already open so the note or deadline
-   * that prompted the tap is on screen.
+   * Where a shared link and a notification land. Not a filter: the list stays
+   * exactly as it was, and the linked task is pinned above it by `TaskSpotlight`,
+   * which fetches it by id so no filter, status or limit can hide it.
+   *
+   * The lists then skip it, because two cards for one task means two independent
+   * expanded states for the same chore.
    */
-  const openTaskId = params.get('task') ?? undefined
+  const linkedTaskId = params.get('task') ?? undefined
 
   const { data: layout } = useLayout(workspace.id)
   const { data: members } = useMembers(workspace.id)
@@ -40,10 +44,23 @@ export function TasksPage({
   const pending = useTasks(workspace.id, { ...scope, status: 'todo', limit: 200 })
   const completed = useTasks(workspace.id, { ...scope, status: 'done', limit: 50 })
 
+  const unpinned = (tasks: Task[]): Task[] => tasks.filter((task) => task.id !== linkedTaskId)
+
   const setParam = (key: string, value: string | undefined): void => {
     const next = new URLSearchParams(params)
     if (value === undefined || value === '' || value === 'anyone') next.delete(key)
     else next.set(key, value)
+    setParams(next, { replace: true })
+  }
+
+  /**
+   * Clear the *filters*, and only the filters. `task` survives, because unpinning
+   * the task someone sent you is not what "widen the search" means — the spotlight
+   * has its own dismiss for that.
+   */
+  const clearFilters = (): void => {
+    const next = new URLSearchParams()
+    if (linkedTaskId) next.set('task', linkedTaskId)
     setParams(next, { replace: true })
   }
 
@@ -128,16 +145,14 @@ export function TasksPage({
         </label>
 
         {filtered && (
-          <button
-            type="button"
-            onClick={() => setParams(new URLSearchParams(), { replace: true })}
-            className="btn btn-sm"
-          >
+          <button type="button" onClick={clearFilters} className="btn btn-sm">
             <Icon name="x" size={14} />
             Clear
           </button>
         )}
       </div>
+
+      <TaskSpotlight workspaceId={workspace.id} members={members ?? []} />
 
       <section className="mt-5">
         <h2 className="flex items-center gap-2 text-sm font-medium tracking-wide text-text-dim uppercase">
@@ -171,14 +186,13 @@ export function TasksPage({
         )}
 
         <div className="mt-2 space-y-2">
-          {pending.data?.tasks.map((task) => (
+          {unpinned(pending.data?.tasks ?? []).map((task) => (
             <TaskCard
               key={task.id}
               task={task}
               workspaceId={workspace.id}
               members={members ?? []}
               flashing={flashing.has(task.id)}
-              defaultExpanded={task.id === openTaskId}
             />
           ))}
         </div>
@@ -198,14 +212,13 @@ export function TasksPage({
         )}
 
         <div className="mt-2 space-y-2">
-          {completed.data?.tasks.map((task) => (
+          {unpinned(completed.data?.tasks ?? []).map((task) => (
             <TaskCard
               key={task.id}
               task={task}
               workspaceId={workspace.id}
               members={members ?? []}
               flashing={flashing.has(task.id)}
-              defaultExpanded={task.id === openTaskId}
             />
           ))}
         </div>

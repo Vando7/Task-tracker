@@ -51,6 +51,9 @@ neglect is visible instead of buried in a list. A chore can span rooms, or belon
   badges; keeping score between people who live together tends to curdle.
 - 📝 **Notes, per occasion** — *"properly furred up this time, maybe make this monthly."* The
   description says what a chore **is**; a note says what **happened**.
+- 🔗 **Shareable** — every card copies a link to itself, and the link *lands*: the chore is pinned to
+  the top of the list, highlighted and open, whatever you had filtered. Notifications go to the same
+  place.
 - ⚡ **Live** — every change another housemate can see arrives over SSE. No polling, no refresh.
 - 🔔 **Push that works with the tab closed** — deadlines and assignments, with quiet hours and
   per-event toggles. Denied permission degrades to in-app only; nothing breaks.

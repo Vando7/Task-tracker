@@ -164,10 +164,12 @@ async function deliver(target: NotifyTarget): Promise<boolean> {
   await sendPushToUser(target.userId, {
     title: copy.title,
     body: copy.body,
-    // A real client route. This used to read `/workspaces/:id/tasks/:taskId`,
-    // which matches nothing the router serves, so every push tap landed on the
-    // 404 page — a silent failure, because nothing on the server can observe
-    // where a notification click goes. `?task=` opens that card.
+    // A real client route, and the same one `taskPath` builds in the web app's
+    // `lib/share.ts` — the two cannot import each other, so they agree by hand and
+    // both say so. This used to read `/workspaces/:id/tasks/:taskId`, which matches
+    // nothing the router serves, so every push tap landed on the 404 page — a silent
+    // failure, because nothing on the server can observe where a notification click
+    // goes. `?task=` pins that task above the list and opens it.
     url: `${env.APP_ORIGIN}/w/${target.workspaceId}/tasks?task=${target.taskId}`,
     tag: `${target.kind}:${target.taskId}`,
   })

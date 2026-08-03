@@ -24,6 +24,33 @@ export function useTasks(workspaceId: string | undefined, filters: TaskFilters) 
 }
 
 /**
+ * One task by id, for a link that has to resolve on its own.
+ *
+ * Everything else on the client reads tasks out of a filtered list, which is fine
+ * until a URL names a specific task: a room filter, `status=done` or simply the
+ * 200-row limit can all mean the task a person was sent to is not in the list they
+ * land on, and then the link does nothing at all. Fetching it by id is what makes
+ * a shared link and a notification tap land every time.
+ *
+ * It is also the first reader of `keys.task(id)`. The optimistic patch in
+ * `useUpdateTask` has always written that entry and nothing has ever rendered it,
+ * so an edit on a linked card is the first one that updates without waiting for a
+ * refetch.
+ *
+ * No retry: a link to a deleted task is a 404, and asking three times only delays
+ * saying so.
+ */
+export function useTask(taskId: string | undefined) {
+  return useQuery({
+    queryKey: keys.task(taskId ?? ''),
+    queryFn: () => api<Task>(`/api/tasks/${taskId}`),
+    enabled: Boolean(taskId),
+    staleTime: 60_000,
+    retry: false,
+  })
+}
+
+/**
  * Every mutation below invalidates the workspace's task list family. The SSE
  * event tells *other* clients; this keeps our own cache honest if a write
  * changed more than the entity we sent (a rotation, a rescheduled recurrence).
@@ -118,10 +145,18 @@ export function useReopenTask(workspaceId: string) {
 }
 
 export function useDeleteTask(workspaceId: string) {
+  const queryClient = useQueryClient()
   const invalidate = useTaskInvalidation(workspaceId)
   return useMutation({
     mutationFn: (taskId: string) => api<void>(`/api/tasks/${taskId}`, { method: 'DELETE' }),
-    onSuccess: () => invalidate(),
+    // Drop the entity itself, not just the lists. The SSE `task.deleted` handler
+    // does this for everyone else, but our own event is skipped as an echo — so
+    // without this the row we just deleted stays cached, and anything reading it
+    // by id goes on rendering it.
+    onSuccess: (_data, taskId) => {
+      queryClient.removeQueries({ queryKey: keys.task(taskId) })
+      invalidate()
+    },
   })
 }
 

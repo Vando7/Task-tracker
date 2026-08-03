@@ -22,6 +22,7 @@ import { AssigneeStack, Avatar } from './Avatar'
 import { CommentThread } from './CommentThread'
 import { Icon, type IconName } from './Icon'
 import { InlineText } from './InlineText'
+import { ShareTaskButton } from './ShareTaskButton'
 
 /**
  * A task card.
@@ -68,6 +69,7 @@ export function TaskCard({
   flashing,
   claimUserId,
   defaultExpanded = false,
+  spotlit = false,
 }: {
   task: Task
   workspaceId: string
@@ -79,8 +81,14 @@ export function TaskCard({
    * resting state — this is an offer, not a demand.
    */
   claimUserId?: string
-  /** Open on mount, for the card a notification deep-links to. */
+  /** Open on mount, for the card a link or a notification lands on. */
   defaultExpanded?: boolean
+  /**
+   * The card a link pointed at. Marked, and given a scroll margin that clears the
+   * sticky header so `scrollIntoView` does not tuck it underneath. Owned by
+   * `TaskSpotlight`, which is the only thing that sets it.
+   */
+  spotlit?: boolean
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -113,6 +121,7 @@ export function TaskCard({
         category.edge,
         done ? 'opacity-75' : '',
         flashing ? 'flash' : '',
+        spotlit ? 'spotlight' : '',
       ].join(' ')}
       style={floorColor ? ({ '--floor': floorColor } as React.CSSProperties) : undefined}
     >
@@ -264,15 +273,25 @@ export function TaskCard({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => setExpanded((open) => !open)}
-            aria-expanded={expanded}
-            className="icon-btn icon-btn-ghost mt-auto"
-            aria-label={expanded ? `Collapse "${task.name}"` : `Expand "${task.name}"`}
-          >
-            <Icon name={expanded ? 'chevronUp' : 'chevronDown'} size={18} />
-          </button>
+          {/*
+            Share sits beside the expand chevron rather than inside the expanded
+            block: handing a chore to someone is a thing you do while scanning a
+            list, and behind an expand it costs two taps and is invisible until you
+            go looking for it.
+          */}
+          <div className="mt-auto flex items-center gap-0.5">
+            <ShareTaskButton workspaceId={workspaceId} taskId={task.id} taskName={task.name} />
+
+            <button
+              type="button"
+              onClick={() => setExpanded((open) => !open)}
+              aria-expanded={expanded}
+              className="icon-btn icon-btn-ghost"
+              aria-label={expanded ? `Collapse "${task.name}"` : `Expand "${task.name}"`}
+            >
+              <Icon name={expanded ? 'chevronUp' : 'chevronDown'} size={18} />
+            </button>
+          </div>
         </div>
       </div>
 

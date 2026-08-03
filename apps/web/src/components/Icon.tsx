@@ -230,6 +230,13 @@ const ICONS = {
     </>
   ),
   send: <path d="M4 12l16-8-6 8 6 8-16-8Z" />,
+  /** Sharing a task is copying its URL, so the affordance is a link, not an arrow. */
+  link: (
+    <>
+      <path d="M10.6 13.4a4 4 0 0 0 5.66 0l2.83-2.83a4 4 0 0 0-5.66-5.66l-1.41 1.42" />
+      <path d="M13.4 10.6a4 4 0 0 0-5.66 0l-2.83 2.83a4 4 0 0 0 5.66 5.66l1.41-1.42" />
+    </>
+  ),
 } as const
 
 export type IconName = keyof typeof ICONS

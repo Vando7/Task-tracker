@@ -90,10 +90,31 @@ implementation went wrong, and each is cheap to honour and expensive to retrofit
 - **Buttons and inputs are the `btn` / `icon-btn` / `field` / `chip` utilities**, with colour
   variants paired (`icon-btn icon-btn-ghost`). Mixing a core utility like `bg-transparent` into one
   of them depends on stylesheet order and will eventually lose; add or use a variant instead.
+  One known hole in that, because it looks like a variant bug and is not: the base rule for native
+  controls (`input, select, textarea, button { color: inherit }`) is **unlayered**, and unlayered
+  declarations outrank every `@layer`, so a variant's own `color` never reaches a `<button>` —
+  `icon-btn-primary` sets `color: #fff` and its glyph still comes out `--color-text`. Colour the
+  `Icon` instead, where nothing is competing.
 - **Icons are the inline SVG set in `components/Icon.tsx`** — `currentColor`, `aria-hidden`, and
   never the only label on a control. Emoji stay for the things a *user* chose: floor and room icons.
 - Phone is the primary target: 44px minimum tap targets (the `tap` utility), thumb-reachable primary
   actions, no hover-dependent affordances.
+
+**Links to a task**
+
+- **A task's URL is one shape, and `lib/share.ts` is where it is built.** Everything that can send
+  someone to a task goes through `taskPath` — the share button, the notification feed. The push
+  payload builds the same path by hand on the server, because the two cannot import each other, and
+  both say so.
+- **It is canonical, never contextual.** No filters, and not the page the sharer happened to be on.
+  A recipient lands on the task in the full list, not inside someone else's search for "kettle".
+- **The page resolves the linked task *by id*, never by hoping it is in the list.** This is the whole
+  feature: a room filter, `status=done` or the list's own limit can each mean the task is not in the
+  response the page renders, and then the link silently does nothing. `?task=` used to mean no more
+  than "expand that card if it is on screen", which is why tapping a notification so often appeared
+  to do nothing at all.
+- **A pinned task is not rendered twice.** Two cards for one chore is two independent expanded
+  states, so the lists skip whatever the spotlight is showing.
 
 ---
 
@@ -162,12 +183,13 @@ apps/
     src/
       main.tsx, App.tsx     # routing and the workspace shell
       routes/               # one file per page
-      components/           # Shell, TaskCard, CommentThread, NewTaskDialog, Avatar, Icon,
+      components/           # Shell, TaskCard, TaskSpotlight, ShareTaskButton,
+                            #   CommentThread, NewTaskDialog, Avatar, Icon,
                             #   InlineText, ThemeToggle
       features/             # tasks/, comments/, layout/, session/, stats/, notifications/
                             #   — hooks per domain
       lib/                  # api client, useEventStream, useTheme, lastWorkspace,
-                            #   formatting, query keys
+                            #   share (the one task URL), formatting, query keys
     public/sw.js            # service worker (push handling)
 packages/
   shared/src/
@@ -186,6 +208,10 @@ Client routes, all under a workspace (`/w/:workspaceId`):
 | `/house` | the floor plan, and the only place floors and rooms are edited |
 | `/tasks` | one list, filtered by room, floor, search and assignee via the query string |
 | `/settings` | fairness tally, appearance, household, notifications, profile |
+
+`/tasks?task=<id>` is additionally **the** URL for one task — where a shared link and a notification
+land. It is not a filter: the list renders exactly as it would without it and the named task is
+pinned above it. See *Sharing a task* below.
 
 ---
 
@@ -351,6 +377,39 @@ recorded with who assigned whom. The task list filters by room, floor, search an
 (*Anyone* · *Mine* · *Unassigned* · specific members), all combinable, all in the URL query string so
 a filtered view is linkable and survives reload.
 
+### Sharing a task
+
+A link icon on every card, beside the expand chevron. It hands over
+`/w/:workspaceId/tasks?task=<taskId>` — the OS share sheet where `navigator.share` exists, the
+clipboard otherwise. Always visible rather than inside the expanded block, because passing a chore to
+someone is a thing you do while scanning a list.
+
+Both of those APIs need a secure context, and this app is routinely opened over plain http on a LAN
+(`EXPOSE=1`, any deployment without TLS) — which is the phone, which is where sharing happens. So the
+third path is real, not theoretical: the URL is shown in a field, selected, for the user to copy by
+hand. Anything that silently did nothing there would fail exactly where the feature is most used.
+
+**Where the link lands** is `TaskSpotlight`, above the list: the task fetched by id, marked, expanded,
+scrolled to, and skipped by the lists below so there is only ever one card for it. Three things follow
+from it being a *pin* rather than a page:
+
+- The list is still underneath, so "what else needs doing" is one scroll away. That is the point of an
+  app made of cards rather than a stack of detail pages, and a dedicated `/task/:id` route would have
+  been a second place a task is rendered.
+- The state is escapable and explained. A band says why the card is up there and its dismiss clears
+  `?task=` — nobody is left with a highlighted card and no idea what did it. Clearing the *filters*
+  deliberately keeps the pin, since widening a search is not the same as putting down what someone
+  sent you.
+- A stale link says so. A deleted task and a task from a household you are not in both answer 404 by
+  design, so there is one honest message for both rather than a guess. A task from a household you
+  *are* in but not the one in the path is the odd case worth handling separately — the card would
+  otherwise render over the wrong house's list — so it offers the URL that works instead.
+
+The marker is `spotlight` in `index.css`: an outline and a glow, one pulse on arrival then settled.
+`outline` rather than `border-color`, because a card already spends its border on the category edge
+and that would be a same-specificity fight decided by stylesheet order. The scroll margin lives on the
+section that `scrollIntoView` is called on, or the sticky header eats the band and the task's name.
+
 ### Recurrence
 
 `recurrenceEvery` + `recurrenceUnit` (`day | week | month`); null means one-off. On completion, a
@@ -453,6 +512,12 @@ the only way a deadline reminder is worth anything.
 | `completed_by_other` | a task you're assigned to is completed by someone else | the other assignees |
 | `commented` | someone writes a note on a task | assignees, its creator, prior commenters — not the author |
 
+- **Every notification is a way into the task it is about.** The feed entry and the push payload both
+  point at `/w/:id/tasks?task=<id>`, and tapping a feed entry also marks *that one* read (`POST
+  /api/notifications/:id/read`) and closes the bell. The route existed and nothing called it, so the
+  only way to clear the badge was "mark all read" — acting on one notification left the badge
+  unmoved, which is half of why the feed felt inert. The other half was landing on a page where
+  nothing visibly happened; see *Sharing a task*.
 - Permission is requested **contextually**, when the user first enables notifications in settings.
   Never on page load.
 - `NotifyPreference` per user: master switch, per-event toggles, `due_soon` lead time, quiet hours.

@@ -35,6 +35,23 @@ export function useUpdateNotifyPreferences() {
   })
 }
 
+/**
+ * Mark one notification read.
+ *
+ * The route has always been there and nothing called it, so the only way to clear
+ * the badge was "mark all read" — which meant acting on one notification left the
+ * other four looking unread and the badge unchanged. Reading one is what tapping it
+ * *is*.
+ */
+export function useMarkRead() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ ok: true }>(`/api/notifications/${id}/read`, { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.notifications() }),
+  })
+}
+
 export function useMarkAllRead() {
   const queryClient = useQueryClient()
   return useMutation({

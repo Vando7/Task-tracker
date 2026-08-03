@@ -428,6 +428,30 @@ input[type="color"] {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--floor) 22%, transparent);
 }
 
+/* --- The linked task ------------------------------------------------------ */
+
+/**
+ * The card a `?task=` link landed on.
+ *
+ * `outline` and `box-shadow` only, deliberately. A card already spends its border
+ * on the category edge (`border-l-4 border-l-urgent`), and a `border-color` here
+ * would be a same-specificity fight with it decided by stylesheet order — the exact
+ * trap the rule about mixing core utilities into these warns about. An outline sits
+ * outside all of that.
+ *
+ * Marker only — no scroll margin. The element `scrollIntoView` is called on is the
+ * section wrapping this card, so the margin that clears the sticky header has to be
+ * there; putting it here as well would only look like it was doing the work.
+ */
+@utility spotlight {
+  outline: 2px solid color-mix(in oklab, var(--color-accent) 60%, transparent);
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 7px color-mix(in oklab, var(--color-accent) 10%, transparent),
+    var(--shadow-card);
+  animation: spotlight-arrive 1.4s ease-out;
+}
+
 /* --- Motion --------------------------------------------------------------- */
 
 /* The flash-on-change animation from the legacy app was genuinely nice. Kept —
@@ -439,6 +463,27 @@ input[type="color"] {
   }
   100% {
     background-color: transparent;
+  }
+}
+
+/* A single pulse on arrival, decaying to the resting marker. A ring that keeps
+   pulsing is noise once you have found the card, and the marker has to stay for as
+   long as `?task=` does — the highlight is what explains why this card is up here. */
+@keyframes spotlight-arrive {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--color-accent) 45%, transparent),
+      var(--shadow-card);
+  }
+  40% {
+    box-shadow:
+      0 0 0 12px color-mix(in oklab, var(--color-accent) 22%, transparent),
+      var(--shadow-card);
+  }
+  100% {
+    box-shadow:
+      0 0 0 7px color-mix(in oklab, var(--color-accent) 10%, transparent),
+      var(--shadow-card);
   }
 }
 
@@ -478,6 +523,11 @@ input[type="color"] {
     /* biome-ignore-end lint/complexity/noImportantStyles: end of the reduced-motion override */
   }
   .flash {
+    animation: none;
+  }
+  /* The resting marker in the utility is the whole message; the pulse was only
+     ever how it arrived. */
+  .spotlight {
     animation: none;
   }
 }
